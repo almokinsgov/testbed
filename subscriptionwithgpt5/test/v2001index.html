@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User & Licence Management</title>
+<style>
+body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+form, .admin-panel { margin-top: 20px; }
+input, button, select { margin: 5px 0; padding: 10px; font-size: 1em; }
+.message { margin-top: 10px; font-weight: bold; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+td, th { border: 1px solid #ddd; padding: 8px; }
+th { background: #f4f4f4; }
+</style>
+</head>
+<body>
+
+<h2>Login / Signup</h2>
+<form id="authForm">
+  <input type="text" id="username" placeholder="Username" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <input type="text" id="licence" placeholder="Licence (signup only)">
+  <div>
+    <button type="button" onclick="submitForm('login')">Login</button>
+    <button type="button" onclick="submitForm('signup')">Signup</button>
+  </div>
+</form>
+<div class="message" id="message"></div>
+
+<div class="admin-panel" id="adminPanel" style="display:none;">
+  <h3>Admin Licence Management</h3>
+  <button onclick="listUsers()">Refresh User List</button>
+  <table id="userTable">
+    <thead>
+      <tr><th>Username</th><th>Licence</th><th>Role</th><th>Actions</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+// CONFIG
+const USE_CORS_PROXY = false;
+const CORS_PROXY_URL = "https://corsproxy.io/?";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxp6ztDcqphIY3EcS4ZIxVsjEXILMa2eUT_FA4u0_xT9IA-y4I6CqxrwPPcEkER1t-GLA/exec"; // Replace with your backend URL
+
+let currentUser = null;
+let currentHash = null;
+
+// Hash password client-side
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return btoa(String.fromCharCode(...hashArray));
+}
+
+async function submitForm(action) {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const licence = document.getElementById("licence").value.trim();
+  const messageEl = document.getElementById("message");
+  messageEl.textContent = "Processing...";
+
+  try {
+    const passwordHash = await hashPassword(password);
+    const url = USE_CORS_PROXY ? CORS_PROXY_URL + BACKEND_URL : BACKEND_URL;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, username, passwordHash, licence })
+    });
+    const data = await res.json();
+    messageEl.textContent = data.message;
+    if (data.success) {
+      messageEl.style.color = "green";
+      currentUser = username;
+      currentHash = passwordHash;
+      if (data.role === "admin") {
+        document.getElementById("adminPanel").style.display = "block";
+        listUsers();
+      }
+    } else {
+      messageEl.style.color = "red";
+    }
+  } catch (err) {
+    messageEl.textContent = "Error: " + err.message;
+    messageEl.style.color = "red";
+  }
+}
+
+async function updateRole(targetUser) {
+  const newRole = document.getElementById(`role-${targetUser}`).value;
+  const url = USE_CORS_PROXY ? CORS_PROXY_URL + BACKEND_URL : BACKEND_URL;
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "updateRole",
+      username: currentUser,
+      passwordHash: currentHash,
+      targetUser,
+      newRole
+    })
+  });
+  listUsers();
+}
+
+
+async function listUsers() {
+  const url = USE_CORS_PROXY ? CORS_PROXY_URL + BACKEND_URL : BACKEND_URL;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "listUsers", username: currentUser, passwordHash: currentHash })
+  });
+  const data = await res.json();
+  const tbody = document.querySelector("#userTable tbody");
+  tbody.innerHTML = "";
+  if (data.success) {
+    data.users.forEach(user => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${user.username}</td>
+    <td><input value="${user.licence}" id="lic-${user.username}"></td>
+    <td>
+      <select id="role-${user.username}">
+        <option value="user" ${user.role === "user" ? "selected" : ""}>User</option>
+        <option value="admin" ${user.role === "admin" ? "selected" : ""}>Admin</option>
+      </select>
+    </td>
+    <td>
+      <button onclick="updateLicence('${user.username}')">Update Licence</button>
+      <button onclick="updateRole('${user.username}')">Update Role</button>
+      <button onclick="deleteUser('${user.username}')">Delete</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+});
+  }
+}
+
+async function updateLicence(targetUser) {
+  const newLicence = document.getElementById(`lic-${targetUser}`).value;
+  const url = USE_CORS_PROXY ? CORS_PROXY_URL + BACKEND_URL : BACKEND_URL;
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "updateLicence", username: currentUser, passwordHash: currentHash, targetUser, newLicence })
+  });
+  listUsers();
+}
+
+async function deleteUser(targetUser) {
+  if (!confirm(`Delete user ${targetUser}?`)) return;
+  const url = USE_CORS_PROXY ? CORS_PROXY_URL + BACKEND_URL : BACKEND_URL;
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "deleteUser", username: currentUser, passwordHash: currentHash, targetUser })
+  });
+  listUsers();
+}
+</script>
+
+</body>
+</html>
+
