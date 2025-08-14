@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DM Reputation And Game Flow</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+  h1{font-size:22px;margin:0 0 6px}
+  h2{font-size:18px;margin:0 0 8px}
+  h3{font-size:14px;margin:0 0 8px}
+  .wrap{padding:16px 16px 80px;max-width:1200px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+  .row{display:grid;gap:12px}
+  @media(min-width:760px){.row.cols-2{grid-template-columns:repeat(2,1fr)}.row.cols-3{grid-template-columns:repeat(3,1fr)}.row.cols-4{grid-template-columns:repeat(4,1fr)}.row.cols-5{grid-template-columns:repeat(5,1fr)}}
+  .input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff}
+  .btn{padding:8px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .muted{color:var(--muted)}
+  .tag{display:inline-block;font-size:12px;padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:#f9fafb}
+  .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .space-y>*+*{margin-top:8px}
+  .list{max-height:220px;overflow:auto}
+  .bar{height:8px;background:#eef2f7;border-radius:999px;overflow:hidden}
+  .bar>i{display:block;height:100%}
+  .small{font-size:12px}
+  .right{text-align:right}
+  .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:#fff;cursor:pointer}
+  .emoji{font-size:18px;line-height:1}
+  .two-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:760px){.two-cols{grid-template-columns:1fr}}
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const {useState,useEffect,useMemo}=React;
+
+/* ---------- Utilities ---------- */
+const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+const toNumber=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+const lsGet=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch{return f}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const useLocal=(k,i)=>{const [v,setV]=useState(()=>lsGet(k,i));useEffect(()=>lsSet(k,v),[k,v]);return [v,setV]};
+const nowIso=()=>new Date().toISOString();
+const download=(name,data)=>{const b=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+const pickFile=()=>new Promise((res)=>{const i=document.createElement("input");i.type="file";i.accept=".json,application/json";i.onchange=()=>{const f=i.files[0];if(!f) return res(null);const r=new FileReader();r.onload=()=>res({name:f.name,text:String(r.result)});r.readAsText(f)};i.click()});
+const safeArr=a=>Array.isArray(a)?a:[];
+
+/* ---------- JSONP Client For GAS ---------- */
+function jsonp(baseUrl,params={},timeoutMs=15000){
+  return new Promise((resolve,reject)=>{
+    if(!baseUrl) return reject(new Error("No Backend Url"));
+    const cb="cb_"+Math.random().toString(36).slice(2);
+    const u=new URL(baseUrl);
+    Object.entries(params).forEach(([k,v])=>u.searchParams.append(k,String(v)));
+    u.searchParams.append("callback",cb);
+    const s=document.createElement("script");
+    let done=false;
+    const t=setTimeout(()=>{if(done)return;done=true;cleanup();reject(new Error("timeout"))},timeoutMs);
+    function cleanup(){try{delete window[cb]}catch{};if(s.parentNode)s.parentNode.removeChild(s);clearTimeout(t)}
+    window[cb]=data=>{if(done)return;done=true;cleanup();resolve(data)};
+    s.onerror=()=>{if(done)return;done=true;cleanup();reject(new Error("jsonp error"))};
+    s.src=u.toString();
+    document.head.appendChild(s);
+  });
+}
+
+/* ---------- Domain ---------- */
+const DEFAULT_SESSION_ID="session-1";
+const INDEX_KEY="dm_sessions_index_v3";
+const stateKey=id=>"dm_state_"+id;
+const eventsCacheKey=id=>"dm_events_cache_"+id;
+
+const CategoryKeys={continuity:"continuity",pace:"pace",fun:"fun",plot:"plot",challenge:"challenge",overall:"overall"};
+const DefaultCategories=[
+  {key:CategoryKeys.continuity,label:"Continuity",min:0,max:10},
+  {key:CategoryKeys.pace,label:"Pace",min:0,max:10},
+  {key:CategoryKeys.fun,label:"Fun",min:0,max:10},
+  {key:CategoryKeys.plot,label:"Plot",min:0,max:10},
+  {key:CategoryKeys.challenge,label:"Challenge",min:0,max:10}
+];
+const DefaultSentiments=[
+  {key:"happy",label:"Happy",emoji:"😊",effects:{fun:+1,plot:+1}},
+  {key:"sad",label:"Sad",emoji:"😢",effects:{fun:-1,plot:-1}},
+  {key:"easy",label:"Easy",emoji:"🍰",effects:{challenge:-1,pace:+1}},
+  {key:"confused",label:"Confused",emoji:"😕",effects:{continuity:-1}},
+  {key:"lost",label:"Lost",emoji:"❓",effects:{continuity:-1,plot:-1}},
+  {key:"bored",label:"Bored",emoji:"🥱",effects:{pace:-1,fun:-1,plot:-1}},
+  {key:"hard",label:"Hard",emoji:"😣",effects:{challenge:+1,pace:-1}}
+];
+
+function computeOverall(scores){
+  const s=scores||{};
+  const c=toNumber(s.continuity)||0;
+  const p=toNumber(s.pace)||0;
+  const f=toNumber(s.fun)||0;
+  const pl=toNumber(s.plot)||0;
+  const ch=toNumber(s.challenge)||0;
+  const total=c+p+pl+ch+0.6*f;
+  const out=Math.round((total/4.6)*10)/10;
+  return clamp(out,0,10);
+}
+function applySentiment(scores,sentiment,weights=1){
+  const s={...scores};
+  const eff=sentiment.effects||{};
+  const w=(typeof weights==="number")?weights:1;
+  Object.entries(eff).forEach(([k,delta])=>{
+    s[k]=clamp(toNumber(s[k]??5)+delta*w,0,10);
+  });
+  s.overall=computeOverall(s);
+  return s;
+}
+function mulberry32Seed(str){
+  let h=1779033703^str.length;
+  for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19}
+  let t=()=>(h+=0x6D2B79F5,(h^=h>>>15,h=Math.imul(h|1,h^h>>>7),h^=h>>>14)>>>0)/4294967296;
+  return t;
+}
+function generateFromSeed(seed){
+  const rnd=mulberry32Seed(seed||"seed");
+  const archetypes=["Methodical Worldbuilder","Chaotic Trickster","Cinematic Narrator","Puzzle Maestro","Gritty Realist"];
+  const objectivesPool=[
+    "Recover The Relic Of Dawn","Broker Peace Between Rival Clans","Decode The Obsidian Codex",
+    "Survive Three Nights In The Blighted Fens","Escort The Caravan Through The Ember Pass",
+    "Expose The Court Impostor","Seal The Rift Before Moonrise"
+  ];
+  const twistsPool=[
+    "The Trusted Guide Is A Doppelganger","The Relic Is Sentient And Anxious",
+    "Time Loops Every Hour Until A Secret Word Is Spoken","All Magic Costs A Memory","The Villain Wants To Surrender"
+  ];
+  const pick=(arr)=>arr[Math.floor(rnd()*arr.length)];
+  const profile={
+    seed,
+    archetype:pick(archetypes),
+    tone:pick(["Playful","Grim","Heroic","Weird","Mystic"]),
+    constraints:[pick(["No Info Dumping","Hard Cut Scenes Allowed","Strict Encumbrance","Montage Allowed"]),pick(["Foreshadow Twice","Rule Of Three Hooks","Keep Turns Under 60s"])],
+    win:"Players fulfill the primary objective and overall score stays 7 or higher",
+    lose:"Overall falls to 3 or lower for five minutes or players abandon objectives"
+  };
+  const objectives=Array.from({length:3},()=>({id:Math.random().toString(36).slice(2),text:pick(objectivesPool),progress:0,weight:1}));
+  const twists=[...new Set(Array.from({length:3},()=>pick(twistsPool)))];
+  return {profile,objectives,twists};
+}
+
+/* ---------- GAS API ---------- */
+function makeApi(baseUrl, sheetId){
+  return {
+    getIndex:()=>jsonp(baseUrl,{action:"getIndex",sheetId}),
+    upsertIndex:(id,name,seed)=>jsonp(baseUrl,{action:"upsertIndex",sheetId,id,name,seed}),
+    getSession:(id)=>jsonp(baseUrl,{action:"getSession",sheetId,id}),
+    saveSnapshot:(id,snap)=>jsonp(baseUrl,{action:"saveSnapshot",sheetId,id,snapshot:encodeURIComponent(JSON.stringify(snap))}),
+    appendEvents:(id,events)=>jsonp(baseUrl,{action:"appendEvents",sheetId,id,events:encodeURIComponent(JSON.stringify(events))}),
+    getEventsSince:(id,ts)=>jsonp(baseUrl,{action:"getEventsSince",sheetId,id,since:ts||""})
+  };
+}
+
+/* ---------- Rebuild From Events ---------- */
+function rebuild(baseState,events){
+  let scores={continuity:5,pace:5,fun:5,plot:5,challenge:5,overall:5};
+  const sentimentsByKey=Object.fromEntries((baseState.sentiments||DefaultSentiments).map(s=>[s.key,s]));
+  (events||[]).forEach(e=>{
+    if(e.type==="vote" && sentimentsByKey[e.sentimentKey]){
+      scores=applySentiment(scores, sentimentsByKey[e.sentimentKey], e.weight||1);
+    }
+  });
+  return {...baseState, scores, lastSaved:nowIso()};
+}
+
+/* ---------- Default State ---------- */
+function defaultState(sessionId,seedValue){
+  const seeded=generateFromSeed(seedValue || ("session-"+(sessionId||DEFAULT_SESSION_ID)));
+  return {
+    version:5,
+    sessionId:sessionId||DEFAULT_SESSION_ID,
+    sessionName:"Session",
+    players:[],
+    categories:[...DefaultCategories],
+    scores:{continuity:5,pace:5,fun:5,plot:5,challenge:5,overall:5},
+    sentiments:[...DefaultSentiments],
+    sentimentWeight:1,
+    voteCooldownSec:15,
+    timers:[],
+    modifiers:{
+      twist:["A Merchant Offers A Dangerous Bargain","A Door Appears Where None Existed","Weather Turns Against You"],
+      wildcardGoodPlayers:["Legendary Inspiration","Hidden Ally Arrives","Lucky Break"],
+      wildcardBadPlayers:["Critical Misunderstanding","Tripping Over Clues","Risky Shortcut Backfires"],
+      wildcardGoodDm:["Perfect Callback","NPC Steals The Show","Vivid Set Piece"],
+      wildcardBadDm:["Rules Brain Fog","Scene Falls Flat","Villain Monologues Too Long"]
+    },
+    dmProfile:seeded.profile,
+    objectives:seeded.objectives,
+    twists:seeded.twists,
+    lastSaved:nowIso()
+  };
+}
+
+/* ---------- App ---------- */
+function App(){
+  const [mode,setMode]=useState("dm");
+  const [sessionId,setSessionId]=useLocal("dm_session_id",DEFAULT_SESSION_ID);
+  const [seed,setSeed]=useLocal("dm_seed","session-"+DEFAULT_SESSION_ID);
+  const [backendUrl,setBackendUrl]=useLocal("dm_backend_url","");
+  const [sheetId,setSheetId]=useLocal("dm_sheet_id","");
+  const [state,setState]=useLocal(stateKey(sessionId),defaultState(sessionId,seed));
+  const [index,setIndex]=useState(lsGet(INDEX_KEY,[{id:DEFAULT_SESSION_ID,name:"Session",seed:"session-"+DEFAULT_SESSION_ID}]));
+  const [eventsCache,setEventsCache]=useLocal(eventsCacheKey(sessionId),[]);
+  const [message,setMessage]=useState("");
+  const api=useMemo(()=>makeApi(backendUrl,sheetId),[backendUrl,sheetId]);
+
+  useEffect(()=>{setMode(new URLSearchParams(location.search).get("mode")||"dm")},[]);
+
+  useEffect(()=>{ // keep local index updated
+    const idx=[...index];
+    const i=idx.findIndex(x=>x.id===sessionId);
+    const entry={id:sessionId,name:state.sessionName||sessionId,seed:state.dmProfile?.seed||seed,updated:nowIso()};
+    if(i>=0) idx[i]={...idx[i],...entry}; else idx.push(entry);
+    idx.sort((a,b)=>a.name.localeCompare(b.name));
+    setIndex(idx); lsSet(INDEX_KEY,idx);
+  },[state.sessionName, state.dmProfile?.seed, seed, sessionId]);
+
+  useEffect(()=>{ // when session changes, load local snapshot and cache
+    const snap=lsGet(stateKey(sessionId),null) || defaultState(sessionId, seed);
+    setState(snap);
+    setEventsCache(lsGet(eventsCacheKey(sessionId),[]));
+  },[sessionId]);
+
+  useEffect(()=>{ // initial remote sync if configured
+    if(!backendUrl||!sheetId) return;
+    (async()=>{
+      try{
+        const r=await api.getSession(sessionId);
+        if(r.ok){
+          const snap=r.snapshot||defaultState(sessionId, seed);
+          const evs=r.events||[];
+          setEventsCache(evs);
+          lsSet(eventsCacheKey(sessionId),evs);
+          const rebuilt=rebuild(snap,evs);
+          setState(rebuilt);
+          lsSet(stateKey(sessionId),rebuilt);
+          setMessage("Connected");
+          setTimeout(()=>setMessage(""),800);
+        }
+      }catch(e){setMessage("Remote Load Failed")}
+    })();
+  },[backendUrl,sheetId,sessionId]);
+
+  useEffect(()=>{ // poll events since last seen
+    if(!backendUrl||!sheetId) return;
+    let isOn=true;
+    let last = (eventsCache.length? eventsCache[eventsCache.length-1].when : "");
+    (async function loop(){
+      while(isOn){
+        try{
+          const r=await api.getEventsSince(sessionId,last||"");
+          if(r.ok){
+            const newEvents=r.events||[];
+            if(newEvents.length){
+              last=newEvents[newEvents.length-1].when;
+              setEventsCache(newEvents);
+              lsSet(eventsCacheKey(sessionId),newEvents);
+              const rebuilt=rebuild(r.snapshot||state, newEvents);
+              setState(rebuilt);
+              lsSet(stateKey(sessionId),rebuilt);
+              setMessage("Live Update");
+              setTimeout(()=>setMessage(""),500);
+            }
+          }
+        }catch(e){}
+        await new Promise(r=>setTimeout(r,2500));
+      }
+    })();
+    return ()=>{isOn=false};
+  },[backendUrl,sheetId,sessionId,eventsCache.length]);
+
+  async function connectRemote(){
+    if(!backendUrl||!sheetId){setMessage("Enter Backend Url And Sheet Id");return}
+    try{
+      const r=await api.getIndex();
+      if(r.ok){setMessage("Connected");setTimeout(()=>setMessage(""),800)}
+      else setMessage("Connect Failed");
+    }catch(e){setMessage("Connect Error")}
+  }
+  async function manualLoad(){
+    if(backendUrl&&sheetId){
+      try{
+        const r=await api.getSession(sessionId);
+        if(r.ok){
+          const rebuilt=rebuild(r.snapshot||defaultState(sessionId,seed), r.events||[]);
+          setEventsCache(r.events||[]);
+          lsSet(eventsCacheKey(sessionId), r.events||[]);
+          setState(rebuilt);
+          lsSet(stateKey(sessionId),rebuilt);
+          setMessage("Loaded");
+          setTimeout(()=>setMessage(""),800);
+          return;
+        }
+      }catch(e){}
+    }
+    const snap=lsGet(stateKey(sessionId),null) || defaultState(sessionId,seed);
+    setState(snap);
+    setMessage("Loaded (Local)");
+    setTimeout(()=>setMessage(""),800);
+  }
+  async function manualSave(){
+    const payload={...state,lastSaved:nowIso()};
+    lsSet(stateKey(sessionId),payload);
+    if(backendUrl&&sheetId){
+      try{
+        await api.upsertIndex(sessionId, payload.sessionName||sessionId, payload.dmProfile?.seed||"");
+        await api.saveSnapshot(sessionId,payload);
+        setMessage("Saved");
+      }catch(e){setMessage("Save Error")}
+    }else{
+      setMessage("Saved (Local)");
+    }
+    setTimeout(()=>setMessage(""),800);
+  }
+  async function exportData(){
+    const bundle = {
+      meta:{exportedAt:nowIso(), version:state.version||1},
+      index:lsGet(INDEX_KEY,[]),
+      sessions:lsGet(INDEX_KEY,[]).reduce((acc, entry)=>{
+        acc[entry.id]={ snapshot:lsGet(stateKey(entry.id),null), events:lsGet(eventsCacheKey(entry.id),[]) };
+        return acc;
+      },{})
+    };
+    download("dm_reputation_export.json", JSON.stringify(bundle,null,2));
+  }
+  async function importData(){
+    const file=await pickFile();
+    if(!file) return;
+    try{
+      const parsed=JSON.parse(file.text);
+      const sessions=parsed.sessions||{};
+      Object.entries(sessions).forEach(([id,pack])=>{
+        if(pack && typeof pack==="object"){
+          if(pack.snapshot) lsSet(stateKey(id), pack.snapshot);
+          if(Array.isArray(pack.events)) lsSet(eventsCacheKey(id), pack.events);
+        }
+      });
+      lsSet(INDEX_KEY, parsed.index||[]);
+      setMessage("Imported");
+      setTimeout(()=>setMessage(""),800);
+    }catch(e){alert("Import Failed: "+e.message)}
+  }
+
+  return React.createElement("div",{className:"wrap"},
+    React.createElement("header",null,
+      React.createElement("h1",null,"DM Reputation And Game Flow"),
+      React.createElement("div",{className:"muted small"},message||"")
+    ),
+    React.createElement("section",{className:"card space-y"},
+      React.createElement("div",{className:"row cols-4"},
+        React.createElement("label",null,
+          React.createElement("div",{className:"small muted"},"Session"),
+          React.createElement("select",{className:"input",value:sessionId,onChange:e=>setSessionId(e.target.value)},
+            (lsGet(INDEX_KEY,[]).length?lsGet(INDEX_KEY,[]):[{id:DEFAULT_SESSION_ID,name:"Session"}]).map(ent=>React.createElement("option",{key:ent.id,value:ent.id}, ent.name?`${ent.name} (${ent.id})` : ent.id))
+          )
+        ),
+        React.createElement("label",null,
+          React.createElement("div",{className:"small muted"},"Session Name"),
+          React.createElement("input",{className:"input",value:state.sessionName,onChange:e=>setState(s=>({...s,sessionName:e.target.value}))})
+        ),
+        React.createElement("label",null,
+          React.createElement("div",{className:"small muted"},"Backend Url"),
+          React.createElement("input",{className:"input",placeholder:"https://script.google.com/macros/s/.../exec",value:backendUrl,onChange:e=>setBackendUrl(e.target.value)})
+        ),
+        React.createElement("label",null,
+          React.createElement("div",{className:"small muted"},"Spreadsheet Id"),
+          React.createElement("input",{className:"input",placeholder:"1AbC...",value:sheetId,onChange:e=>setSheetId(e.target.value)})
+        )
+      ),
+      React.createElement("div",{className:"flex"},
+        React.createElement("button",{className:"btn",onClick:connectRemote},"Connect"),
+        React.createElement("button",{className:"btn",onClick:manualLoad},"Load"),
+        React.createElement("button",{className:"btn",onClick:manualSave},"Save"),
+        React.createElement("button",{className:"btn",onClick:resetFromSeed},"Generate From Seed"),
+        React.createElement("button",{className:"btn",onClick:newSession},"New Local"),
+        React.createElement("button",{className:"btn",onClick:exportData},"Export"),
+        React.createElement("button",{className:"btn",onClick:importData},"Import")
+      )
+    ),
+    mode==="player"
+      ? React.createElement(PlayerView,{state,setState,sessionId,api,backendUrl,sheetId,eventsCache})
+      : React.createElement(DMView,{state,setState,sessionId,api,backendUrl,sheetId}),
+    React.createElement("section",{className:"card",style:{marginTop:12}},
+      React.createElement("div",{className:"flex"},
+        React.createElement("span",null,"Mode"),
+        React.createElement("select",{className:"input",style:{maxWidth:180},value:mode,onChange:e=>setMode(e.target.value)},
+          React.createElement("option",{value:"dm"},"DM"),
+          React.createElement("option",{value:"player"},"Player")
+        )
+      )
+    )
+  );
+
+  function newSession(){
+    const id=prompt("New Local Session ID","session-"+Math.random().toString(36).slice(2));
+    if(!id) return;
+    const seedIn=prompt("Seed","session-"+id) || ("session-"+id);
+    const st=defaultState(id,seedIn);
+    lsSet(stateKey(id), st);
+    const idx=lsGet(INDEX_KEY,[]);
+    idx.push({id,name:st.sessionName,seed:seedIn});
+    lsSet(INDEX_KEY,idx);
+    setSessionId(id);
+    setSeed(seedIn);
+    setState(st);
+  }
+  function resetFromSeed(){
+    const newSeed=prompt("Seed", state.dmProfile?.seed || seed || ("session-"+sessionId));
+    if(!newSeed) return;
+    const seeded=generateFromSeed(newSeed);
+    const st={...state,dmProfile:seeded.profile,objectives:seeded.objectives,twists:seeded.twists,lastSaved:nowIso()};
+    setSeed(newSeed);
+    setState(st);
+  }
+}
+
+/* ---------- DM View ---------- */
+function DMView({state,setState,sessionId,api,backendUrl,sheetId}){
+  function setScore(k,v){
+    setState(s=>{
+      const nv=clamp(v,0,10);
+      const sc={...s.scores,[k]:nv};
+      sc.overall=computeOverall(sc);
+      return {...s,scores:sc,lastSaved:nowIso()};
+    });
+  }
+  function addTimer(){
+    const id = (window.crypto && typeof window.crypto.randomUUID==="function")
+      ? window.crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+    setState(s=>({...s,timers:[...s.timers,{id,label:"Timer",seconds:0,running:false}],lastSaved:nowIso()}));
+  }
+  function updateTimer(id,patch){ setState(s=>({...s,timers:safeArr(s.timers).map(t=>t.id===id?{...t,...patch}:t),lastSaved:nowIso()})) }
+  function removeTimer(id){ setState(s=>({...s,timers:safeArr(s.timers).filter(t=>t.id!==id),lastSaved:nowIso()})) }
+  function addPlayer(){ const name=prompt("Player Name",""); if(!name) return; if(safeArr(state.players).includes(name)) return; setState(s=>({...s,players:[...s.players,name],lastSaved:nowIso()})) }
+  function draw(kind){ const deck=safeArr(state.modifiers?.[kind]); if(deck.length===0) return alert("Empty Deck"); const card=deck[Math.floor(Math.random()*deck.length)]; alert(card) }
+  function setSentimentEffect(idx,key,catKey,delta){
+    setState(s=>{
+      const sentiments=[...s.sentiments];
+      const eff={...(sentiments[idx].effects||{})};
+      if(delta===0) delete eff[catKey]; else eff[catKey]=delta;
+      sentiments[idx]={...sentiments[idx],effects:eff};
+      return {...s,sentiments,lastSaved:nowIso()};
+    });
+  }
+  function setCooldown(v){
+    setState(s=>({...s,voteCooldownSec:clamp(toNumber(v)||0,0,3600),lastSaved:nowIso()}));
+  }
+  async function saveRemote(){
+    if(!backendUrl||!sheetId) return;
+    const payload={...state,lastSaved:nowIso()};
+    try{
+      await api.upsertIndex(sessionId,payload.sessionName||sessionId,payload.dmProfile?.seed||"");
+      await api.saveSnapshot(sessionId,payload);
+      alert("Saved To Cloud");
+    }catch(e){alert("Save Failed")}
+  }
+
+  useEffect(()=>{
+    const handles=safeArr(state.timers).map(t=>{
+      if(!t.running) return null;
+      const h=setInterval(()=>{ updateTimer(t.id,{seconds:(t.seconds||0)+1}) },1000);
+      return {h};
+    }).filter(Boolean);
+    return ()=>handles.forEach(x=>clearInterval(x.h));
+  },[state.timers]);
+
+  const overall=state.scores.overall;
+
+  return React.createElement("div",{className:"row"},
+    React.createElement("section",{className:"card",style:{gridColumn:"span 2"}},
+      React.createElement("h2",null,"Live Scores"),
+      React.createElement("div",{className:"row cols-3"},
+        state.categories.map(cat=>React.createElement("div",{key:cat.key,className:"card"},
+          React.createElement("div",{className:"small muted"},cat.label),
+          React.createElement("div",{className:"bar"},React.createElement("i",{style:{width:((state.scores[cat.key]||0)/10*100)+"%",background:"#22c55e"}})),
+          React.createElement("div",{className:"flex"},
+            React.createElement("button",{className:"btn",onClick:()=>setScore(cat.key,(state.scores[cat.key]||0)-1)},"-1"),
+            React.createElement("span",{className:"tag"},String(state.scores[cat.key]||0)),
+            React.createElement("button",{className:"btn",onClick:()=>setScore(cat.key,(state.scores[cat.key]||0)+1)},"+1")
+          )
+        ))
+      ),
+      React.createElement("div",{className:"two-cols",style:{marginTop:10}},
+        React.createElement("div",{className:"card"},
+          React.createElement("div",{className:"small muted"},"Overall"),
+          React.createElement("div",{className:"bar"},React.createElement("i",{style:{width:(overall/10*100)+"%",background:overall<4?"#ef4444":overall<7?"#f59e0b":"#22c55e"}})),
+          React.createElement("div",{className:"small"},String(overall)),
+          React.createElement("div",{className:"right",style:{marginTop:6}},
+            React.createElement("button",{className:"btn",onClick:saveRemote,disabled:!(backendUrl&&sheetId)},"Save To Cloud")
+          )
+        ),
+        React.createElement("div",{className:"card"},
+          React.createElement("div",{className:"small muted"},"Voting Cooldown (seconds)"),
+          React.createElement("input",{className:"input",type:"number",min:"0",max:"3600",value:String(state.voteCooldownSec||0),onChange:e=>setCooldown(e.target.value)})
+        )
+      )
+    ),
+    React.createElement("section",{className:"card"},
+      React.createElement("h2",null,"Players"),
+      React.createElement("div",{className:"flex"},
+        React.createElement("button",{className:"btn",onClick:addPlayer},"Add Player"),
+        React.createElement("span",{className:"small muted"},safeArr(state.players).length," total")
+      ),
+      React.createElement("ul",{className:"space-y",style:{marginTop:8}},
+        safeArr(state.players).map(p=>React.createElement("li",{key:p,className:"pill"},p))
+      )
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 2"}},
+      React.createElement("h2",null,"Sentiment Mapping"),
+      React.createElement("div",{className:"small muted"},"Edit how each sentiment affects categories"),
+      React.createElement("div",{className:"space-y",style:{marginTop:8}},
+        state.sentiments.map((snt,idx)=>React.createElement("div",{key:snt.key,className:"card"},
+          React.createElement("div",{className:"flex"},React.createElement("span",{className:"emoji"},snt.emoji)," ",snt.label),
+          React.createElement("div",{className:"row cols-4",style:{marginTop:6}},
+            state.categories.map(cat=>{
+              const current=(snt.effects?.[cat.key])??0;
+              return React.createElement("div",{key:cat.key},
+                React.createElement("div",{className:"small muted"},cat.label),
+                React.createElement("div",{className:"flex"},
+                  React.createElement("button",{className:"btn",onClick:()=>setSentimentEffect(idx,snt.key,cat.key,-1),style:{opacity:current===-1?1:.6}},"-1"),
+                  React.createElement("button",{className:"btn",onClick:()=>setSentimentEffect(idx,snt.key,cat.key,0),style:{opacity:current===0?1:.6}},"0"),
+                  React.createElement("button",{className:"btn",onClick:()=>setSentimentEffect(idx,snt.key,cat.key,1),style:{opacity:current===1?1:.6}},"+1")
+                )
+              )
+            })
+          )
+        ))
+      )
+    ),
+    React.createElement("section",{className:"card"},
+      React.createElement("h2",null,"Timers"),
+      React.createElement("div",{className:"flex"},
+        React.createElement("button",{className:"btn",onClick:addTimer},"Add Timer")
+      ),
+      React.createElement("div",{className:"space-y",style:{marginTop:8}},
+        safeArr(state.timers).map(t=>{
+          const m=String(Math.floor((t.seconds||0)/60)).padStart(2,"0");
+          const s=String((t.seconds||0)%60).padStart(2,"0");
+          return React.createElement("div",{key:t.id,className:"card"},
+            React.createElement("div",{className:"flex"},
+              React.createElement("input",{className:"input",style:{maxWidth:200},value:t.label,onChange:e=>updateTimer(t.id,{label:e.target.value})}),
+              React.createElement("span",{className:"tag"},m,":",s),
+              React.createElement("button",{className:"btn",onClick:()=>updateTimer(t.id,{running:true})},"Start"),
+              React.createElement("button",{className:"btn",onClick:()=>updateTimer(t.id,{running:false})},"Pause"),
+              React.createElement("button",{className:"btn",onClick:()=>updateTimer(t.id,{seconds:0})},"Reset"),
+              React.createElement("button",{className:"btn",onClick:()=>removeTimer(t.id)},"Remove")
+            )
+          )
+        })
+      )
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 2"}},
+      React.createElement("h2",null,"DM Profile And Objectives"),
+      React.createElement("div",{className:"row cols-3"},
+        React.createElement("div",{className:"card"},
+          React.createElement("div",{className:"small muted"},"Archetype"),
+          React.createElement("div",null,state.dmProfile?.archetype||""),
+          React.createElement("div",{className:"small muted",style:{marginTop:6}},"Tone"),
+          React.createElement("div",null,state.dmProfile?.tone||""),
+          React.createElement("div",{className:"small muted",style:{marginTop:6}},"Constraints"),
+          React.createElement("ul",null,safeArr(state.dmProfile?.constraints).map((c,i)=>React.createElement("li",{key:i},c)))
+        ),
+        React.createElement("div",{className:"card"},
+          React.createElement("div",{className:"small muted"},"Win"),
+          React.createElement("div",null,state.dmProfile?.win||"")
+        ),
+        React.createElement("div",{className:"card"},
+          React.createElement("div",{className:"small muted"},"Lose"),
+          React.createElement("div",null,state.dmProfile?.lose||"")
+        )
+      ),
+      React.createElement("div",{className:"row cols-2",style:{marginTop:10}},
+        React.createElement("div",{className:"card"},
+          React.createElement("h3",null,"Objectives"),
+          React.createElement("ul",{className:"space-y"},
+            safeArr(state.objectives).map(o=>React.createElement("li",{key:o.id,className:"card"},
+              React.createElement("input",{className:"input",value:o.text,onChange:e=>setState(s=>({...s,objectives:s.objectives.map(x=>x.id===o.id?{...x,text:e.target.value}:x),lastSaved:nowIso()}))}),
+              React.createElement("label",{className:"small"},"Progress ",o.progress,"%",React.createElement("input",{type:"range",min:0,max:100,value:o.progress,onChange:e=>setState(s=>({...s,objectives:s.objectives.map(x=>x.id===o.id?{...x,progress:toNumber(e.target.value)}:x),lastSaved:nowIso()}))}))
+            ))
+          )
+        ),
+        React.createElement("div",{className:"card"},
+          React.createElement("h3",null,"Twists"),
+          React.createElement("ul",{className:"space-y"},
+            safeArr(state.twists).map((t,i)=>React.createElement("li",{key:i,className:"pill"},t))
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ---------- Player View ---------- */
+function PlayerView({state,setState,sessionId,api,backendUrl,sheetId,eventsCache}){
+  const [playerName,setPlayerName]=useLocal("dm_player_name","");
+
+  const playerOptions = safeArr(state.players);
+  const myEvents = useMemo(()=>safeArr(eventsCache).filter(e=>e.type==="vote" && e.player===playerName),[eventsCache,playerName]);
+  const lastVoteAt = myEvents.length ? new Date(myEvents[myEvents.length-1].when) : null;
+
+  async function vote(sent){
+    if(!playerName){ alert("Select Your Name"); return; }
+    if((state.voteCooldownSec||0)>0 && lastVoteAt){
+      const now = new Date();
+      const diffSec = Math.floor((now - lastVoteAt)/1000);
+      const remain = (state.voteCooldownSec - diffSec);
+      if(remain>0){
+        alert("Cooldown active. Try again in "+remain+"s");
+        return;
+      }
+    }
+    const evt={
+      id:(window.crypto && typeof window.crypto.randomUUID==="function") ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+      type:"vote",
+      when:nowIso(),
+      player:playerName,
+      sentimentKey:sent.key,
+      weight:state.sentimentWeight||1
+    };
+    if(backendUrl&&sheetId){
+      try{
+        await api.appendEvents(sessionId,[evt]);
+        const r=await api.getEventsSince(sessionId,"");
+        if(r.ok){
+          const rebuilt=rebuild(r.snapshot||state, r.events||[]);
+          setState(rebuilt);
+          lsSet("dm_state_"+sessionId,rebuilt);
+          lsSet("dm_events_cache_"+sessionId, r.events||[]);
+        }
+      }catch(e){ alert("Network Error") }
+    }else{
+      const scores=applySentiment(state.scores, sent, state.sentimentWeight||1);
+      setState(s=>({...s,scores,lastSaved:nowIso()}));
+      const localEvents = safeArr(lsGet("dm_events_cache_"+sessionId,[])).concat([evt]);
+      lsSet("dm_events_cache_"+sessionId, localEvents);
+    }
+  }
+
+  const overall=state.scores.overall;
+
+  return React.createElement("div",{className:"row"},
+    React.createElement("section",{className:"card"},
+      React.createElement("h2",null,"Your Handle"),
+      React.createElement("div",{className:"space-y"},
+        React.createElement("select",{className:"input",value:playerName,onChange:e=>setPlayerName(e.target.value)},
+          React.createElement("option",{value:""},"Select Player"),
+          playerOptions.map(p=>React.createElement("option",{key:p,value:p},p))
+        ),
+        playerOptions.length===0 ? React.createElement("div",{className:"small muted"},"Ask the DM to add players") : null
+      )
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 2"}},
+      React.createElement("h2",null,"How Are You Feeling"),
+      React.createElement("div",{className:"small muted"},"Tap a button to nudge the DM health"),
+      React.createElement("div",{className:"row cols-4",style:{marginTop:6}},
+        safeArr(state.sentiments).map(snt=>
+          React.createElement("button",{key:snt.key,className:"pill",onClick:()=>vote(snt),title:snt.label,disabled:!playerName},
+            React.createElement("span",{className:"emoji"},snt.emoji)," ",snt.label
+          )
+        )
+      ),
+      (state.voteCooldownSec>0 && lastVoteAt)
+        ? React.createElement("div",{className:"small muted",style:{marginTop:8}},
+            "Last vote at ", lastVoteAt.toLocaleTimeString(), ". Cooldown ", state.voteCooldownSec, "s.")
+        : null
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 3"}},
+      React.createElement("h2",null,"Overall DM Health"),
+      React.createElement("div",{className:"bar"},React.createElement("i",{style:{width:(overall/10*100)+"%",background:overall<4?"#ef4444":overall<7?"#f59e0b":"#22c55e"}})),
+      React.createElement("div",{className:"small"},String(overall)),
+      React.createElement("div",{className:"row cols-5",style:{marginTop:8}},
+        state.categories.map(cat=>{
+          const v=state.scores[cat.key]||0;
+          return React.createElement("div",{key:cat.key,className:"card"},
+            React.createElement("div",{className:"small muted"},cat.label),
+            React.createElement("div",{className:"bar"},React.createElement("i",{style:{width:(v/10*100)+"%",background:"#22c55e"}})),
+            React.createElement("div",{className:"small"},String(v))
+          )
+        })
+      )
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 3"}},
+      React.createElement("h2",null,"Your Past Votes"),
+      (playerName && safeArr(eventsCache).length)
+        ? React.createElement("ul",{className:"list space-y"},
+            safeArr(eventsCache).filter(e=>e.type==="vote" && e.player===playerName)
+              .slice(-50)
+              .reverse()
+              .map(e=>React.createElement("li",{key:e.id,className:"pill"},
+                new Date(e.when).toLocaleTimeString()," · ", e.player," · ", e.sentimentKey, " ×", e.weight
+              ))
+          )
+        : React.createElement("div",{className:"small muted"},"No votes yet")
+    )
+  );
+}
+
+/* ---------- Mount ---------- */
+ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(App));
+
+/* ---------- Tests ---------- */
+(function tests(){
+  const assert=(cond,msg)=>{ if(!cond){ console.error("Test Fail:",msg); throw new Error(msg); } };
+  const base={continuity:5,pace:5,fun:5,plot:5,challenge:5};
+  assert(computeOverall(base)>=0 && computeOverall(base)<=10,"overall bounds");
+  const happy={key:"happy",effects:{fun:+1,plot:+1}};
+  const after=applySentiment(base,happy,1);
+  assert(after.fun===6 && after.plot===6,"happy bumps fun and plot");
+  const confused={key:"confused",effects:{continuity:-1}};
+  const after2=applySentiment(after,confused,1);
+  assert(after2.continuity===4,"confused lowers continuity");
+  const seeded=generateFromSeed("abc");
+  assert(Array.isArray(seeded.objectives)&&seeded.objectives.length===3,"seed objectives length");
+  assert(Array.isArray(seeded.twists)&&seeded.twists.length>=1,"seed twists length");
+  const low={continuity:0,pace:0,fun:0,plot:0,challenge:0};
+  const high={continuity:10,pace:10,fun:10,plot:10,challenge:10};
+  assert(computeOverall(low)>=0,"overall lower clamp");
+  assert(computeOverall(high)<=10,"overall upper clamp");
+  const clampTest=applySentiment({continuity:0,pace:10,fun:10,plot:10,challenge:10}, {effects:{continuity:-5,pace:+5}}, 1);
+  assert(clampTest.continuity===0,"sentiment clamp lower");
+  assert(clampTest.pace===10,"sentiment clamp upper");
+  const idGen = (window.crypto && typeof window.crypto.randomUUID==="function") ? window.crypto.randomUUID() : Math.random().toString(36).slice(2);
+  assert(typeof idGen==="string" && idGen.length>0,"uuid gen");
+  console.log("All tests passed");
+})();
+</script>
+</body>
+</html>
