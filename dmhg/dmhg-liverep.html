@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DM Reputation And Game Flow</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+  h1{font-size:22px;margin:0 0 6px}
+  h2{font-size:18px;margin:0 0 8px}
+  h3{font-size:14px;margin:0 0 8px}
+  .wrap{padding:16px 16px 80px;max-width:1200px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+  .row{display:grid;gap:12px}
+  @media(min-width:760px){.row.cols-2{grid-template-columns:repeat(2,1fr)}.row.cols-3{grid-template-columns:repeat(3,1fr)}.row.cols-4{grid-template-columns:repeat(4,1fr)}.row.cols-5{grid-template-columns:repeat(5,1fr)}}
+  .input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff}
+  .btn{padding:8px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .muted{color:var(--muted)}
+  .tag{display:inline-block;font-size:12px;padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:#f9fafb}
+  .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .space-y>*+*{margin-top:8px}
+  .list{max-height:220px;overflow:auto}
+  .bar{height:8px;background:#eef2f7;border-radius:999px;overflow:hidden}
+  .bar>i{display:block;height:100%}
+  .small{font-size:12px}
+  .right{text-align:right}
+  .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:#fff;cursor:pointer}
+  .emoji{font-size:18px;line-height:1}
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const {useState,useEffect,useMemo}=React;
+
+/* ---------- Utilities ---------- */
+const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+const toNumber=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+const lsGet=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch{return f}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const useLocal=(k,i)=>{const [v,setV]=useState(()=>lsGet(k,i));useEffect(()=>lsSet(k,v),[k,v]);return [v,setV]};
+const getParam=name=>new URLSearchParams(location.search).get(name)||"";
+const nowIso=()=>new Date().toISOString();
+const download=(name,data)=>{const b=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+const pickFile=()=>new Promise((res)=>{const i=document.createElement("input");i.type="file";i.accept=".json,application/json";i.onchange=()=>{const f=i.files[0];if(!f) return res(null);const r=new FileReader();r.onload=()=>res({name:f.name,text:String(r.result)});r.readAsText(f)};i.click()});
+const safeArr=a=>Array.isArray(a)?a:[];
+
+/* ---------- Event Bus (conflict-free) ---------- */
+function makeBus(channelName){
+  const ch = ("BroadcastChannel" in window) ? new BroadcastChannel(channelName) : null;
+  const listeners = new Set();
+  if(ch){ ch.onmessage = (ev)=>listeners.forEach(fn=>fn(ev.data)); }
+  window.addEventListener("storage",(e)=>{
+    if(e.key && e.key.startsWith("dm_events_")){ try{ const data=JSON.parse(e.newValue||"[]"); listeners.forEach(fn=>fn({type:"storageSync", key:e.key, data})) }catch{} }
+  });
+  return {
+    post:(msg)=>{ if(ch) ch.postMessage(msg); },
+    on:(fn)=>{ listeners.add(fn); return ()=>listeners.delete(fn); }
+  };
+}
+const bus = makeBus("dm-sync");
+
+/* ---------- Domain Model ---------- */
+const DEFAULT_SESSION_ID="session-1";
+
+const CategoryKeys={continuity:"continuity",pace:"pace",fun:"fun",plot:"plot",challenge:"challenge",overall:"overall"};
+const DefaultCategories=[
+  {key:CategoryKeys.continuity,label:"Continuity",min:0,max:10},
+  {key:CategoryKeys.pace,label:"Pace",min:0,max:10},
+  {key:CategoryKeys.fun,label:"Fun",min:0,max:10},
+  {key:CategoryKeys.plot,label:"Plot",min:0,max:10},
+  {key:CategoryKeys.challenge,label:"Challenge",min:0,max:10}
+];
+const DefaultSentiments=[
+  {key:"happy",label:"Happy",emoji:"😊",effects:{fun:+1,plot:+1}},
+  {key:"sad",label:"Sad",emoji:"😢",effects:{fun:-1,plot:-1}},
+  {key:"easy",label:"Easy",emoji:"🍰",effects:{challenge:-1,pace:+1}},
+  {key:"confused",label:"Confused",emoji:"😕",effects:{continuity:-1}},
+  {key:"lost",label:"Lost",emoji:"❓",effects:{continuity:-1,plot:-1}},
+  {key:"bored",label:"Bored",emoji:"🥱",effects:{pace:-1,fun:-1,plot:-1}},
+  {key:"hard",label:"Hard",emoji:"😣",effects:{challenge:+1,pace:-1}}
+];
+
+function computeOverall(scores){
+  const s=scores||{};
+  const c=toNumber(s.continuity)||0;
+  const p=toNumber(s.pace)||0;
+  const f=toNumber(s.fun)||0;
+  const pl=toNumber(s.plot)||0;
+  const ch=toNumber(s.challenge)||0;
+  const total=c+p+pl+ch+0.6*f;
+  const out=Math.round((total/4.6)*10)/10;
+  return clamp(out,0,10);
+}
+function applySentiment(scores,sentiment,weights=1){
+  const s={...scores};
+  const eff=sentiment.effects||{};
+  const w=(typeof weights==="number")?weights:1;
+  Object.entries(eff).forEach(([k,delta])=>{
+    s[k]=clamp(toNumber(s[k]??5)+delta*w,0,10);
+  });
+  s.overall=computeOverall(s);
+  return s;
+}
+
+/* Seeded content */
+function mulberry32Seed(str){
+  let h=1779033703^str.length;
+  for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19}
+  let t=()=>(h+=0x6D2B79F5,(h^=h>>>15,h=Math.imul(h|1,h^h>>>7),h^=h>>>14)>>>0)/4294967296;
+  return t;
+}
+function generateFromSeed(seed){
+  const rnd=mulberry32Seed(seed||"seed");
+  const archetypes=["Methodical Worldbuilder","Chaotic Trickster","Cinematic Narrator","Puzzle Maestro","Gritty Realist"];
+  const objectivesPool=[
+    "Recover The Relic Of Dawn",
+    "Broker Peace Between Rival Clans",
+    "Decode The Obsidian Codex",
+    "Survive Three Nights In The Blighted Fens",
+    "Escort The Caravan Through The Ember Pass",
+    "Expose The Court Impostor",
+    "Seal The Rift Before Moonrise"
+  ];
+  const twistsPool=[
+    "The Trusted Guide Is A Doppelganger",
+    "The Relic Is Sentient And Anxious",
+    "Time Loops Every Hour Until A Secret Word Is Spoken",
+    "All Magic Costs A Memory",
+    "The Villain Wants To Surrender"
+  ];
+  const pick=(arr)=>arr[Math.floor(rnd()*arr.length)];
+  const profile={
+    seed,
+    archetype:pick(archetypes),
+    tone:pick(["Playful","Grim","Heroic","Weird","Mystic"]),
+    constraints:[pick(["No Info Dumping","Hard Cut Scenes Allowed","Strict Encumbrance","Montage Allowed"]),pick(["Foreshadow Twice","Rule Of Three Hooks","Keep Turns Under 60s"])],
+    win:"Players fulfill the primary objective and overall score stays 7 or higher",
+    lose:"Overall falls to 3 or lower for five minutes or players abandon objectives"
+  };
+  const objectives=Array.from({length:3},()=>({id:Math.random().toString(36).slice(2),text:pick(objectivesPool),progress:0,weight:1}));
+  const twists=[...new Set(Array.from({length:3},()=>pick(twistsPool)))];
+  return {profile,objectives,twists};
+}
+
+/* ---------- Sessions Index ---------- */
+const INDEX_KEY="dm_sessions_index_v2";
+function readIndex(){return lsGet(INDEX_KEY,[])};
+function writeIndex(idx){lsSet(INDEX_KEY,idx)};
+function upsertIndexEntry({id,name,seed}){
+  const idx=readIndex();
+  const i=idx.findIndex(x=>x.id===id);
+  const entry={id,name,seed,updated:nowIso()};
+  if(i>=0) idx[i]={...idx[i],...entry}; else idx.push(entry);
+  writeIndex(idx.sort((a,b)=>a.name.localeCompare(b.name)));
+}
+function removeIndexEntry(id){writeIndex(readIndex().filter(x=>x.id!==id))}
+
+/* ---------- Event Log and Rebuild ---------- */
+function eventsKey(id){return "dm_events_"+id}
+function stateKey(id){return "dm_state_"+id}
+
+function loadEvents(id){return lsGet(eventsKey(id),[])}
+function saveEvents(id,evts){lsSet(eventsKey(id),evts)}
+
+function appendEvent(id,evt){
+  const list=loadEvents(id);
+  if(list.find(x=>x.id===evt.id)) return; // dedupe
+  list.push(evt);
+  saveEvents(id,list);
+  lsSet("dm_ev_touch_"+id, {t:nowIso()}); // nudge storage event on Safari quirks
+  bus.post({type:"event",sessionId:id,evt});
+}
+
+function rebuild(baseState,events){
+  let scores={continuity:5,pace:5,fun:5,plot:5,challenge:5,overall:5};
+  const sentimentsByKey = Object.fromEntries((baseState.sentiments||DefaultSentiments).map(s=>[s.key,s]));
+  events.forEach(e=>{
+    if(e.type==="vote" && sentimentsByKey[e.sentimentKey]){
+      scores = applySentiment(scores, sentimentsByKey[e.sentimentKey], e.weight||1);
+    }
+  });
+  return {...baseState, scores, lastSaved:nowIso()};
+}
+
+/* ---------- Default State ---------- */
+function defaultState(sessionId,seedValue){
+  const seeded=generateFromSeed(seedValue || ("session-"+(sessionId||DEFAULT_SESSION_ID)));
+  return {
+    version:3,
+    sessionId:sessionId||DEFAULT_SESSION_ID,
+    sessionName:"Session",
+    players:[],
+    categories:[...DefaultCategories],
+    scores:{continuity:5,pace:5,fun:5,plot:5,challenge:5,overall:5},
+    sentiments:[...DefaultSentiments],
+    sentimentWeight:1,
+    timers:[],
+    modifiers:{
+      twist:["A Merchant Offers A Dangerous Bargain","A Door Appears Where None Existed","Weather Turns Against You"],
+      wildcardGoodPlayers:["Legendary Inspiration","Hidden Ally Arrives","Lucky Break"],
+      wildcardBadPlayers:["Critical Misunderstanding","Tripping Over Clues","Risky Shortcut Backfires"],
+      wildcardGoodDm:["Perfect Callback","NPC Steals The Show","Vivid Set Piece"],
+      wildcardBadDm:["Rules Brain Fog","Scene Falls Flat","Villain Monologues Too Long"]
+    },
+    dmProfile:seeded.profile,
+    objectives:seeded.objectives,
+    twists:seeded.twists,
+    lastSaved:nowIso()
+  };
+}
+
+/* ---------- App ---------- */
+function App(){
+  const [mode,setMode]=useState(getParam("mode")||"dm");
+  const [sessionId,setSessionId]=useLocal("dm_session_id",DEFAULT_SESSION_ID);
+  const [seed,setSeed]=useLocal("dm_seed","session-"+DEFAULT_SESSION_ID);
+  const [state,setState]=useLocal(stateKey(sessionId),defaultState(sessionId,seed));
+  const [index,setIndex]=useState(readIndex());
+  const [message,setMessage]=useState("");
+
+  useEffect(()=>{ upsertIndexEntry({id:sessionId,name:state.sessionName||sessionId,seed:(state.dmProfile?.seed||seed||"")}); setIndex(readIndex()); },[]);
+  useEffect(()=>{ upsertIndexEntry({id:sessionId,name:state.sessionName||sessionId,seed:(state.dmProfile?.seed||seed||"")}); setIndex(readIndex()); },[state.sessionName, state.dmProfile?.seed, seed, sessionId]);
+
+  // Rebuild from events at startup and when switching sessions
+  useEffect(()=>{
+    const snap = lsGet(stateKey(sessionId), null) || defaultState(sessionId, seed);
+    const rebuilt = rebuild(snap, loadEvents(sessionId));
+    setState(rebuilt);
+  },[sessionId]);
+
+  // Bus listener for incoming events
+  useEffect(()=>{
+    const off = bus.on((msg)=>{
+      if(!msg) return;
+      if(msg.type==="event" && msg.sessionId===sessionId){
+        const snap = lsGet(stateKey(sessionId), null) || defaultState(sessionId, seed);
+        const reb = rebuild(snap, loadEvents(sessionId));
+        setState(reb);
+        setMessage("Live Update");
+        setTimeout(()=>setMessage(""),600);
+      }
+      if(msg.type==="storageSync" && msg.key===eventsKey(sessionId)){
+        const snap = lsGet(stateKey(sessionId), null) || defaultState(sessionId, seed);
+        const reb = rebuild(snap, loadEvents(sessionId));
+        setState(reb);
+      }
+    });
+    return off;
+  },[sessionId, seed]);
+
+  // Light periodic reconcile in case a storage event was missed
+  useEffect(()=>{
+    const h = setInterval(()=>{
+      const snap = lsGet(stateKey(sessionId), null);
+      const evs = loadEvents(sessionId);
+      if(snap){
+        const calc = rebuild(snap, evs);
+        if(calc.lastSaved !== state.lastSaved){
+          setState(calc);
+        }
+      }
+    }, 8000);
+    return ()=>clearInterval(h);
+  },[sessionId, state.lastSaved]);
+
+  function manualSave(){
+    const payload={...state,lastSaved:nowIso()};
+    lsSet(stateKey(sessionId), payload);
+    upsertIndexEntry({id:sessionId,name:payload.sessionName||sessionId,seed:payload.dmProfile?.seed||""});
+    setIndex(readIndex());
+    setState(payload);
+    setMessage("Saved");
+    setTimeout(()=>setMessage(""),800);
+  }
+  function manualLoad(){
+    const snap=lsGet(stateKey(sessionId),null) || defaultState(sessionId, seed);
+    const evs=loadEvents(sessionId);
+    const calc=rebuild(snap,evs);
+    setState(calc);
+    setMessage("Loaded");
+    setTimeout(()=>setMessage(""),800);
+  }
+
+  function newSession(){
+    const id=prompt("New Session ID","session-"+Math.random().toString(36).slice(2));
+    if(!id) return;
+    const seedIn=prompt("Seed For Generation","session-"+id) || ("session-"+id);
+    const st=defaultState(id,seedIn);
+    lsSet(stateKey(id), st);
+    saveEvents(id,[]);
+    upsertIndexEntry({id,name:st.sessionName,seed:seedIn});
+    setIndex(readIndex());
+    setSessionId(id);
+    setSeed(seedIn);
+    setState(st);
+  }
+  function duplicateSession(){
+    const id=prompt("Duplicate As Session ID","session-"+Math.random().toString(36).slice(2));
+    if(!id) return;
+    const cloned={...state,sessionId:id,lastSaved:nowIso()};
+    lsSet(stateKey(id), cloned);
+    saveEvents(id, loadEvents(sessionId).slice());
+    upsertIndexEntry({id,name:cloned.sessionName,seed:cloned.dmProfile?.seed||""});
+    setIndex(readIndex());
+    setSessionId(id);
+    setSeed(cloned.dmProfile?.seed||seed);
+    setState(cloned);
+  }
+  function deleteSession(){
+    if(!confirm("Delete This Session From This Browser")) return;
+    localStorage.removeItem(stateKey(sessionId));
+    localStorage.removeItem(eventsKey(sessionId));
+    removeIndexEntry(sessionId);
+    setIndex(readIndex());
+    setSessionId(DEFAULT_SESSION_ID);
+    const st=defaultState(DEFAULT_SESSION_ID,"session-"+DEFAULT_SESSION_ID);
+    setSeed(st.dmProfile.seed);
+    setState(st);
+  }
+  function resetFromSeed(){
+    const newSeed=prompt("Enter Seed", state.dmProfile?.seed || seed || ("session-"+sessionId));
+    if(!newSeed) return;
+    const seeded=generateFromSeed(newSeed);
+    const snap={...state, dmProfile:seeded.profile, objectives:seeded.objectives, twists:seeded.twists};
+    lsSet(stateKey(sessionId), snap);
+    setSeed(newSeed);
+    setState(rebuild(snap, loadEvents(sessionId)));
+    setMessage("Generated From Seed");
+    setTimeout(()=>setMessage(""),800);
+  }
+
+  function exportData(){
+    const bundle = {
+      meta:{exportedAt:nowIso(), version:state.version||1},
+      index:readIndex(),
+      sessions:readIndex().reduce((acc, entry)=>{
+        acc[entry.id]={ snapshot:lsGet(stateKey(entry.id),null), events:loadEvents(entry.id) };
+        return acc;
+      },{})
+    };
+    download("dm_reputation_export.json", JSON.stringify(bundle,null,2));
+  }
+  async function importData(){
+    const file=await pickFile();
+    if(!file) return;
+    try{
+      const parsed=JSON.parse(file.text);
+      const sessions=parsed.sessions||{};
+      Object.entries(sessions).forEach(([id,pack])=>{
+        if(pack && typeof pack==="object"){
+          if(pack.snapshot) lsSet(stateKey(id), pack.snapshot);
+          if(Array.isArray(pack.events)) saveEvents(id, pack.events);
+          upsertIndexEntry({id,name:(pack.snapshot?.sessionName)||id,seed:pack.snapshot?.dmProfile?.seed||""});
+        }
+      });
+      setIndex(readIndex());
+      setMessage("Imported");
+      setTimeout(()=>setMessage(""),800);
+    }catch(e){
+      alert("Import Failed: "+e.message);
+    }
+  }
+
+  return React.createElement("div",{className:"wrap"},
+    React.createElement("header",null,
+      React.createElement("h1",null,"DM Reputation And Game Flow"),
+      React.createElement("div",{className:"muted small"},message||"")
+    ),
+    React.createElement("section",{className:"card space-y"},
+      React.createElement("div",{className:"row cols-4"},
+        React.createElement("label",null,
+          React.createElement("div",{className:"small muted"},"Session"),
+          React.createElement("select",{className:"input",value:sessionId,onChange:e=>setSessionId(e.target.value)},
+            readIndex().map(ent=>React.createElement("option",{key:ent.id,value:ent.id}, ent.name?`${ent.name} (${ent.id})` : ent.id))
+          )
+        ),
+        React.createElement("label",null,
+          React.createElement("div",{className:"small muted"},"Session Name"),
+          React.createElement("input",{className:"input",value:state.sessionName,onChange:e=>{const val=e.target.value; setState(s=>({...s,sessionName:val}))}})
+        ),
+        React.createElement("label",null,
+          React.createElement("div",{className:"small muted"},"Seed"),
+          React.createElement("input",{className:"input",value:(state.dmProfile?.seed)||seed,onChange:e=>setSeed(e.target.value)})
+        ),
+        React.createElement("label",null,
+          React.createElement("div",{className:"small muted"},"Mode"),
+          React.createElement("select",{className:"input",value:mode,onChange:e=>setMode(e.target.value)},
+            React.createElement("option",{value:"dm"},"DM"),
+            React.createElement("option",{value:"player"},"Player")
+          )
+        )
+      ),
+      React.createElement("div",{className:"flex"},
+        React.createElement("button",{className:"btn",onClick:manualLoad},"Load"),
+        React.createElement("button",{className:"btn",onClick:manualSave},"Save"),
+        React.createElement("button",{className:"btn",onClick:resetFromSeed},"Generate From Seed"),
+        React.createElement("button",{className:"btn",onClick:newSession},"New"),
+        React.createElement("button",{className:"btn",onClick:duplicateSession},"Duplicate"),
+        React.createElement("button",{className:"btn",onClick:deleteSession},"Delete"),
+        React.createElement("button",{className:"btn",onClick:exportData},"Export"),
+        React.createElement("button",{className:"btn",onClick:importData},"Import")
+      )
+    ),
+    mode==="player"
+      ? React.createElement(PlayerView,{state,setState,sessionId})
+      : React.createElement(DMView,{state,setState,sessionId})
+  );
+}
+
+/* ---------- DM View ---------- */
+function DMView({state,setState,sessionId}){
+  function setScore(k,v){
+    setState(s=>{
+      const nv=clamp(v,0,10);
+      const sc={...s.scores,[k]:nv};
+      sc.overall=computeOverall(sc);
+      const snap={...s,scores:sc,lastSaved:nowIso()};
+      lsSet("dm_state_"+sessionId, snap);
+      return snap;
+    })
+  }
+  function addTimer(){
+    const id = (window.crypto && typeof window.crypto.randomUUID==="function")
+      ? window.crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+    setState(s=>({...s,timers:[...s.timers,{id,label:"Timer",seconds:0,running:false}],lastSaved:nowIso()}));
+  }
+  function updateTimer(id,patch){ setState(s=>({...s,timers:safeArr(s.timers).map(t=>t.id===id?{...t,...patch}:t),lastSaved:nowIso()})) }
+  function removeTimer(id){ setState(s=>({...s,timers:safeArr(s.timers).filter(t=>t.id!==id),lastSaved:nowIso()})) }
+  function addPlayer(){ const name=prompt("Player Name",""); if(!name) return; if(safeArr(state.players).includes(name)) return; setState(s=>({...s,players:[...s.players,name],lastSaved:nowIso()})) }
+  function draw(kind){ const deck=safeArr(state.modifiers?.[kind]); if(deck.length===0) return alert("Empty Deck"); const card=deck[Math.floor(Math.random()*deck.length)]; alert(card) }
+  function setSentimentEffect(idx,key,catKey,delta){
+    setState(s=>{
+      const sentiments=[...s.sentiments];
+      const eff={...(sentiments[idx].effects||{})};
+      if(delta===0) delete eff[catKey]; else eff[catKey]=delta;
+      sentiments[idx]={...sentiments[idx],effects:eff};
+      const snap={...s,sentiments,lastSaved:nowIso()};
+      lsSet("dm_state_"+sessionId, snap);
+      return snap;
+    });
+  }
+
+  useEffect(()=>{
+    const handles=safeArr(state.timers).map(t=>{
+      if(!t.running) return null;
+      const h=setInterval(()=>{ updateTimer(t.id,{seconds:(t.seconds||0)+1}) },1000);
+      return {h};
+    }).filter(Boolean);
+    return ()=>handles.forEach(x=>clearInterval(x.h));
+  },[state.timers]);
+
+  const overall=state.scores.overall;
+
+  return React.createElement("div",{className:"row"},
+    React.createElement("section",{className:"card",style:{gridColumn:"span 2"}},
+      React.createElement("h2",null,"Live Scores"),
+      React.createElement("div",{className:"row cols-3"},
+        state.categories.map(cat=>React.createElement("div",{key:cat.key,className:"card"},
+          React.createElement("div",{className:"small muted"},cat.label),
+          React.createElement("div",{className:"bar"},React.createElement("i",{style:{width:((state.scores[cat.key]||0)/10*100)+"%",background:"#22c55e"}})),
+          React.createElement("div",{className:"flex"},
+            React.createElement("button",{className:"btn",onClick:()=>setScore(cat.key,(state.scores[cat.key]||0)-1)},"-1"),
+            React.createElement("span",{className:"tag"},String(state.scores[cat.key]||0)),
+            React.createElement("button",{className:"btn",onClick:()=>setScore(cat.key,(state.scores[cat.key]||0)+1)},"+1")
+          )
+        ))
+      ),
+      React.createElement("div",{className:"card",style:{marginTop:10}},
+        React.createElement("div",{className:"small muted"},"Overall"),
+        React.createElement("div",{className:"bar"},React.createElement("i",{style:{width:(overall/10*100)+"%",background:overall<4?"#ef4444":overall<7?"#f59e0b":"#22c55e"}})),
+        React.createElement("div",{className:"small"},String(overall))
+      )
+    ),
+    React.createElement("section",{className:"card"},
+      React.createElement("h2",null,"Players"),
+      React.createElement("div",{className:"flex"},
+        React.createElement("button",{className:"btn",onClick:addPlayer},"Add Player"),
+        React.createElement("span",{className:"small muted"},safeArr(state.players).length," total")
+      ),
+      React.createElement("ul",{className:"space-y",style:{marginTop:8}},
+        safeArr(state.players).map(p=>React.createElement("li",{key:p,className:"pill"},p))
+      )
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 2"}},
+      React.createElement("h2",null,"Sentiment Mapping"),
+      React.createElement("div",{className:"small muted"},"Edit how each sentiment affects categories. +1 or -1 per click"),
+      React.createElement("div",{className:"space-y",style:{marginTop:8}},
+        state.sentiments.map((snt,idx)=>React.createElement("div",{key:snt.key,className:"card"},
+          React.createElement("div",{className:"flex"},React.createElement("span",{className:"emoji"},snt.emoji)," ",snt.label),
+          React.createElement("div",{className:"row cols-4",style:{marginTop:6}},
+            state.categories.map(cat=>{
+              const current=(snt.effects?.[cat.key])??0;
+              return React.createElement("div",{key:cat.key},
+                React.createElement("div",{className:"small muted"},cat.label),
+                React.createElement("div",{className:"flex"},
+                  React.createElement("button",{className:"btn",onClick:()=>setSentimentEffect(idx,snt.key,cat.key,-1),style:{opacity:current===-1?1:.6}},"-1"),
+                  React.createElement("button",{className:"btn",onClick:()=>setSentimentEffect(idx,snt.key,cat.key,0),style:{opacity:current===0?1:.6}},"0"),
+                  React.createElement("button",{className:"btn",onClick:()=>setSentimentEffect(idx,snt.key,cat.key,1),style:{opacity:current===1?1:.6}},"+1")
+                )
+              )
+            })
+          )
+        ))
+      )
+    ),
+    React.createElement("section",{className:"card"},
+      React.createElement("h2",null,"Timers"),
+      React.createElement("div",{className:"flex"},
+        React.createElement("button",{className:"btn",onClick:addTimer},"Add Timer")
+      ),
+      React.createElement("div",{className:"space-y",style:{marginTop:8}},
+        safeArr(state.timers).map(t=>{
+          const m=String(Math.floor((t.seconds||0)/60)).padStart(2,"0");
+          const s=String((t.seconds||0)%60).padStart(2,"0");
+          return React.createElement("div",{key:t.id,className:"card"},
+            React.createElement("div",{className:"flex"},
+              React.createElement("input",{className:"input",style:{maxWidth:200},value:t.label,onChange:e=>updateTimer(t.id,{label:e.target.value})}),
+              React.createElement("span",{className:"tag"},m,":",s),
+              React.createElement("button",{className:"btn",onClick:()=>updateTimer(t.id,{running:true})},"Start"),
+              React.createElement("button",{className:"btn",onClick:()=>updateTimer(t.id,{running:false})},"Pause"),
+              React.createElement("button",{className:"btn",onClick:()=>updateTimer(t.id,{seconds:0})},"Reset"),
+              React.createElement("button",{className:"btn",onClick:()=>removeTimer(t.id)},"Remove")
+            )
+          )
+        })
+      )
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 2"}},
+      React.createElement("h2",null,"DM Profile And Objectives"),
+      React.createElement("div",{className:"row cols-3"},
+        React.createElement("div",{className:"card"},
+          React.createElement("div",{className:"small muted"},"Archetype"),
+          React.createElement("div",null,state.dmProfile?.archetype||""),
+          React.createElement("div",{className:"small muted",style:{marginTop:6}},"Tone"),
+          React.createElement("div",null,state.dmProfile?.tone||""),
+          React.createElement("div",{className:"small muted",style:{marginTop:6}},"Constraints"),
+          React.createElement("ul",null,safeArr(state.dmProfile?.constraints).map((c,i)=>React.createElement("li",{key:i},c)))
+        ),
+        React.createElement("div",{className:"card"},
+          React.createElement("div",{className:"small muted"},"Win"),
+          React.createElement("div",null,state.dmProfile?.win||"")
+        ),
+        React.createElement("div",{className:"card"},
+          React.createElement("div",{className:"small muted"},"Lose"),
+          React.createElement("div",null,state.dmProfile?.lose||"")
+        )
+      ),
+      React.createElement("div",{className:"row cols-2",style:{marginTop:10}},
+        React.createElement("div",{className:"card"},
+          React.createElement("h3",null,"Objectives"),
+          React.createElement("ul",{className:"space-y"},
+            safeArr(state.objectives).map(o=>React.createElement("li",{key:o.id,className:"card"},
+              React.createElement("input",{className:"input",value:o.text,onChange:e=>setState(s=>({...s,objectives:s.objectives.map(x=>x.id===o.id?{...x,text:e.target.value}:x),lastSaved:nowIso()}))}),
+              React.createElement("label",{className:"small"},"Progress ",o.progress,"%",React.createElement("input",{type:"range",min:0,max:100,value:o.progress,onChange:e=>setState(s=>({...s,objectives:s.objectives.map(x=>x.id===o.id?{...x,progress:toNumber(e.target.value)}:x),lastSaved:nowIso()}))}))
+            ))
+          )
+        ),
+        React.createElement("div",{className:"card"},
+          React.createElement("h3",null,"Twists"),
+          React.createElement("ul",{className:"space-y"},
+            safeArr(state.twists).map((t,i)=>React.createElement("li",{key:i,className:"pill"},t))
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ---------- Player View ---------- */
+function PlayerView({state,setState,sessionId}){
+  const [playerName,setPlayerName]=useLocal("dm_player_name","");
+  const [message,setMessage]=useState("");
+
+  function vote(sent){
+    if(!playerName){ setMessage("Enter Name First"); return; }
+    const evt={
+      id:(window.crypto && typeof window.crypto.randomUUID==="function") ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+      type:"vote",
+      when:nowIso(),
+      player:playerName,
+      sentimentKey:sent.key,
+      weight:state.sentimentWeight||1
+    };
+    appendEvent(sessionId, evt);
+    const snap = lsGet("dm_state_"+sessionId, null) || defaultState(sessionId, state.dmProfile?.seed || "session-"+sessionId);
+    const reb = rebuild(snap, loadEvents(sessionId));
+    setState(reb);
+    setMessage("Thanks");
+    setTimeout(()=>setMessage(""),1200);
+  }
+
+  const overall=state.scores.overall;
+
+  return React.createElement("div",{className:"row"},
+    React.createElement("section",{className:"card"},
+      React.createElement("h2",null,"Your Handle"),
+      React.createElement("input",{className:"input",placeholder:"Player Name",value:playerName,onChange:e=>setPlayerName(e.target.value)})
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 2"}},
+      React.createElement("h2",null,"How Are You Feeling"),
+      React.createElement("div",{className:"small muted"},"Tap a button to nudge the DM health"),
+      React.createElement("div",{className:"row cols-4",style:{marginTop:6}},
+        safeArr(state.sentiments).map(snt=>
+          React.createElement("button",{key:snt.key,className:"pill",onClick:()=>vote(snt),title:snt.label},
+            React.createElement("span",{className:"emoji"},snt.emoji)," ",snt.label
+          )
+        )
+      ),
+      message?React.createElement("div",{className:"small",style:{marginTop:8}},message):null
+    ),
+    React.createElement("section",{className:"card",style:{gridColumn:"span 3"}},
+      React.createElement("h2",null,"Overall DM Health"),
+      React.createElement("div",{className:"bar"},React.createElement("i",{style:{width:(overall/10*100)+"%",background:overall<4?"#ef4444":overall<7?"#f59e0b":"#22c55e"}})),
+      React.createElement("div",{className:"small"},String(overall)),
+      React.createElement("div",{className:"row cols-5",style:{marginTop:8}},
+        state.categories.map(cat=>{
+          const v=state.scores[cat.key]||0;
+          return React.createElement("div",{key:cat.key,className:"card"},
+            React.createElement("div",{className:"small muted"},cat.label),
+            React.createElement("div",{className:"bar"},React.createElement("i",{style:{width:(v/10*100)+"%",background:"#22c55e"}})),
+            React.createElement("div",{className:"small"},String(v))
+          )
+        })
+      )
+    )
+  );
+}
+
+/* ---------- Mount ---------- */
+ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(App));
+
+/* ---------- Tests ---------- */
+(function tests(){
+  const assert=(cond,msg)=>{ if(!cond){ console.error("Test Fail:",msg); throw new Error(msg); } };
+
+  const base={continuity:5,pace:5,fun:5,plot:5,challenge:5};
+  assert(computeOverall(base)>=0 && computeOverall(base)<=10,"overall bounds");
+  const happy=DefaultSentiments.find(s=>s.key==="happy");
+  const after=applySentiment(base,happy,1);
+  assert(after.fun===6 && after.plot===6,"happy bumps fun and plot");
+  const confused=DefaultSentiments.find(s=>s.key==="confused");
+  const after2=applySentiment(after,confused,1);
+  assert(after2.continuity===4,"confused lowers continuity");
+  const seeded=generateFromSeed("abc");
+  assert(Array.isArray(seeded.objectives)&&seeded.objectives.length===3,"seed objectives length");
+  assert(Array.isArray(seeded.twists)&&seeded.twists.length>=1,"seed twists length");
+
+  const low={continuity:0,pace:0,fun:0,plot:0,challenge:0};
+  const high={continuity:10,pace:10,fun:10,plot:10,challenge:10};
+  assert(computeOverall(low)>=0,"overall lower clamp");
+  assert(computeOverall(high)<=10,"overall upper clamp");
+
+  const clampTest=applySentiment({continuity:0,pace:10,fun:10,plot:10,challenge:10}, {effects:{continuity:-5,pace:+5}}, 1);
+  assert(clampTest.continuity===0,"sentiment clamp lower");
+  assert(clampTest.pace===10,"sentiment clamp upper");
+
+  const idGen = (window.crypto && typeof window.crypto.randomUUID==="function")
+    ? window.crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+  assert(typeof idGen==="string" && idGen.length>0,"uuid gen");
+
+  const testSession="test-"+Math.random().toString(36).slice(2);
+  lsSet("dm_state_"+testSession, defaultState(testSession,"seed-"+testSession));
+  saveEvents(testSession,[]);
+  const e1={id:"e1",type:"vote",when:nowIso(),player:"A",sentimentKey:"happy",weight:1};
+  const e2={id:"e2",type:"vote",when:nowIso(),player:"B",sentimentKey:"confused",weight:1};
+  appendEvent(testSession,e1);
+  appendEvent(testSession,e2);
+  appendEvent(testSession,e1);
+  const events=loadEvents(testSession);
+  assert(events.length===2,"event log dedupe");
+  const snap=lsGet("dm_state_"+testSession,null);
+  const rebuilt=rebuild(snap,events);
+  assert(rebuilt.scores.fun===6 && rebuilt.scores.plot===6 && rebuilt.scores.continuity===4,"rebuild applies events");
+  console.log("All tests passed");
+})();
+</script>
+</body>
+</html>
