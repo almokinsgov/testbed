@@ -1,1 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Map Ideas Explore</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+  header { padding: 10px 14px; font-size: 18px; font-weight: 600; display:flex; align-items:center; gap:8px; }
+  header .spacer { flex:1; }
+  header .btn { padding:8px 10px; font-size:14px; border:1px solid #ddd; background:#fff; cursor:pointer; border-radius:6px; }
+  #wrap { display: grid; grid-template-columns: 420px 1fr; height: calc(100vh - 52px); }
+  #left { border-right: 1px solid #e2e2e2; display:flex; flex-direction: column; }
+  #filters { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #list { overflow:auto; }
+  .item { padding: 10px; border-top: 1px solid #eee; cursor: pointer; }
+  .item:hover { background: #fafafa; }
+  .title { font-weight: 600; font-size: 14px; }
+  .meta { font-size: 12px; color:#666; margin-top: 4px; display:flex; gap:8px; align-items: center; flex-wrap: wrap; }
+  .vote { display:inline-flex; align-items:center; gap:6px; }
+  .vote button { padding: 4px 8px; border:1px solid #ddd; background:#fff; cursor:pointer; border-radius:5px; }
+  #map { width: 100%; height: 100%; }
+  select, input[type=text], input[type=number] { width:100%; padding:8px; font-size:14px; }
+  #status { padding: 6px 10px; font-size:12px; color:#555; border-top:1px solid #eee; }
 
+  /* Legend */
+  .legend { background:#fff; border:1px solid #ddd; border-radius:8px; padding:8px 10px; font-size:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .legend h4 { margin:0 0 6px 0; font-size:12px; font-weight:700; }
+  .legend .row { display:flex; align-items:center; gap:8px; margin:4px 0; }
+  .legend .swatch { width:12px; height:12px; border-radius:3px; border:1px solid #ccc; }
+
+  /* Loading Overlay */
+  #loading {
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.75); z-index: 9999; backdrop-filter: blur(2px);
+  }
+  #loading .card {
+    background:#fff; border:1px solid #e5e5e5; border-radius:10px; padding:16px 18px;
+    box-shadow:0 6px 18px rgba(0,0,0,.08); display:flex; align-items:center; gap:12px; font-size:14px;
+  }
+  .spinner {
+    width:22px; height:22px; border:3px solid #ddd; border-top-color:#0d6efd; border-radius:50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg);} }
+</style>
+</head>
+<body>
+<header>
+  Map Ideas Explore
+  <span class="spacer"></span>
+  <button id="resetBtn" class="btn">Reset View</button>
+</header>
+
+<div id="wrap">
+  <div id="left">
+    <div id="filters">
+      <select id="mapSel"><option value="all">All Maps</option></select>
+      <select id="catFilter"><option value="">All Categories</option></select>
+      <select id="sort">
+        <option value="votes_desc">Sort By Votes</option>
+        <option value="date_desc">Newest First</option>
+        <option value="date_asc">Oldest First</option>
+      </select>
+      <input id="search" placeholder="Search comments" />
+      <input id="minVotes" type="number" placeholder="Min votes" />
+    </div>
+    <div id="list"></div>
+    <div id="status"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading"><div class="card"><div class="spinner"></div><div id="loadingText">Loading…</div></div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylz2W_8O4QcHF4Jr39LZ2Zeli9YKRSKTRbcWVDSw1t6GMGcG-DeCGFgW4otmQsCiBSLw/exec';
+
+let maps = [];
+let catIndex = new Map();
+let currentMapId = 'all';
+
+let allSubmissions = [];
+let filtered = [];
+let map, baseTile;
+let markerLayer;
+let markersById = new Map();
+
+let initialView = { center: {lat:-41, lng:174}, zoom: 5 };
+let legendCtrl;
+
+/* Loader with reference counting */
+let loadCount = 0;
+function showLoading(text) {
+  loadCount++;
+  document.getElementById('loadingText').textContent = text || 'Loading…';
+  document.getElementById('loading').style.display = 'flex';
+}
+function hideLoading() {
+  loadCount = Math.max(0, loadCount - 1);
+  if (loadCount === 0) document.getElementById('loading').style.display = 'none';
+}
+
+/* Robust fetch helpers */
+async function fetchWithTimeout(url, opts={}, timeoutMs=15000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: ctrl.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
+async function getJSON(url, timeoutMs=15000) {
+  const res = await fetchWithTimeout(url, { method:'GET' }, timeoutMs);
+  if (!res.ok) throw new Error('Network error');
+  return res.json();
+}
+async function postForm(url, params, timeoutMs=15000) {
+  const res = await fetchWithTimeout(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body: params
+  }, timeoutMs);
+  if (!res.ok) throw new Error('Network error');
+  return res.json();
+}
+
+/* Init */
+
+init();
+
+async function init() {
+  showLoading('Loading Maps');
+  try {
+    const m = await getJSON(`${SCRIPT_URL}?action=maps`);
+    maps = m.ok ? (m.maps || []) : [];
+  } catch(e) {
+    err('Failed to load maps');
+    hideLoading();
+    return;
+  } finally {
+    hideLoading();
+  }
+
+  catIndex.clear();
+  maps.forEach(mp => (mp.categories||[]).forEach(c => catIndex.set(`${mp.mapId}|${c.categoryId}`, c)));
+
+  const mapSel = document.getElementById('mapSel');
+  mapSel.innerHTML = `<option value="all">All Maps</option>` +
+    maps.map(mp => `<option value="${mp.mapId}">${escapeHTML(mp.name || mp.mapId)}</option>`).join('');
+  mapSel.value = 'all';
+  mapSel.addEventListener('change', onMapChange);
+
+  const base = maps[0] || {
+    center:{lat:-41.0,lng:174.0}, zoom:5, minZoom:3, maxZoom:19,
+    tileUrl:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    tileAttribution:'© OpenStreetMap contributors'
+  };
+  initialView = { center: base.center, zoom: base.zoom };
+  map = L.map('map').setView([base.center.lat, base.center.lng], base.zoom);
+  baseTile = L.tileLayer(base.tileUrl, { attribution: base.tileAttribution, minZoom: base.minZoom, maxZoom: base.maxZoom }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+
+  addLegendControl();
+  updateLegend();
+
+  bindFilters();
+  document.getElementById('resetBtn').addEventListener('click', () => { fitToMarkersOrInitial(); });
+
+  setCategoryOptionsForScope('all', '');
+
+  showLoading('Loading Submissions');
+  try {
+    const res = await getJSON(`${SCRIPT_URL}?action=submissions`);
+    allSubmissions = res.ok && Array.isArray(res.submissions) ? res.submissions : [];
+    info(`${allSubmissions.length} total submissions loaded`);
+  } catch(e) {
+    err('Failed to load submissions');
+  } finally {
+    hideLoading();
+  }
+
+  showLoading('Drawing Markers');
+  try {
+    rebuildMarkers();
+    applyFilters();
+    fitToMarkersOrInitial();
+  } finally {
+    hideLoading();
+  }
+}
+
+/* Map Choice */
+
+function onMapChange() {
+  currentMapId = document.getElementById('mapSel').value;
+
+  const mp = currentMapId === 'all' ? null : maps.find(x => x.mapId === currentMapId);
+  if (baseTile) baseTile.remove();
+  if (mp) {
+    baseTile = L.tileLayer(mp.tileUrl, { attribution: mp.tileAttribution, minZoom: mp.minZoom, maxZoom: mp.maxZoom }).addTo(map);
+    initialView = { center: mp.center, zoom: mp.zoom };
+  } else {
+    const b = maps[0] || initialView;
+    baseTile = L.tileLayer(b.tileUrl || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: b.tileAttribution || '© OpenStreetMap contributors',
+      minZoom: b.minZoom || 3, maxZoom: b.maxZoom || 19
+    }).addTo(map);
+    initialView = { center: b.center || initialView.center, zoom: b.zoom || initialView.zoom };
+  }
+
+  setCategoryOptionsForScope(currentMapId, '');
+  updateLegend();
+
+  showLoading('Drawing Markers');
+  try {
+    rebuildMarkers();
+    applyFilters();
+    fitToMarkersOrInitial();
+  } finally {
+    hideLoading();
+  }
+}
+
+/* Legend */
+
+function addLegendControl() {
+  legendCtrl = L.control({ position: 'bottomright' });
+  legendCtrl.onAdd = function() {
+    const div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = '<h4>Categories</h4><div>Loading…</div>';
+    return div;
+  };
+  legendCtrl.addTo(map);
+}
+function updateLegend() {
+  if (!legendCtrl) return;
+  const div = legendCtrl.getContainer();
+  const items = legendItemsForScope(currentMapId);
+  if (!items.length) {
+    div.innerHTML = `<h4>Categories</h4><div>None Configured</div>`;
+    return;
+  }
+  div.innerHTML = `<h4>Categories</h4>` + items.map(i =>
+    `<div class="row"><span class="swatch" style="background:${i.color}"></span><span>${escapeHTML(i.label)}</span></div>`
+  ).join('');
+}
+function legendItemsForScope(scope) {
+  if (scope === 'all') {
+    const seen = new Map();
+    maps.forEach(mp => (mp.categories||[]).forEach(c => {
+      const key = `${c.label}|${c.color}`;
+      if (!seen.has(key)) seen.set(key, { label: c.label, color: c.color || '#3388ff' });
+    }));
+    return Array.from(seen.values());
+  } else {
+    const mp = maps.find(x => x.mapId === scope);
+    return (mp?.categories || []).map(c => ({ label: c.label, color: c.color || '#3388ff' }));
+  }
+}
+
+/* Category Options */
+
+function setCategoryOptionsForScope(scopeMapId, valueToKeep) {
+  const catSel = document.getElementById('catFilter');
+
+  if (scopeMapId === 'all') {
+    const seen = new Map();
+    maps.forEach(mp => (mp.categories||[]).forEach(c => {
+      const key = `${c.label}|${c.color}`;
+      if (!seen.has(key)) seen.set(key, {label:c.label, color:c.color});
+    }));
+    const opts = Array.from(seen.values());
+    if (opts.length === 0) {
+      catSel.innerHTML = `<option value="">All Categories (None Configured)</option>`;
+      catSel.value = '';
+      return;
+    }
+    catSel.innerHTML = '<option value="">All Categories</option>' +
+      opts.map(c => `<option value="${escapeAttr(c.label)}">${escapeHTML(c.label)}</option>`).join('');
+    catSel.value = opts.some(o => o.label === valueToKeep) ? valueToKeep : '';
+  } else {
+    const mp = maps.find(x => x.mapId === scopeMapId);
+    const cats = mp?.categories || [];
+    if (cats.length === 0) {
+      catSel.innerHTML = `<option value="">All Categories (None Configured)</option>`;
+      catSel.value = '';
+      return;
+    }
+    catSel.innerHTML = '<option value="">All Categories</option>' +
+      cats.map(c => `<option value="${escapeAttr(c.categoryId)}">${escapeHTML(c.label)}</option>`).join('');
+    catSel.value = cats.some(c => String(c.categoryId) === String(valueToKeep)) ? valueToKeep : '';
+  }
+}
+
+/* Build Markers For Current Map Scope */
+
+function rebuildMarkers() {
+  markerLayer.clearLayers();
+  markersById.clear();
+
+  const scoped = currentMapId === 'all'
+    ? allSubmissions
+    : allSubmissions.filter(s => String(s.mapId) === String(currentMapId));
+
+  scoped.forEach(item => {
+    const cat = catIndex.get(`${item.mapId}|${item.categoryId}`) || { color:'#3388ff', label:'Category' };
+    const lat = Number(item.lat), lng = Number(item.lng);
+    if (!isFinite(lat) || !isFinite(lng)) return;
+    const m = L.circleMarker([lat, lng], { radius: 7, weight: 2, color: cat.color || '#3388ff', fillOpacity: .9 });
+    m.on('click', () => openAndCenter(item.id));
+    m.bindPopup(makePopupHTML(item, cat), { maxWidth: 320, autoPan: false });
+    m.addTo(markerLayer);
+    markersById.set(item.id, m);
+  });
+
+  info(`${scoped.length} submissions in scope`);
+}
+
+/* Filtering And Rendering */
+
+function bindFilters() {
+  const rerun = () => {
+    showLoading('Applying Filters');
+    try { applyFilters(); fitToMarkersOrInitial(); }
+    finally { hideLoading(); }
+  };
+  document.getElementById('catFilter').addEventListener('change', rerun);
+  document.getElementById('sort').addEventListener('change', rerun);
+  document.getElementById('search').addEventListener('input', debounce(rerun, 200));
+  document.getElementById('minVotes').addEventListener('input', debounce(rerun, 200));
+}
+
+function applyFilters() {
+  const catSelEl = document.getElementById('catFilter');
+  const catSel = catSelEl.value;
+  const hasCategoryChoices = !(catSelEl.options.length === 1 && catSelEl.options[0].value === '');
+
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const minVotes = Number(document.getElementById('minVotes').value || 0);
+  const sort = document.getElementById('sort').value;
+
+  let base = currentMapId === 'all'
+    ? allSubmissions.slice()
+    : allSubmissions.filter(s => String(s.mapId) === String(currentMapId));
+
+  if (hasCategoryChoices) {
+    if (currentMapId === 'all') {
+      if (catSel) base = base.filter(it => {
+        const c = catIndex.get(`${it.mapId}|${it.categoryId}`);
+        return c && c.label === catSel;
+      });
+    } else if (catSel) {
+      base = base.filter(it => String(it.categoryId) === String(catSel));
+    }
+  }
+
+  if (q) base = base.filter(it => String(it.comment||'').toLowerCase().includes(q));
+  if (minVotes) base = base.filter(it => (it.votes || 0) >= minVotes);
+
+  if (sort === 'votes_desc') base.sort((a,b) => (b.votes||0)-(a.votes||0));
+  if (sort === 'date_desc') base.sort((a,b) => new Date(b.createdAtISO) - new Date(a.createdAtISO));
+  if (sort === 'date_asc')  base.sort((a,b) => new Date(a.createdAtISO) - new Date(b.createdAtISO));
+
+  filtered = base;
+  renderList();
+  updateMarkerVisibility();
+  info(`${filtered.length} visible after filters`);
+}
+
+function renderList() {
+  const list = document.getElementById('list');
+  if (!filtered.length) { list.innerHTML = '<div class="item">No submissions match the filters</div>'; return; }
+  list.innerHTML = filtered.map(it => {
+    const c = catIndex.get(`${it.mapId}|${it.categoryId}`);
+    const d = new Date(it.createdAtISO).toLocaleDateString();
+    const who = it.displayName || 'Anonymous';
+    const snippet = String(it.comment||'');
+    const short = snippet.length > 80 ? `${snippet.slice(0,80)}…` : snippet;
+    const mapName = maps.find(mp => mp.mapId === it.mapId)?.name || it.mapId;
+    return `
+      <div class="item" data-id="${it.id}">
+        <div class="title">${escapeHTML(c?.label || 'Category')} • ${escapeHTML(mapName)}</div>
+        <div class="meta">
+          <span>${escapeHTML(d)}</span>
+          <span>•</span>
+          <span>${escapeHTML(who)}</span>
+          <span>•</span>
+          <span>${escapeHTML(short)}</span>
+          <span style="margin-left:auto" class="vote">Votes: <strong id="listVotes-${it.id}">${it.votes || 0}</strong></span>
+        </div>
+      </div>`;
+  }).join('');
+  Array.from(list.querySelectorAll('.item')).forEach(el => {
+    el.addEventListener('click', () => openAndCenter(el.dataset.id));
+  });
+}
+
+function updateMarkerVisibility() {
+  const keep = new Set(filtered.map(f => f.id));
+  markersById.forEach((m, id) => {
+    if (keep.has(id)) m.setStyle({ opacity:1, fillOpacity:.9 });
+    else m.setStyle({ opacity:.12, fillOpacity:.08 });
+  });
+}
+
+/* Open And Center Popups On Demand Only */
+
+function openAndCenter(id) {
+  const it = filtered.find(x => x.id === id) || allSubmissions.find(x => x.id === id);
+  if (!it) return;
+  const m = markersById.get(id);
+  if (!m) return;
+
+  const latlng = [Number(it.lat), Number(it.lng)];
+  const targetZoom = Math.max(map.getZoom(), 16);
+  const doOpen = () => {
+    m.openPopup(); // autoPan disabled
+    try {
+      const padX = 24, padTop = 120;
+      map.panInside(new L.LatLng(latlng[0], latlng[1]), { paddingTopLeft: [padX, padTop], paddingBottomRight: [padX, 24] });
+    } catch(_) { map.panTo(latlng); }
+  };
+
+  if (map.getZoom() < targetZoom) {
+    map.once('moveend', doOpen);
+    map.setView(latlng, targetZoom, { animate:true });
+  } else {
+    map.panTo(latlng, { animate:true });
+    setTimeout(doOpen, 180);
+  }
+
+  const list = document.getElementById('list');
+  Array.from(list.children).forEach(el => el.style.background='');
+  const row = Array.from(list.children).find(el => el.getAttribute('data-id') === id);
+  if (row) row.style.background = '#f3f7ff';
+}
+
+/* Voting with Safe Refresh */
+
+async function vote(submissionId, delta) {
+  disableVoteButtons(submissionId, true);
+
+  // optimistic
+  const target = allSubmissions.find(x => x.id === submissionId);
+  const oldVotes = target ? (target.votes || 0) : 0;
+  if (target) target.votes = oldVotes + delta;
+  updateVoteUI(submissionId, target ? target.votes : oldVotes + delta);
+
+  showLoading('Submitting Vote');
+  try {
+    const body = new URLSearchParams();
+    body.set('action','vote');
+    body.set('submissionId', submissionId);
+    body.set('delta', String(delta));
+    body.set('clientId', getOrMakeClientId());
+
+    const json = await postForm(SCRIPT_URL, body);
+    if (!json.ok) throw new Error('Vote failed on server');
+
+    if (json.accepted === false && json.reason === 'cooldown') {
+      if (target) target.votes = oldVotes;
+      updateVoteUI(submissionId, oldVotes);
+      info('You have voted on this recently. Try again later.');
+      return;
+    }
+  } catch (e) {
+    if (target) target.votes = oldVotes;
+    updateVoteUI(submissionId, oldVotes);
+    err('Vote failed');
+    return;
+  } finally {
+    hideLoading();
+  }
+
+  // Try a quick refresh, but never block the UI or the loader
+  try {
+    showLoading('Refreshing Votes');
+    const url = currentMapId === 'all'
+      ? `${SCRIPT_URL}?action=submissions`
+      : `${SCRIPT_URL}?action=submissions&mapId=${encodeURIComponent(currentMapId)}`;
+    const fresh = await getJSON(url).catch(()=>null);
+    if (fresh && fresh.ok) {
+      const byId = new Map(fresh.submissions.map(s => [s.id, s.votes || 0]));
+      allSubmissions.forEach(s => { if (byId.has(s.id)) s.votes = byId.get(s.id); });
+      applyFilters();
+    }
+    info('Vote recorded');
+  } catch (e) {
+    // If refresh fails, keep the optimistic count and continue
+    info('Vote recorded');
+  } finally {
+    hideLoading();
+    disableVoteButtons(submissionId, false);
+  }
+}
+
+function updateVoteUI(id, v) {
+  const listEl = document.getElementById(`listVotes-${id}`);
+  if (listEl) listEl.textContent = v;
+  const popEl = document.getElementById(`popVotes-${id}`);
+  if (popEl) popEl.textContent = v;
+}
+
+function disableVoteButtons(id, disabled) {
+  const up = document.getElementById(`up-${id}`);
+  const down = document.getElementById(`down-${id}`);
+  if (up) up.disabled = disabled;
+  if (down) down.disabled = disabled;
+}
+
+/* Map Helpers */
+
+function fitToMarkersOrInitial() {
+  const visible = filtered.map(it => markersById.get(it.id)).filter(Boolean);
+  if (visible.length) {
+    const group = L.featureGroup(visible);
+    try { map.fitBounds(group.getBounds().pad(0.25)); } catch(_) {}
+  } else {
+    map.setView([initialView.center.lat, initialView.center.lng], initialView.zoom);
+  }
+}
+
+function makePopupHTML(item, cat) {
+  const date = new Date(item.createdAtISO).toLocaleString();
+  const who = item.displayName || 'Anonymous';
+  const mapName = maps.find(mp => mp.mapId === item.mapId)?.name || item.mapId;
+  return `
+    <div style="font-size:14px">
+      <div style="font-weight:600;margin-bottom:4px">${escapeHTML(cat?.label || 'Category')} • <span style="color:#666;font-weight:400">${escapeHTML(mapName)}</span></div>
+      <div style="margin:0 0 6px; color:#555">${escapeHTML(who)} • ${escapeHTML(date)}</div>
+      <div style="margin:6px 0 8px">${escapeHTML(item.comment||'')}</div>
+      <div class="vote" style="display:flex;gap:8px;align-items:center">
+        <button id="up-${item.id}" onclick="vote('${item.id}',1)">Upvote</button>
+        <button id="down-${item.id}" onclick="vote('${item.id}',-1)">Downvote</button>
+        <span id="popVotes-${item.id}">${item.votes || 0}</span>
+      </div>
+    </div>`;
+}
+
+/* Utilities and Status */
+
+function escapeHTML(s) { return String(s||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function escapeAttr(s) { return escapeHTML(s); }
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+function getOrMakeClientId() { const k='mapIdeasClientId'; let id=localStorage.getItem(k); if(!id){ id=cryptoRandom(); localStorage.setItem(k,id);} return id; }
+function cryptoRandom(){ const a=new Uint8Array(16); (window.crypto||window.msCrypto).getRandomValues(a); return Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function info(t){ document.getElementById('status').textContent = t; }
+function err(t){ document.getElementById('status').textContent = t; console.error(t); }
+</script>
+</body>
+</html>
