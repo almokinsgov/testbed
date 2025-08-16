@@ -1,1 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Map Ideas Submit</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+  header { padding: 10px 14px; font-size: 18px; font-weight: 600; }
+  #app { display: grid; grid-template-columns: 1fr 360px; height: calc(100vh - 52px); gap: 0; }
+  #map { width: 100%; height: 100%; }
+  #panel { border-left: 1px solid #e2e2e2; padding: 12px; overflow: auto; }
+  .row { margin-bottom: 10px; }
+  label { display:block; font-size: 13px; margin-bottom: 4px; }
+  input[type=text], select, textarea { width:100%; padding:8px; font-size:14px; }
+  textarea { min-height: 100px; }
+  .hint { font-size: 12px; color: #666; }
+  .btn { padding: 10px 12px; background:#0d6efd; color:#fff; border:0; cursor:pointer; border-radius: 6px; }
+  .btn:disabled { opacity: .6; cursor: not-allowed; }
+  .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-left: 6px; }
+  .footer { font-size:12px; color:#666; margin-top: 8px; }
+  .note { background:#f6f8fa; padding:8px; border-radius:6px; font-size:12px; }
+</style>
+</head>
+<body>
+<header>Map Ideas Submit</header>
+<div id="app">
+  <div id="map"></div>
+  <div id="panel">
+    <!-- NEW: Map selector -->
+    <div class="row">
+      <label for="mapSel">Map</label>
+      <select id="mapSel"></select>
+    </div>
 
+    <div class="row">
+      <div><strong>Selected Location</strong><span id="posPill" class="pill">None</span></div>
+      <div class="hint">Click on the map to drop or move your pin.</div>
+    </div>
+    <div class="row">
+      <label for="category">Category</label>
+      <select id="category"></select>
+    </div>
+    <div class="row">
+      <label for="comment">Comment</label>
+      <textarea id="comment" placeholder="Describe the idea or issue"></textarea>
+    </div>
+    <div class="row">
+      <label for="name">Name</label>
+      <input id="name" type="text" placeholder="First name or initials" />
+      <label style="margin-top:6px"><input id="anon" type="checkbox" /> Submit as anonymous</label>
+      <div class="note" style="margin-top:6px">
+        Submissions are displayed on the public map and list. If you select anonymous your name will not be shown.
+      </div>
+    </div>
+    <div class="row">
+      <button id="saveBtn" class="btn" disabled>Save Draft</button>
+      <button id="submitBtn" class="btn" disabled>Submit</button>
+    </div>
+    <div class="footer" id="msg"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylz2W_8O4QcHF4Jr39LZ2Zeli9YKRSKTRbcWVDSw1t6GMGcG-DeCGFgW4otmQsCiBSLw/exec';
+
+// state
+let maps = [];
+let currentMap = null;
+let map, marker;
+let categories = [];
+const state = { lat:null, lng:null, draft:false, submissionId:null };
+
+// init
+init();
+
+async function init() {
+  // fetch maps list
+  const m = await getJSON(`${SCRIPT_URL}?action=maps`);
+  if (!m.ok) { show('Failed to load maps'); return; }
+  maps = m.maps || [];
+  // build selector
+  const sel = document.getElementById('mapSel');
+  sel.innerHTML = maps.map((x,i) => `<option value="${x.mapId}" ${i===0?'selected':''}>${escapeHTML(x.name || x.mapId)}</option>`).join('');
+  sel.addEventListener('change', onMapChange);
+  // set first map
+  if (maps.length) setCurrentMap(maps[0].mapId);
+  bindUI();
+}
+
+function onMapChange() {
+  const id = document.getElementById('mapSel').value;
+  setCurrentMap(id);
+}
+
+function setCurrentMap(mapId) {
+  currentMap = maps.find(m => m.mapId === mapId);
+  categories = currentMap?.categories || [];
+  rebuildMap();
+  fillCategories();
+  clearForm();
+}
+
+function rebuildMap() {
+  // destroy previous map instance if needed
+  if (map) { map.off(); map.remove(); }
+  map = L.map('map').setView([currentMap.center.lat, currentMap.center.lng], currentMap.zoom);
+  L.tileLayer(currentMap.tileUrl, {
+    attribution: currentMap.tileAttribution,
+    minZoom: currentMap.minZoom,
+    maxZoom: currentMap.maxZoom
+  }).addTo(map);
+  marker = null;
+  map.on('click', e => setMarker(e.latlng));
+}
+
+function setMarker(latlng) {
+  if (!marker) {
+    marker = L.marker(latlng, { draggable: true }).addTo(map);
+    marker.on('dragend', () => {
+      const ll = marker.getLatLng();
+      state.lat = ll.lat; state.lng = ll.lng;
+      updatePill();
+      updateButtons();
+    });
+  } else {
+    marker.setLatLng(latlng);
+  }
+  state.lat = latlng.lat; state.lng = latlng.lng;
+  updatePill();
+  updateButtons();
+}
+
+function fillCategories() {
+  const sel = document.getElementById('category');
+  sel.innerHTML = '<option value="">Select a category</option>' + categories.map(c => `<option value="${c.categoryId}">${escapeHTML(c.label)}</option>`).join('');
+}
+
+function bindUI() {
+  document.getElementById('category').addEventListener('change', updateButtons);
+  document.getElementById('comment').addEventListener('input', updateButtons);
+  document.getElementById('name').addEventListener('input', updateButtons);
+  document.getElementById('saveBtn').addEventListener('click', onSaveDraft);
+  document.getElementById('submitBtn').addEventListener('click', onSubmit);
+}
+
+function updatePill() {
+  const el = document.getElementById('posPill');
+  el.textContent = state.lat && state.lng ? `${state.lat.toFixed(5)}, ${state.lng.toFixed(5)}` : 'None';
+}
+
+function canSubmit() {
+  const categoryId = document.getElementById('category').value;
+  const comment = document.getElementById('comment').value.trim();
+  return !!(currentMap && state.lat && state.lng && categoryId && comment.length >= 3);
+}
+
+function updateButtons() {
+  const ready = canSubmit();
+  document.getElementById('saveBtn').disabled = !ready;
+  document.getElementById('submitBtn').disabled = !ready;
+}
+
+function clearForm() {
+  state.lat = null; state.lng = null; state.draft = false; state.submissionId = null;
+  if (marker) { map.removeLayer(marker); marker = null; }
+  document.getElementById('category').value = '';
+  document.getElementById('comment').value = '';
+  document.getElementById('name').value = '';
+  document.getElementById('anon').checked = false;
+  updatePill();
+  updateButtons();
+  show('');
+}
+
+async function onSaveDraft() {
+  document.getElementById('submitBtn').focus();
+  show('Draft saved locally. Click submit to send to the database.');
+  state.draft = true;
+}
+
+async function onSubmit() {
+  if (!canSubmit()) return;
+  const body = new URLSearchParams();
+  body.set('action','submit');
+  body.set('mapId', currentMap.mapId);
+  body.set('lat', String(state.lat));
+  body.set('lng', String(state.lng));
+  body.set('categoryId', document.getElementById('category').value);
+  body.set('comment', document.getElementById('comment').value.trim());
+  body.set('createdBy', document.getElementById('name').value.trim());
+  body.set('anonymous', document.getElementById('anon').checked ? '1' : '0');
+
+  setBusy(true);
+  const res = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+  const json = await res.json().catch(()=>({ok:false}));
+  setBusy(false);
+
+  if (json.ok) {
+    show('Submission saved. Thank you.');
+    clearForm(); // NEW: clear everything after a successful submit
+  } else {
+    show('Submit failed. Try again.');
+  }
+}
+
+async function getJSON(url) {
+  const res = await fetch(url, { method:'GET' });
+  if (!res.ok) throw new Error('Network error');
+  return res.json();
+}
+function show(msg) { document.getElementById('msg').textContent = msg; }
+function setBusy(b) { document.getElementById('saveBtn').disabled = b; document.getElementById('submitBtn').disabled = b; }
+function escapeHTML(s) { return String(s||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+</script>
+</body>
+</html>
