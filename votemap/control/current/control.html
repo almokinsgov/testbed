@@ -1,1 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Map Ideas Control Panel</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root{ --bg:#ffffff; --mut:#6b7280; --bd:#e5e7eb; --ink:#111827; --accent:#0d6efd; }
+  html,body{ height:100%; }
+  body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; color:var(--ink); background:var(--bg); }
 
+  header{ display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--bd); }
+  header h1{ margin:0; font-size:18px; font-weight:700; }
+  header .spacer{ flex:1; }
+  header .pill{ font-size:12px; color:#374151; background:#f3f4f6; border:1px solid #e5e7eb; padding:4px 8px; border-radius:999px; }
+
+  #wrap{ display:grid; grid-template-rows:auto 1fr; height:calc(100vh - 56px); }
+  nav{ display:flex; gap:6px; padding:8px; border-bottom:1px solid var(--bd); overflow:auto; }
+  .tab{ padding:8px 10px; border:1px solid var(--bd); background:#fff; border-radius:8px; cursor:pointer; font-size:14px; }
+  .tab.active{ border-color:var(--accent); color:var(--accent); font-weight:600; }
+
+  .page{ display:none; height:100%; }
+  .page.active{ display:grid; grid-template-columns: 320px 1fr; }
+  .colL{ border-right:1px solid var(--bd); padding:12px; overflow:auto; }
+  .colR{ padding:10px; overflow:auto; }
+
+  .group{ margin-bottom:12px; }
+  .group label{ display:block; font-size:12px; color:var(--mut); margin-bottom:4px; }
+  .group input, .group select, .group textarea{
+    width:100%; padding:8px; border:1px solid var(--bd); border-radius:8px; font-size:14px; background:#fff;
+  }
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+  .btn{ padding:8px 10px; font-size:14px; border:1px solid var(--bd); background:#fff; border-radius:8px; cursor:pointer; }
+  .btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.warn{ background:#fee2e2; border-color:#fecaca; }
+  .btn.small{ font-size:12px; padding:6px 8px; }
+
+  .toolbar{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  .table{ border:1px solid var(--bd); border-radius:10px; overflow:hidden; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  thead{ background:#f9fafb; position:sticky; top:0; z-index:2; }
+  th, td{ padding:8px 10px; border-bottom:1px solid var(--bd); vertical-align:top; }
+  tbody tr:hover{ background:#f8fafc; }
+  .muted{ color:var(--mut); }
+  .badge{ display:inline-block; padding:2px 6px; border-radius:999px; font-size:12px; border:1px solid var(--bd); background:#f9fafb; }
+  .legend{ background:#fff; border:1px solid var(--bd); border-radius:8px; padding:8px; }
+
+  /* Mini map */
+  #miniMap{ width:100%; height:220px; border-radius:10px; border:1px solid var(--bd); overflow:hidden; }
+
+  /* Loading overlay */
+  #loading{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(255,255,255,.75); z-index:9999; backdrop-filter:blur(2px); }
+  #loading .card{ background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:16px 18px; box-shadow:0 6px 18px rgba(0,0,0,.08); display:flex; align-items:center; gap:12px; font-size:14px; }
+  .spinner{ width:22px; height:22px; border:3px solid #ddd; border-top-color:var(--accent); border-radius:50%; animation:spin .9s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+
+  /* Toasts */
+  #toast{ position:fixed; right:14px; bottom:14px; display:none; padding:10px 12px; background:#111827; color:#fff; border-radius:10px; font-size:14px; z-index:99999; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Map Ideas Control Panel</h1>
+  <span class="pill" id="sheetIdPill">Sheet: Loading</span>
+  <span class="spacer"></span>
+  <button class="btn" id="reloadBtn">Reload</button>
+</header>
+
+<div id="wrap">
+  <nav id="tabs">
+    <button class="tab active" data-page="pageMaps">Maps</button>
+    <button class="tab" data-page="pageCats">Categories</button>
+    <button class="tab" data-page="pageSubs">Submissions</button>
+    <button class="tab" data-page="pageVotes">Voting Log</button>
+    <button class="tab" data-page="pageSettings">Settings</button>
+  </nav>
+
+  <!-- Maps -->
+  <section class="page active" id="pageMaps">
+    <div class="colL">
+      <div class="group">
+        <label>Existing Maps</label>
+        <select id="mapList" size="10" style="height: 320px"></select>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn primary" id="newMapBtn">New Map</button>
+        <button class="btn" id="saveMapBtn">Save Map</button>
+        <button class="btn warn" id="deleteMapBtn">Delete Map</button>
+      </div>
+    </div>
+
+    <div class="colR">
+      <div class="group"><label>Map Id</label><input id="map_id" placeholder="e.g. city_centre" /></div>
+      <div class="group"><label>Name</label><input id="map_name" placeholder="Display name" /></div>
+      <div class="row">
+        <div class="group"><label>Center Lat</label><input id="map_lat" type="number" step="any" /></div>
+        <div class="group"><label>Center Lng</label><input id="map_lng" type="number" step="any" /></div>
+      </div>
+      <div class="row">
+        <div class="group"><label>Zoom</label><input id="map_zoom" type="number" step="1" /></div>
+        <div class="group"><label>Min Zoom</label><input id="map_minzoom" type="number" step="1" /></div>
+      </div>
+      <div class="row">
+        <div class="group"><label>Max Zoom</label><input id="map_maxzoom" type="number" step="1" /></div>
+        <div class="group"><label>Attribution</label><input id="map_attr" placeholder="© OpenStreetMap contributors" /></div>
+      </div>
+      <div class="group"><label>Tile URL</label><input id="map_tile" placeholder="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /></div>
+
+      <div class="group"><label>Mini Map Preview</label><div id="miniMap"></div><div class="muted" style="margin-top:6px">Click the preview to set center. Use your mouse wheel to set zoom. Values sync to the form.</div></div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="page" id="pageCats">
+    <div class="colL">
+      <div class="group">
+        <label>Map</label>
+        <select id="cat_map_sel"></select>
+      </div>
+      <div class="group">
+        <label>Categories for Map</label>
+        <select id="cat_list" size="12" style="height: 360px"></select>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn primary" id="newCatBtn">New Category</button>
+        <button class="btn" id="saveCatBtn">Save Category</button>
+        <button class="btn warn" id="deleteCatBtn">Delete Category</button>
+      </div>
+    </div>
+
+    <div class="colR">
+      <div class="group"><label>Category Id</label><input id="cat_id" placeholder="e.g. safety" /></div>
+      <div class="group"><label>Label</label><input id="cat_label" placeholder="e.g. Safety" /></div>
+      <div class="group"><label>Color</label><input id="cat_color" type="color" value="#3388ff" /></div>
+      <div class="legend" id="catLegend"></div>
+    </div>
+  </section>
+
+  <!-- Submissions -->
+  <section class="page" id="pageSubs">
+    <div class="colL">
+      <div class="group"><label>Map Filter</label><select id="sub_map_sel"><option value="all">All Maps</option></select></div>
+      <div class="group"><label>Category Filter</label><select id="sub_cat_sel"><option value="">All Categories</option></select></div>
+      <div class="group"><label>Search</label><input id="sub_search" placeholder="Search comments or name" /></div>
+      <div class="row">
+        <div class="group"><label>Min Votes</label><input id="sub_minVotes" type="number" /></div>
+        <div class="group"><label>Sort</label>
+          <select id="sub_sort">
+            <option value="date_desc">Newest First</option>
+            <option value="date_asc">Oldest First</option>
+            <option value="votes_desc">Votes</option>
+          </select>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn" id="sub_reload">Reload</button>
+        <button class="btn warn" id="sub_delete">Delete Selected</button>
+        <span class="muted" id="sub_count">0</span>
+      </div>
+    </div>
+
+    <div class="colR">
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34px"><input type="checkbox" id="sub_check_all" /></th>
+              <th>Map</th><th>Category</th><th>Comment</th><th>Name</th><th>Anonymous</th><th>Votes</th><th>Created</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="sub_tbody"></tbody>
+        </table>
+      </div>
+      <div class="toolbar" style="justify-content:flex-end">
+        <button class="btn small" id="sub_prev">Prev</button>
+        <span class="muted" id="sub_page_info">Page 1</span>
+        <button class="btn small" id="sub_next">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Voting Log -->
+  <section class="page" id="pageVotes">
+    <div class="colL">
+      <div class="group"><label>Search</label><input id="vote_search" placeholder="submissionId or clientId" /></div>
+      <div class="row">
+        <div class="group"><label>From</label><input id="vote_from" type="date" /></div>
+        <div class="group"><label>To</label><input id="vote_to" type="date" /></div>
+      </div>
+      <div class="toolbar">
+        <button class="btn" id="vote_reload">Reload</button>
+        <button class="btn warn" id="vote_revoke">Revoke Selected</button>
+        <span class="muted" id="vote_count">0</span>
+      </div>
+    </div>
+
+    <div class="colR">
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34px"><input type="checkbox" id="vote_check_all" /></th>
+              <th>Time</th><th>Submission</th><th>Δ</th><th>Client</th><th>IP</th>
+            </tr>
+          </thead>
+          <tbody id="vote_tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section class="page" id="pageSettings">
+    <div class="colL">
+      <div class="group"><label>Spreadsheet Id</label><input id="settings_sheet_id" readonly /></div>
+      <div class="group"><label>Web App URL</label><input id="settings_script_url" value="" /></div>
+      <div class="toolbar">
+        <button class="btn primary" id="settings_save_url">Save URL</button>
+        <button class="btn" id="settings_ping">Ping Backend</button>
+      </div>
+    </div>
+    <div class="colR">
+      <div class="group">
+        <label>Maintenance</label>
+        <div class="toolbar">
+          <button class="btn" id="btn_export">Export Submissions CSV</button>
+          <button class="btn" id="btn_recalc">Recalculate Vote Totals</button>
+          <button class="btn" id="btn_clear_cache">Clear Backend Cache</button>
+        </div>
+      </div>
+      <p class="muted">All operations call Apps Script actions. See the action list in the code comments to wire these on the server.</p>
+    </div>
+  </section>
+</div>
+
+<!-- Loading and Toast -->
+<div id="loading"><div class="card"><div class="spinner"></div><div id="loadingText">Loading</div></div></div>
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ===================== Config ===================== */
+let SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3KME94TX9SClv0eT5NvLyKdfxGBEyJuJOzWv3KtMkUPcj-gK7MlHLyl6rzrjm6AGpNw/exec';
+
+/*
+Expected Apps Script endpoints (GET unless stated):
+- ?action=meta                     -> { ok, sheetId }
+- ?action=maps                     -> { ok, maps: [...] }
+- POST action=upsertMap            -> body: mapId, name, lat, lng, zoom, minZoom, maxZoom, tileUrl, tileAttribution
+- POST action=deleteMap            -> body: mapId
+- ?action=categories&mapId=...     -> { ok, categories: [...] }
+- POST action=upsertCategory       -> body: mapId, categoryId, label, color
+- POST action=deleteCategory       -> body: mapId, categoryId
+- ?action=submissions              -> { ok, submissions: [...] }  // all maps
+- ?action=submissions&mapId=...    -> subset
+- POST action=updateSubmission     -> body: id, mapId?, categoryId?, comment?, displayName?, anonymous? ("true"|"false")
+- POST action=deleteSubmission     -> body: id
+- ?action=votesLog                 -> { ok, votes: [{id, submissionId, delta, clientId, ip, tsISO}] }
+- POST action=revokeVotes          -> body: ids=<comma separated vote ids>
+- POST action=recalcVotes          -> no body
+- ?action=exportCSV                -> returns CSV string in { ok, csv }
+- POST action=clearCache           -> maintenance
+*/
+
+/* ===================== State ===================== */
+let maps = [];               // [{mapId, name, center:{lat,lng}, zoom, minZoom, maxZoom, tileUrl, tileAttribution, categories:[...] }]
+let catByMap = new Map();    // mapId -> categories[]
+let subsAll = [];            // submissions
+let votesAll = [];           // votes log
+let pageSize = 15, pageIndex = 0;
+let miniMap, miniTile, miniMarker;
+
+/* ===================== Utilities ===================== */
+let loadCount = 0;
+function showLoading(t){ loadCount++; document.getElementById('loadingText').textContent=t||'Loading'; document.getElementById('loading').style.display='flex'; }
+function hideLoading(){ loadCount=Math.max(0,loadCount-1); if(!loadCount) document.getElementById('loading').style.display='none'; }
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.style.display='block'; setTimeout(()=>el.style.display='none', 1600); }
+async function getJSON(u){ const r=await fetch(u); if(!r.ok) throw new Error('Network'); return r.json(); }
+async function postForm(params){ const r=await fetch(SCRIPT_URL,{method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:params}); if(!r.ok) throw new Error('Network'); return r.json(); }
+function $(id){ return document.getElementById(id); }
+function escapeHTML(s){ return String(s||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+
+/* ===================== Boot ===================== */
+init();
+async function init(){
+  wireTabs();
+
+  $('settings_script_url').value = SCRIPT_URL;
+
+  $('reloadBtn').addEventListener('click', reloadAll);
+  $('settings_save_url').addEventListener('click', ()=>{
+    SCRIPT_URL = $('settings_script_url').value.trim() || SCRIPT_URL;
+    toast('Saved URL');
+  });
+  $('settings_ping').addEventListener('click', async ()=>{
+    showLoading('Pinging');
+    try{ const j=await getJSON(`${SCRIPT_URL}?action=meta`); toast(j.ok ? 'OK' : 'Error'); if(j.sheetId){ $('settings_sheet_id').value=j.sheetId; $('sheetIdPill').textContent='Sheet: '+j.sheetId; } }
+    catch(e){ toast('Error'); } finally{ hideLoading(); }
+  });
+
+  // Maps UI handlers
+  $('newMapBtn').addEventListener('click', newMapForm);
+  $('saveMapBtn').addEventListener('click', saveMap);
+  $('deleteMapBtn').addEventListener('click', deleteMap);
+  $('mapList').addEventListener('change', onSelectMap);
+
+  // Categories UI handlers
+  $('cat_map_sel').addEventListener('change', refreshCategoryList);
+  $('newCatBtn').addEventListener('click', newCatForm);
+  $('saveCatBtn').addEventListener('click', saveCategory);
+  $('deleteCatBtn').addEventListener('click', deleteCategory);
+  $('cat_list').addEventListener('change', onSelectCategory);
+
+  // Submissions handlers
+  $('sub_reload').addEventListener('click', loadSubmissions);
+  $('sub_check_all').addEventListener('change', e=>{
+    document.querySelectorAll('#sub_tbody input[type=checkbox]').forEach(cb=>cb.checked=e.target.checked);
+  });
+  $('sub_delete').addEventListener('click', deleteSelectedSubmissions);
+  $('sub_prev').addEventListener('click', ()=>{ if(pageIndex>0){ pageIndex--; renderSubs(); } });
+  $('sub_next').addEventListener('click', ()=>{ const totalPages=Math.ceil(filterSubs().length/pageSize); if(pageIndex<totalPages-1){ pageIndex++; renderSubs(); } });
+  ['sub_map_sel','sub_cat_sel','sub_search','sub_minVotes','sub_sort'].forEach(id=>{
+    $(id).addEventListener('input', ()=>{ pageIndex=0; renderSubs(); });
+    $(id).addEventListener('change', ()=>{ pageIndex=0; renderSubs(); });
+  });
+
+  // Votes handlers
+  $('vote_reload').addEventListener('click', loadVotes);
+  $('vote_check_all').addEventListener('change', e=>{
+    document.querySelectorAll('#vote_tbody input[type=checkbox]').forEach(cb=>cb.checked=e.target.checked);
+  });
+  $('vote_revoke').addEventListener('click', revokeSelectedVotes);
+  ['vote_search','vote_from','vote_to'].forEach(id=>$(id).addEventListener('input', renderVotes));
+
+  // Settings maintenance
+  $('btn_export').addEventListener('click', exportCSV);
+  $('btn_recalc').addEventListener('click', recalcVotes);
+  $('btn_clear_cache').addEventListener('click', clearCache);
+
+  await reloadAll();
+}
+
+/* ===================== Navigation ===================== */
+function wireTabs(){
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  tabs.forEach(t => t.addEventListener('click', ()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const id = t.getAttribute('data-page');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    $(id).classList.add('active');
+  }));
+}
+
+/* ===================== Reload Everything ===================== */
+async function reloadAll(){
+  showLoading('Loading Maps');
+  try {
+    const meta = await getJSON(`${SCRIPT_URL}?action=meta`).catch(()=>({ok:false}));
+    if(meta.sheetId){ $('settings_sheet_id').value=meta.sheetId; $('sheetIdPill').textContent='Sheet: '+meta.sheetId; }
+
+    const m = await getJSON(`${SCRIPT_URL}?action=maps`);
+    maps = m.maps || [];
+    catByMap.clear();
+    maps.forEach(mp => catByMap.set(mp.mapId, mp.categories || []));
+
+    // Populate selects
+    $('mapList').innerHTML = maps.map(mp => `<option value="${mp.mapId}">${escapeHTML(mp.name||mp.mapId)}</option>`).join('');
+    $('cat_map_sel').innerHTML = maps.map(mp => `<option value="${mp.mapId}">${escapeHTML(mp.name||mp.mapId)}</option>`).join('');
+    $('sub_map_sel').innerHTML = `<option value="all">All Maps</option>` + maps.map(mp => `<option value="${mp.mapId}">${escapeHTML(mp.name||mp.mapId)}</option>`).join('');
+    // Select first items if any
+    if(maps.length){ $('mapList').value = maps[0].mapId; onSelectMap(); $('cat_map_sel').value = maps[0].mapId; refreshCategoryList(); }
+
+    // Mini map init/update
+    setTimeout(initMiniMap, 0);
+
+    // Load submissions and votes
+    await loadSubmissions();
+    await loadVotes();
+  } catch(e){
+    toast('Load Failed');
+  } finally {
+    hideLoading();
+  }
+}
+
+/* ===================== Maps CRUD ===================== */
+function onSelectMap(){
+  const id = $('mapList').value;
+  const mp = maps.find(x=>x.mapId===id);
+  if(!mp) return;
+  $('map_id').value = mp.mapId;
+  $('map_name').value = mp.name || '';
+  $('map_lat').value = mp.center?.lat ?? '';
+  $('map_lng').value = mp.center?.lng ?? '';
+  $('map_zoom').value = mp.zoom ?? 5;
+  $('map_minzoom').value = mp.minZoom ?? 3;
+  $('map_maxzoom').value = mp.maxZoom ?? 19;
+  $('map_attr').value = mp.tileAttribution || '© OpenStreetMap contributors';
+  $('map_tile').value = mp.tileUrl || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  updateMiniMap();
+}
+
+function newMapForm(){
+  $('map_id').value=''; $('map_name').value='';
+  $('map_lat').value='-41'; $('map_lng').value='174';
+  $('map_zoom').value='5'; $('map_minzoom').value='3'; $('map_maxzoom').value='19';
+  $('map_attr').value='© OpenStreetMap contributors';
+  $('map_tile').value='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  updateMiniMap();
+}
+
+async function saveMap(){
+  const p = new URLSearchParams();
+  p.set('action','upsertMap');
+  p.set('mapId', $('map_id').value.trim());
+  p.set('name', $('map_name').value.trim());
+  p.set('lat', $('map_lat').value.trim());
+  p.set('lng', $('map_lng').value.trim());
+  p.set('zoom', $('map_zoom').value.trim());
+  p.set('minZoom', $('map_minzoom').value.trim());
+  p.set('maxZoom', $('map_maxzoom').value.trim());
+  p.set('tileUrl', $('map_tile').value.trim());
+  p.set('tileAttribution', $('map_attr').value.trim());
+  showLoading('Saving Map');
+  try{
+    const j = await postForm(p);
+    if(!j.ok){ toast('Save Failed'); return; }
+    toast('Saved');
+    await reloadAll();
+    $('mapList').value = $('map_id').value;
+  }catch(e){ toast('Save Failed'); } finally{ hideLoading(); }
+}
+
+async function deleteMap(){
+  const id = $('map_id').value.trim();
+  if(!id) return;
+  if(!confirm(`Delete map ${id}?`)) return;
+  const p = new URLSearchParams();
+  p.set('action','deleteMap');
+  p.set('mapId', id);
+  showLoading('Deleting Map');
+  try{
+    const j = await postForm(p);
+    if(!j.ok){ toast('Delete Failed'); return; }
+    toast('Deleted');
+    await reloadAll();
+  }catch(e){ toast('Delete Failed'); } finally{ hideLoading(); }
+}
+
+/* Mini Leaflet */
+function initMiniMap(){
+  if(miniMap) return updateMiniMap();
+  const lat = parseFloat($('map_lat').value||'-41'), lng = parseFloat($('map_lng').value||'174');
+  miniMap = L.map('miniMap', { zoomControl:true }).setView([lat,lng], parseInt($('map_zoom').value||'5',10));
+  miniTile = L.tileLayer($('map_tile').value||'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: $('map_attr').value||'© OpenStreetMap contributors' }).addTo(miniMap);
+  miniMarker = L.marker([lat,lng], { draggable:true }).addTo(miniMap);
+  miniMarker.on('dragend', ()=>{
+    const c = miniMarker.getLatLng();
+    $('map_lat').value = c.lat.toFixed(6);
+    $('map_lng').value = c.lng.toFixed(6);
+  });
+  miniMap.on('click', e=>{
+    miniMarker.setLatLng(e.latlng);
+    $('map_lat').value = e.latlng.lat.toFixed(6);
+    $('map_lng').value = e.latlng.lng.toFixed(6);
+  });
+  miniMap.on('zoomend', ()=>{
+    $('map_zoom').value = miniMap.getZoom();
+  });
+  // Form inputs -> mini map
+  ['map_lat','map_lng','map_zoom'].forEach(id => $(id).addEventListener('input', ()=>{
+    const lat=parseFloat($('map_lat').value||'-41'), lng=parseFloat($('map_lng').value||'174'), z=parseInt($('map_zoom').value||'5',10);
+    miniMap.setView([lat,lng], z);
+    miniMarker.setLatLng([lat,lng]);
+  }));
+  $('map_tile').addEventListener('input', ()=>{ miniTile.setUrl($('map_tile').value||'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'); });
+  $('map_attr').addEventListener('input', ()=>{ miniTile.setAttribution($('map_attr').value||'© OpenStreetMap contributors'); });
+}
+function updateMiniMap(){
+  if(!miniMap) return initMiniMap();
+  const lat=parseFloat($('map_lat').value||'-41'), lng=parseFloat($('map_lng').value||'174'), z=parseInt($('map_zoom').value||'5',10);
+  miniMap.setView([lat,lng], z);
+  miniMarker.setLatLng([lat,lng]);
+  miniTile.setUrl($('map_tile').value||'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+  miniTile.setAttribution($('map_attr').value||'© OpenStreetMap contributors');
+}
+
+/* ===================== Categories CRUD ===================== */
+function refreshCategoryList(){
+  const mapId = $('cat_map_sel').value;
+  const cats = catByMap.get(mapId) || [];
+  $('cat_list').innerHTML = cats.map(c => `<option value="${c.categoryId}">${escapeHTML(c.label)} <span class="muted">(${c.categoryId})</span></option>`).join('');
+  $('catLegend').innerHTML = '<div style="font-weight:600; margin-bottom:6px">Legend</div>' + (cats.length? cats.map(c => `<div style="display:flex; align-items:center; gap:8px; margin:4px 0"><span style="display:inline-block; width:12px; height:12px; border:1px solid #ccc; background:${c.color||'#3388ff'}; border-radius:3px"></span> ${escapeHTML(c.label)}</div>`).join(''): '<span class="muted">No Categories</span>');
+  // Clear form
+  $('cat_id').value=''; $('cat_label').value=''; $('cat_color').value='#3388ff';
+}
+function onSelectCategory(){
+  const mapId = $('cat_map_sel').value;
+  const cats = catByMap.get(mapId) || [];
+  const c = cats.find(x => String(x.categoryId) === String($('cat_list').value));
+  if(!c) return;
+  $('cat_id').value = c.categoryId;
+  $('cat_label').value = c.label || '';
+  $('cat_color').value = c.color || '#3388ff';
+}
+function newCatForm(){
+  $('cat_list').value='';
+  $('cat_id').value=''; $('cat_label').value=''; $('cat_color').value='#3388ff';
+}
+async function saveCategory(){
+  const mapId = $('cat_map_sel').value;
+  const p = new URLSearchParams();
+  p.set('action','upsertCategory');
+  p.set('mapId', mapId);
+  p.set('categoryId', $('cat_id').value.trim());
+  p.set('label', $('cat_label').value.trim());
+  p.set('color', $('cat_color').value);
+  showLoading('Saving Category');
+  try{
+    const j = await postForm(p);
+    if(!j.ok){ toast('Save Failed'); return; }
+    toast('Saved');
+    await reloadAll();
+    $('cat_map_sel').value = mapId;
+    refreshCategoryList();
+  }catch(e){ toast('Save Failed'); } finally{ hideLoading(); }
+}
+async function deleteCategory(){
+  const mapId = $('cat_map_sel').value;
+  const id = $('cat_id').value.trim();
+  if(!id) return;
+  if(!confirm(`Delete category ${id} on map ${mapId}?`)) return;
+  const p = new URLSearchParams();
+  p.set('action','deleteCategory');
+  p.set('mapId', mapId);
+  p.set('categoryId', id);
+  showLoading('Deleting Category');
+  try{
+    const j = await postForm(p);
+    if(!j.ok){ toast('Delete Failed'); return; }
+    toast('Deleted');
+    await reloadAll();
+    $('cat_map_sel').value = mapId;
+    refreshCategoryList();
+  }catch(e){ toast('Delete Failed'); } finally{ hideLoading(); }
+}
+
+/* ===================== Submissions ===================== */
+async function loadSubmissions(){
+  showLoading('Loading Submissions');
+  try{
+    const j = await getJSON(`${SCRIPT_URL}?action=submissions`);
+    subsAll = j.ok ? (j.submissions || []) : [];
+    $('sub_check_all').checked = false;
+    pageIndex = 0;
+    renderSubs();
+  }catch(e){ toast('Load Failed'); } finally{ hideLoading(); }
+}
+
+function filterSubs(){
+  const mapId = $('sub_map_sel').value;
+  const catSel = $('sub_cat_sel').value;
+  const q = $('sub_search').value.trim().toLowerCase();
+  const minVotes = parseInt($('sub_minVotes').value||'0', 10);
+  let out = subsAll.slice();
+  if(mapId !== 'all') out = out.filter(s => String(s.mapId) === String(mapId));
+  // set category options when map changes
+  const mpCats = mapId==='all' ? Array.from(new Set(subsAll.map(s => s.categoryLabel))).map(label=>({label})) : (catByMap.get(mapId)||[]);
+  $('sub_cat_sel').innerHTML = '<option value="">All Categories</option>'+ (mapId==='all' ? mpCats.map(c=>`<option value="${escapeHTML(c.label||'')}">${escapeHTML(c.label||'')}</option>`).join('') : mpCats.map(c=>`<option value="${escapeHTML(c.categoryId)}">${escapeHTML(c.label)}</option>`).join(''));
+  if(mapId==='all'){ if(catSel) out = out.filter(s => (s.categoryLabel || '') === catSel); }
+  else { if(catSel) out = out.filter(s => String(s.categoryId) === String(catSel)); }
+  if(q) out = out.filter(s => String(s.comment||'').toLowerCase().includes(q) || String(s.displayName||'').toLowerCase().includes(q));
+  if(minVotes) out = out.filter(s => (s.votes||0) >= minVotes);
+
+  const sort = $('sub_sort').value;
+  if(sort==='date_desc') out.sort((a,b)=> new Date(b.createdAtISO) - new Date(a.createdAtISO));
+  if(sort==='date_asc') out.sort((a,b)=> new Date(a.createdAtISO) - new Date(b.createdAtISO));
+  if(sort==='votes_desc') out.sort((a,b)=> (b.votes||0)-(a.votes||0));
+  return out;
+}
+
+function renderSubs(){
+  const filtered = filterSubs();
+  $('sub_count').textContent = `${filtered.length} items`;
+  // pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  pageIndex = Math.min(pageIndex, totalPages - 1);
+  $('sub_page_info').textContent = `Page ${pageIndex+1} of ${totalPages}`;
+  const page = filtered.slice(pageIndex*pageSize, pageIndex*pageSize + pageSize);
+
+  const tbody = $('sub_tbody');
+  tbody.innerHTML = page.map(s => {
+    const who = s.displayName || 'Anonymous';
+    const catLabel = s.categoryLabel || s.categoryId || '';
+    const created = new Date(s.createdAtISO).toLocaleString();
+    return `<tr>
+      <td><input type="checkbox" data-id="${s.id}" /></td>
+      <td>${escapeHTML(s.mapId)}</td>
+      <td>${escapeHTML(catLabel)}</td>
+      <td>${escapeHTML(s.comment||'')}</td>
+      <td>${escapeHTML(who)}</td>
+      <td>${s.anonymous ? 'Yes' : 'No'}</td>
+      <td>${s.votes||0}</td>
+      <td class="muted">${escapeHTML(created)}</td>
+      <td>
+        <button class="btn small" onclick="editSubmission('${s.id}')">Edit</button>
+        <button class="btn small warn" onclick="deleteSingleSubmission('${s.id}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function selectedSubmissionIds(){
+  return Array.from(document.querySelectorAll('#sub_tbody input[type=checkbox]:checked')).map(cb => cb.getAttribute('data-id'));
+}
+
+async function deleteSelectedSubmissions(){
+  const ids = selectedSubmissionIds();
+  if(!ids.length) return;
+  if(!confirm(`Delete ${ids.length} submission(s)?`)) return;
+  showLoading('Deleting');
+  try{
+    for(const id of ids){
+      const p = new URLSearchParams(); p.set('action','deleteSubmission'); p.set('id', id);
+      const j = await postForm(p); if(!j.ok) throw new Error('delete fail');
+    }
+    toast('Deleted');
+    await loadSubmissions();
+  }catch(e){ toast('Delete Failed'); } finally{ hideLoading(); }
+}
+async function deleteSingleSubmission(id){
+  if(!confirm(`Delete submission ${id}?`)) return;
+  const p = new URLSearchParams(); p.set('action','deleteSubmission'); p.set('id', id);
+  showLoading('Deleting');
+  try{ const j = await postForm(p); if(!j.ok) throw new Error(); toast('Deleted'); await loadSubmissions(); }
+  catch(e){ toast('Delete Failed'); } finally{ hideLoading(); }
+}
+
+function editSubmission(id){
+  const s = subsAll.find(x=>x.id===id); if(!s) return;
+  const newComment = prompt('Edit Comment', s.comment||''); if(newComment===null) return;
+  const newName = prompt('Edit Submitter Name', s.displayName||''); if(newName===null) return;
+  const anon = confirm('Mark as Anonymous? OK=Yes Cancel=No');
+  const p = new URLSearchParams();
+  p.set('action','updateSubmission');
+  p.set('id', id);
+  p.set('comment', newComment);
+  p.set('displayName', newName);
+  p.set('anonymous', anon ? 'true' : 'false');
+  showLoading('Updating');
+  postForm(p).then(j=>{
+    if(!j.ok) throw new Error();
+    toast('Updated');
+    loadSubmissions();
+  }).catch(()=>toast('Update Failed')).finally(()=>hideLoading());
+}
+
+/* ===================== Votes Log ===================== */
+async function loadVotes(){
+  showLoading('Loading Votes');
+  try{
+    const j = await getJSON(`${SCRIPT_URL}?action=votesLog`);
+    votesAll = j.ok ? (j.votes || []) : [];
+    renderVotes();
+  }catch(e){ toast('Load Failed'); } finally{ hideLoading(); }
+}
+
+function renderVotes(){
+  const q = $('vote_search').value.trim().toLowerCase();
+  const from = $('vote_from').value ? new Date($('vote_from').value) : null;
+  const to = $('vote_to').value ? new Date($('vote_to').value) : null;
+  const body = $('vote_tbody');
+  let arr = votesAll.slice();
+  if(q) arr = arr.filter(v => String(v.submissionId).toLowerCase().includes(q) || String(v.clientId).toLowerCase().includes(q));
+  if(from) arr = arr.filter(v => new Date(v.tsISO) >= from);
+  if(to)   arr = arr.filter(v => new Date(v.tsISO) <= new Date(to.getTime()+86400000-1));
+  $('vote_count').textContent = `${arr.length} rows`;
+  body.innerHTML = arr.slice(0,500).map(v => {
+    const d = new Date(v.tsISO).toLocaleString();
+    return `<tr>
+      <td><input type="checkbox" data-id="${v.id}" /></td>
+      <td class="muted">${escapeHTML(d)}</td>
+      <td>${escapeHTML(v.submissionId)}</td>
+      <td>${v.delta>0?'+1':'-1'}</td>
+      <td>${escapeHTML(v.clientId||'')}</td>
+      <td>${escapeHTML(v.ip||'')}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function revokeSelectedVotes(){
+  const ids = Array.from(document.querySelectorAll('#vote_tbody input[type=checkbox]:checked')).map(cb=>cb.getAttribute('data-id'));
+  if(!ids.length) return;
+  if(!confirm(`Revoke ${ids.length} vote(s)?`)) return;
+  const p = new URLSearchParams(); p.set('action','revokeVotes'); p.set('ids', ids.join(','));
+  showLoading('Revoking');
+  try{ const j = await postForm(p); if(!j.ok) throw new Error(); toast('Revoked'); await loadVotes(); await loadSubmissions(); }
+  catch(e){ toast('Revoke Failed'); } finally{ hideLoading(); }
+}
+
+/* ===================== Settings Actions ===================== */
+async function exportCSV(){
+  showLoading('Exporting');
+  try{
+    const j = await getJSON(`${SCRIPT_URL}?action=exportCSV`);
+    if(!j.ok || !j.csv){ toast('Export Failed'); return; }
+    const blob = new Blob([j.csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='submissions.csv'; a.click();
+    URL.revokeObjectURL(url);
+    toast('Exported');
+  }catch(e){ toast('Export Failed'); } finally{ hideLoading(); }
+}
+async function recalcVotes(){
+  const p = new URLSearchParams(); p.set('action','recalcVotes');
+  showLoading('Recalculating Votes');
+  try{ const j = await postForm(p); if(!j.ok) throw new Error(); toast('Recalculated'); await loadSubmissions(); }
+  catch(e){ toast('Recalc Failed'); } finally{ hideLoading(); }
+}
+async function clearCache(){
+  const p = new URLSearchParams(); p.set('action','clearCache');
+  showLoading('Clearing Cache');
+  try{ const j = await postForm(p); if(!j.ok) throw new Error(); toast('Cache Cleared'); }
+  catch(e){ toast('Clear Failed'); } finally{ hideLoading(); }
+}
+</script>
+</body>
+</html>
