@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>urn:oid:2.49.0.1.124.0.90003.2</identifier>
+  <sender>cap.test.metservice.nz</sender>
+  <sent>2025-08-18T02:10:00Z</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+
+  <info>
+    <category>Met</category>
+    <event>Severe Thunderstorm Warning</event>
+    <urgency>Immediate</urgency>
+    <severity>Extreme</severity>
+    <certainty>Likely</certainty>
+    <effective>2025-08-18T02:10:00Z</effective>
+    <onset>2025-08-18T02:15:00Z</onset>
+    <expires>2025-08-18T05:15:00Z</expires>
+    <senderName>MetService Test</senderName>
+    <headline>Red severe thunderstorm warning for parts of Northland</headline>
+    <description>Severe thunderstorms with torrential rain and damaging wind gusts are possible. Localised hail may occur.</description>
+    <instruction>Move indoors, stay away from windows, and avoid using wired electrical devices. Monitor official updates.</instruction>
+
+    <parameter>
+      <valueName>ColourCode</valueName>
+      <value>Red</value>
+    </parameter>
+    <parameter>
+      <valueName>ColourCodeHex</valueName>
+      <value>#FF0000</value>
+    </parameter>
+
+    <area>
+      <areaDesc>Northland including central and eastern Far North</areaDesc>
+      <polygon>-34.85,173.95 -34.85,174.25 -35.20,174.25 -35.20,173.95 -34.85,173.95</polygon>
+    </area>
+  </info>
+</alert>
