@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>urn:oid:2.49.0.1.124.0.90001.1</identifier>
+  <sender>cap.test.metservice.nz</sender>
+  <sent>2025-08-18T00:15:00Z</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+
+  <info>
+    <category>Met</category>
+    <event>Strong Wind Watch</event>
+    <urgency>Expected</urgency>
+    <severity>Moderate</severity>
+    <certainty>Possible</certainty>
+    <effective>2025-08-18T00:15:00Z</effective>
+    <onset>2025-08-18T06:00:00Z</onset>
+    <expires>2025-08-18T18:00:00Z</expires>
+    <senderName>MetService Test</senderName>
+    <headline>Yellow strong wind watch for Northland</headline>
+    <description>Northwesterly winds may approach warning criteria at times. Exposed areas could see strong gusts.</description>
+    <instruction>Secure light outdoor items and take care if driving high sided vehicles in exposed areas.</instruction>
+
+    <parameter>
+      <valueName>ColourCode</valueName>
+      <value>Yellow</value>
+    </parameter>
+    <parameter>
+      <valueName>ColourCodeHex</valueName>
+      <value>#FFFF00</value>
+    </parameter>
+
+    <area>
+      <areaDesc>Northland including Far North District</areaDesc>
+      <!-- CAP polygon uses "lat,lon" pairs -->
+      <polygon>-34.90,173.80 -34.90,174.20 -35.40,174.20 -35.40,173.80 -34.90,173.80</polygon>
+    </area>
+  </info>
+</alert>
