@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>urn:oid:2.49.0.1.124.0.90002.5</identifier>
+  <sender>cap.test.metservice.nz</sender>
+  <sent>2025-08-18T01:00:00Z</sent>
+  <status>Actual</status>
+  <msgType>Update</msgType>
+  <scope>Public</scope>
+
+  <info>
+    <category>Met</category>
+    <event>Heavy Rain Warning</event>
+    <urgency>Expected</urgency>
+    <severity>Severe</severity>
+    <certainty>Likely</certainty>
+    <effective>2025-08-18T01:00:00Z</effective>
+    <onset>2025-08-18T02:30:00Z</onset>
+    <expires>2025-08-18T16:30:00Z</expires>
+    <senderName>MetService Test</senderName>
+    <headline>Orange heavy rain warning for Far North District</headline>
+    <description>Periods of heavy rain expected with localised downpours. Accumulations may be significant in a short time.</description>
+    <instruction>Avoid flood prone areas, keep drains clear, and do not attempt to drive through flood waters.</instruction>
+
+    <parameter>
+      <valueName>ColourCode</valueName>
+      <value>Orange</value>
+    </parameter>
+    <parameter>
+      <valueName>ColourCodeHex</valueName>
+      <value>#FFA500</value>
+    </parameter>
+
+    <area>
+      <areaDesc>Far North District</areaDesc>
+      <polygon>-34.95,173.90 -34.95,174.10 -35.35,174.10 -35.35,173.90 -34.95,173.90</polygon>
+    </area>
+  </info>
+</alert>
