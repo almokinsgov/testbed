@@ -9,7 +9,7 @@
     <title>Yellow Strong Wind Watch for Northland</title>
     <id>urn:oid:2.49.0.1.124.0.90001.1</id>
     <updated>2025-08-18T00:15:00Z</updated>
-    <link rel="alternate" type="application/cap+xml" href="https://your.host.example/cap/items/urn-oid-2.49.0.1.124.0.90001.1.xml"/>
+    <link rel="alternate" type="application/cap+xml" href="https://almokinsgov.github.io/testbed/cap/items/urn-oid-2.49.0.1.124.0.90001.1.xml"/>
     <summary>Yellow strong wind watch for Northland including Far North District</summary>
   </entry>
 
@@ -17,7 +17,7 @@
     <title>Orange Heavy Rain Warning for Far North District</title>
     <id>urn:oid:2.49.0.1.124.0.90002.5</id>
     <updated>2025-08-18T01:00:00Z</updated>
-    <link rel="alternate" type="application/cap+xml" href="https://your.host.example/cap/items/urn-oid-2.49.0.1.124.0.90002.5.xml"/>
+    <link rel="alternate" type="application/cap+xml" href="https://almokinsgov.github.io/testbed/cap/items/urn-oid-2.49.0.1.124.0.90002.5.xml"/>
     <summary>Orange heavy rain warning for Far North District</summary>
   </entry>
 
@@ -25,7 +25,7 @@
     <title>Red Severe Thunderstorm Warning for Northland</title>
     <id>urn:oid:2.49.0.1.124.0.90003.2</id>
     <updated>2025-08-18T02:10:00Z</updated>
-    <link rel="alternate" type="application/cap+xml" href="https://your.host.example/cap/items/urn-oid-2.49.0.1.124.0.90003.2.xml"/>
+    <link rel="alternate" type="application/cap+xml" href="https://almokinsgov.github.io/testbed/cap/items/urn-oid-2.49.0.1.124.0.90003.2.xml"/>
     <summary>Red severe thunderstorm warning affecting parts of the Far North</summary>
   </entry>
 </feed>
