@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage Alert Email Subscription</title>
+  <style>
+    :root { font-family: system-ui, Arial, sans-serif; color-scheme: light dark; }
+    body { margin: 0; padding: 24px; max-width: 900px; }
+    h1, h2 { margin: 0 0 12px; }
+    .card { border: 1px solid #ccc; border-radius: 10px; padding: 16px; margin: 16px 0; }
+    label { display: block; margin: 8px 0 4px; }
+    input[type="text"], input[type="email"], select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #aaa; }
+    button { padding: 10px 14px; border: 0; border-radius: 8px; cursor: pointer; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hidden { display: none; }
+    .muted { color: #666; font-size: 0.95em; }
+    .success { color: #0a8; }
+    .error { color: #c22; }
+    .inline { display: inline-block; margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Region Warnings And Alerts Email</h1>
+  <p class="muted">Subscribe, confirm your email, and manage your preferences. You can also request a login code to view or change your settings and unsubscribe.</p>
+
+  <div class="card" id="subscribeCard">
+    <h2>Subscribe</h2>
+    <label>Email</label>
+    <input id="subEmail" type="email" placeholder="you@example.org" />
+    <div class="row">
+      <div>
+        <label>Region Filter</label>
+        <select id="farNorthOnly">
+          <option value="true">Far North Only</option>
+          <option value="false">All Regions</option>
+        </select>
+      </div>
+      <div>
+        <label>Minimum Colour</label>
+        <select id="colourMin">
+          <option>Yellow</option>
+          <option>Orange</option>
+          <option>Red</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Lead Time Hours</label>
+        <input id="leadTimeHours" type="number" min="0" step="1" value="0" />
+      </div>
+      <div>
+        <label>Email On Updates</label>
+        <select id="emailOnUpdates">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Minimum Severity</label>
+        <select id="severityMin">
+          <option>Minor</option>
+          <option>Moderate</option>
+          <option>Severe</option>
+        </select>
+      </div>
+      <div>
+        <label>Daily Summary</label>
+        <select id="dailySummary">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button id="btnSubscribe">Subscribe</button>
+      <span id="subMsg" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="card" id="confirmCard">
+    <h2>Confirm Email</h2>
+    <label>Email</label>
+    <input id="confEmail" type="email" placeholder="you@example.org" />
+    <label>6 Digit Code</label>
+    <input id="confCode" type="text" maxlength="6" placeholder="123456" />
+    <div style="margin-top:12px">
+      <button id="btnConfirm">Confirm</button>
+      <button id="btnResend">Resend Code</button>
+      <span id="confMsg" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="card" id="loginCard">
+    <h2>Login With Code</h2>
+    <label>Email</label>
+    <input id="loginEmail" type="email" placeholder="you@example.org" />
+    <div style="margin-top:12px">
+      <button id="btnRequestLogin">Send Login Code</button>
+      <span id="loginMsg" class="muted"></span>
+    </div>
+    <div style="margin-top:12px">
+      <label>6 Digit Code</label>
+      <input id="loginCode" type="text" maxlength="6" placeholder="123456" />
+      <button id="btnVerify">Verify Code</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="prefsCard">
+    <h2>Your Preferences</h2>
+    <div id="who" class="muted"></div>
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>Region Filter</label>
+        <select id="p_farNorthOnly">
+          <option value="true">Far North Only</option>
+          <option value="false">All Regions</option>
+        </select>
+      </div>
+      <div>
+        <label>Minimum Colour</label>
+        <select id="p_colourMin">
+          <option>Yellow</option>
+          <option>Orange</option>
+          <option>Red</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Lead Time Hours</label>
+        <input id="p_leadTimeHours" type="number" min="0" step="1" />
+      </div>
+      <div>
+        <label>Email On Updates</label>
+        <select id="p_emailOnUpdates">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Minimum Severity</label>
+        <select id="p_severityMin">
+          <option>Minor</option>
+          <option>Moderate</option>
+          <option>Severe</option>
+        </select>
+      </div>
+      <div>
+        <label>Daily Summary</label>
+        <select id="p_dailySummary">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button id="btnSavePrefs">Save</button>
+      <button id="btnUnsub" style="background:#eee;">Unsubscribe</button>
+      <span id="prefsMsg" class="muted"></span>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxXZ4Ii3q7qGKk0qGykLd5H0qitRz7ZP7FOo38A9d3WeW7HmJoO-7UBzbItyvCPP1QR/exec'; // replace with your Web App URL
+
+    let AUTH = { email: null, token: null };
+
+    function show(el, on) { el.classList.toggle('hidden', !on); }
+    function msg(el, text, ok=true) { el.textContent = text; el.className = ok ? 'muted success' : 'muted error'; }
+
+    async function post(action, body) {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...(body||{}) })
+      });
+      return res.json();
+    }
+
+    // Subscribe
+    document.getElementById('btnSubscribe').addEventListener('click', async () => {
+      const payload = {
+        email: document.getElementById('subEmail').value.trim(),
+        farNorthOnly: document.getElementById('farNorthOnly').value === 'true',
+        colourMin: document.getElementById('colourMin').value,
+        leadTimeHours: Number(document.getElementById('leadTimeHours').value || 0),
+        emailOnUpdates: document.getElementById('emailOnUpdates').value === 'true',
+        severityMin: document.getElementById('severityMin').value,
+        dailySummary: document.getElementById('dailySummary').value === 'true'
+      };
+      const r = await post('subscribe', payload);
+      msg(document.getElementById('subMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+    });
+
+    // Confirm
+    document.getElementById('btnConfirm').addEventListener('click', async () => {
+      const email = document.getElementById('confEmail').value.trim();
+      const code = document.getElementById('confCode').value.trim();
+      const r = await post('confirm', { email, code });
+      msg(document.getElementById('confMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+    });
+
+    document.getElementById('btnResend').addEventListener('click', async () => {
+      const email = document.getElementById('confEmail').value.trim();
+      const r = await post('resend_code', { email });
+      msg(document.getElementById('confMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+    });
+
+    // Login with code
+    document.getElementById('btnRequestLogin').addEventListener('click', async () => {
+      const email = document.getElementById('loginEmail').value.trim();
+      const r = await post('request_login_code', { email });
+      msg(document.getElementById('loginMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+    });
+
+    document.getElementById('btnVerify').addEventListener('click', async () => {
+      const email = document.getElementById('loginEmail').value.trim();
+      const code = document.getElementById('loginCode').value.trim();
+      const r = await post('verify_code', { email, code });
+      if (r.ok) {
+        AUTH.email = email;
+        AUTH.token = r.token;
+        await loadPrefs();
+        show(document.getElementById('prefsCard'), true);
+        msg(document.getElementById('loginMsg'), 'Logged in. Token valid for ' + r.ttlMinutes + ' minutes.');
+      } else {
+        msg(document.getElementById('loginMsg'), r.error || 'Error', false);
+      }
+    });
+
+    async function authed(action, data) {
+      if (!AUTH.token) throw new Error('Not logged in');
+      return post(action, { token: AUTH.token, ...(data||{}) });
+    }
+
+    async function loadPrefs() {
+      const r = await authed('get_prefs');
+      if (!r.ok) { msg(document.getElementById('prefsMsg'), r.error || 'Error', false); return; }
+      const p = r.prefs;
+      document.getElementById('who').textContent = 'Signed in as ' + p.email + (p.active ? ' (active)' : '');
+      document.getElementById('p_farNorthOnly').value = p.farNorthOnly ? 'true' : 'false';
+      document.getElementById('p_colourMin').value = p.colourMin;
+      document.getElementById('p_leadTimeHours').value = p.leadTimeHours;
+      document.getElementById('p_emailOnUpdates').value = p.emailOnUpdates ? 'true' : 'false';
+      document.getElementById('p_severityMin').value = p.severityMin;
+      document.getElementById('p_dailySummary').value = p.dailySummary ? 'true' : 'false';
+    }
+
+    document.getElementById('btnSavePrefs').addEventListener('click', async () => {
+      const payload = {
+        farNorthOnly: document.getElementById('p_farNorthOnly').value === 'true',
+        colourMin: document.getElementById('p_colourMin').value,
+        leadTimeHours: Number(document.getElementById('p_leadTimeHours').value || 0),
+        emailOnUpdates: document.getElementById('p_emailOnUpdates').value === 'true',
+        severityMin: document.getElementById('p_severityMin').value,
+        dailySummary: document.getElementById('p_dailySummary').value === 'true'
+      };
+      const r = await authed('update_prefs', payload);
+      msg(document.getElementById('prefsMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+    });
+
+    document.getElementById('btnUnsub').addEventListener('click', async () => {
+      if (!confirm('Unsubscribe this email from alerts')) return;
+      const r = await authed('unsubscribe');
+      msg(document.getElementById('prefsMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+    });
+  </script>
+</body>
+</html>
