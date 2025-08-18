@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage Alert Email Subscription</title>
+  <style>
+    :root { font-family: system-ui, Arial, sans-serif; color-scheme: light dark; }
+    body { margin: 0; padding: 24px; max-width: 900px; }
+    h1, h2 { margin: 0 0 12px; }
+    nav { display: flex; gap: 8px; margin: 0 0 16px; }
+    .tab { padding: 10px 14px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; background: #f6f6f6; }
+    .tab.active { background: #e8f6ef; border-color: #7bc7a5; }
+    .card { border: 1px solid #ccc; border-radius: 10px; padding: 16px; margin: 16px 0; }
+    label { display: block; margin: 8px 0 4px; }
+    input[type="text"], input[type="email"], input[type="number"], select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #aaa; }
+    button { padding: 10px 14px; border: 0; border-radius: 8px; cursor: pointer; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hidden { display: none; }
+    .muted { color: #666; font-size: 0.95em; }
+    .success { color: #0a8; }
+    .error { color: #c22; }
+  </style>
+</head>
+<body>
+  <h1>Region Warnings And Alerts Email</h1>
+  <nav id="tabs">
+    <button class="tab" data-view="subscribe">Subscribe</button>
+    <button class="tab" data-view="login">Login</button>
+  </nav>
+  <p id="intro" class="muted">Use the tabs to subscribe or log in with a one time code. Some links in your email will take you straight to confirmation or manage.</p>
+
+  <!-- Subscribe -->
+  <div class="card" id="subscribeCard">
+    <h2>Subscribe</h2>
+    <label>Email</label>
+    <input id="subEmail" type="email" placeholder="you@example.org" />
+    <div class="row">
+      <div>
+        <label>Region Filter</label>
+        <select id="farNorthOnly">
+          <option value="true">Far North Only</option>
+          <option value="false">All Regions</option>
+        </select>
+      </div>
+      <div>
+        <label>Minimum Colour</label>
+        <select id="colourMin">
+          <option>Yellow</option>
+          <option>Orange</option>
+          <option>Red</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Lead Time Hours</label>
+        <input id="leadTimeHours" type="number" min="0" step="1" value="0" />
+      </div>
+      <div>
+        <label>Email On Updates</label>
+        <select id="emailOnUpdates">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Minimum Severity</label>
+        <select id="severityMin">
+          <option>Minor</option>
+          <option>Moderate</option>
+          <option>Severe</option>
+        </select>
+      </div>
+      <div>
+        <label>Daily Summary</label>
+        <select id="dailySummary">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button id="btnSubscribe">Subscribe</button>
+      <span id="subMsg" class="muted"></span>
+    </div>
+  </div>
+
+  <!-- Confirm -->
+  <div class="card hidden" id="confirmCard">
+    <h2>Confirm Email</h2>
+    <label>Email</label>
+    <input id="confEmail" type="email" placeholder="you@example.org" />
+    <label>6 Digit Code</label>
+    <input id="confCode" type="text" maxlength="6" placeholder="123456" />
+    <div style="margin-top:12px">
+      <button id="btnConfirm">Confirm</button>
+      <button id="btnResend">Resend Code</button>
+      <span id="confMsg" class="muted"></span>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div class="card hidden" id="loginCard">
+    <h2>Login With Code</h2>
+    <label>Email</label>
+    <input id="loginEmail" type="email" placeholder="you@example.org" />
+    <div style="margin-top:12px">
+      <button id="btnRequestLogin">Send Login Code</button>
+      <span id="loginMsg" class="muted"></span>
+    </div>
+    <div style="margin-top:12px">
+      <label>6 Digit Code</label>
+      <input id="loginCode" type="text" maxlength="6" placeholder="123456" />
+      <button id="btnVerify">Verify Code</button>
+    </div>
+  </div>
+
+  <!-- Manage -->
+  <div class="card hidden" id="prefsCard">
+    <h2>Your Preferences</h2>
+    <div id="who" class="muted"></div>
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>Region Filter</label>
+        <select id="p_farNorthOnly">
+          <option value="true">Far North Only</option>
+          <option value="false">All Regions</option>
+        </select>
+      </div>
+      <div>
+        <label>Minimum Colour</label>
+        <select id="p_colourMin">
+          <option>Yellow</option>
+          <option>Orange</option>
+          <option>Red</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Lead Time Hours</label>
+        <input id="p_leadTimeHours" type="number" min="0" step="1" />
+      </div>
+      <div>
+        <label>Email On Updates</label>
+        <select id="p_emailOnUpdates">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Minimum Severity</label>
+        <select id="p_severityMin">
+          <option>Minor</option>
+          <option>Moderate</option>
+          <option>Severe</option>
+        </select>
+      </div>
+      <div>
+        <label>Daily Summary</label>
+        <select id="p_dailySummary">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button id="btnSavePrefs">Save</button>
+      <button id="btnUnsub" style="background:#eee;">Unsubscribe</button>
+      <span id="prefsMsg" class="muted"></span>
+    </div>
+  </div>
+
+  <script>
+    // Apps Script Web App /exec URL
+    const API = 'https://script.google.com/macros/s/AKfycbwC-TekPeOvnANfjqkzsN6a8NPU7vYJ7sBGJJd5ajt2XxW4zZoZZ-YV7z0K8yd2R6Sf/exec';
+
+    // Base for building self-links (matches what the backend uses)
+    const BASE = 'https://almokinsgov.github.io/testbed/capemailer/sub/index.html';
+
+    let AUTH = { email: null, token: null };
+
+    function qs() { return new URLSearchParams(location.search); }
+    function getView() { return (qs().get('view') || 'subscribe').toLowerCase(); }
+    function setView(v, extra = {}) {
+      const p = new URLSearchParams({ view: v, ...extra });
+      history.replaceState(null, '', BASE + '?' + p.toString());
+      route();
+    }
+    function cleanUrlTo(v = 'manage') {
+      history.replaceState(null, '', BASE + '?view=' + encodeURIComponent(v));
+    }
+
+    function showOnly(id) {
+      const ids = ['subscribeCard', 'confirmCard', 'loginCard', 'prefsCard'];
+      ids.forEach(x => document.getElementById(x).classList.toggle('hidden', x !== id));
+      // Tabs: highlight for subscribe/login only
+      document.querySelectorAll('.tab').forEach(btn => {
+        const active = ((id === 'subscribeCard' && btn.dataset.view === 'subscribe') ||
+                        (id === 'loginCard' && btn.dataset.view === 'login'));
+        btn.classList.toggle('active', active);
+      });
+      // Intro line
+      document.getElementById('intro').classList.toggle('hidden', id === 'confirmCard' || id === 'prefsCard');
+    }
+    function msg(el, text, ok = true) { el.textContent = text; el.className = ok ? 'muted success' : 'muted error'; }
+
+    // Send as URL-encoded to avoid preflight
+    async function postForm(action, dataObj) {
+      const body = new URLSearchParams();
+      body.append('action', action);
+      for (const [k, v] of Object.entries(dataObj || {})) {
+        body.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+      }
+      const res = await fetch(API, { method: 'POST', body }); // no headers → no preflight
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return { ok: true, raw: text }; }
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => setView(btn.dataset.view));
+    });
+
+    // Subscribe
+    document.getElementById('btnSubscribe').addEventListener('click', async () => {
+      const payload = {
+        email: document.getElementById('subEmail').value.trim(),
+        farNorthOnly: document.getElementById('farNorthOnly').value === 'true',
+        colourMin: document.getElementById('colourMin').value,
+        leadTimeHours: Number(document.getElementById('leadTimeHours').value || 0),
+        emailOnUpdates: document.getElementById('emailOnUpdates').value === 'true',
+        severityMin: document.getElementById('severityMin').value,
+        dailySummary: document.getElementById('dailySummary').value === 'true'
+      };
+      try {
+        const r = await postForm('subscribe', payload);
+        msg(document.getElementById('subMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+        if (r.ok) setView('confirm', { email: payload.email });
+      } catch (err) {
+        msg(document.getElementById('subMsg'), String(err), false);
+      }
+    });
+
+    // Confirm
+    document.getElementById('btnConfirm').addEventListener('click', async () => {
+      const email = document.getElementById('confEmail').value.trim();
+      const code = document.getElementById('confCode').value.trim();
+      try {
+        const r = await postForm('confirm', { email, code });
+        msg(document.getElementById('confMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+        if (r.ok) setView('login', { email });
+      } catch (err) {
+        msg(document.getElementById('confMsg'), String(err), false);
+      }
+    });
+
+    // Resend code
+    document.getElementById('btnResend').addEventListener('click', async () => {
+      const email = document.getElementById('confEmail').value.trim();
+      try {
+        const r = await postForm('resend_code', { email });
+        msg(document.getElementById('confMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+      } catch (err) {
+        msg(document.getElementById('confMsg'), String(err), false);
+      }
+    });
+
+    // Request login code
+    document.getElementById('btnRequestLogin').addEventListener('click', async () => {
+      const email = document.getElementById('loginEmail').value.trim();
+      try {
+        const r = await postForm('request_login_code', { email });
+        msg(document.getElementById('loginMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+      } catch (err) {
+        msg(document.getElementById('loginMsg'), String(err), false);
+      }
+    });
+
+    // Verify code
+    document.getElementById('btnVerify').addEventListener('click', async () => {
+      const email = document.getElementById('loginEmail').value.trim();
+      const code = document.getElementById('loginCode').value.trim();
+      try {
+        const r = await postForm('verify_code', { email, code });
+        if (r.ok) {
+          AUTH.email = email;
+          AUTH.token = r.token;
+          await loadPrefs();
+          showOnly('prefsCard');
+          msg(document.getElementById('loginMsg'), 'Logged in. Token valid for ' + r.ttlMinutes + ' minutes.');
+          cleanUrlTo('manage'); // remove code from URL if present
+        } else {
+          msg(document.getElementById('loginMsg'), r.error || 'Error', false);
+        }
+      } catch (err) {
+        msg(document.getElementById('loginMsg'), String(err), false);
+      }
+    });
+
+    async function authed(action, data) {
+      if (!AUTH.token) throw new Error('Not logged in');
+      return postForm(action, { ...(data || {}), token: AUTH.token });
+    }
+
+    async function loadPrefs() {
+      try {
+        const r = await authed('get_prefs');
+        if (!r.ok) { msg(document.getElementById('prefsMsg'), r.error || 'Error', false); return; }
+        const p = r.prefs;
+        document.getElementById('who').textContent = 'Signed in as ' + p.email + (p.active ? ' (active)' : '');
+        document.getElementById('p_farNorthOnly').value = p.farNorthOnly ? 'true' : 'false';
+        document.getElementById('p_colourMin').value = p.colourMin;
+        document.getElementById('p_leadTimeHours').value = p.leadTimeHours;
+        document.getElementById('p_emailOnUpdates').value = p.emailOnUpdates ? 'true' : 'false';
+        document.getElementById('p_severityMin').value = p.severityMin;
+        document.getElementById('p_dailySummary').value = p.dailySummary ? 'true' : 'false';
+      } catch (err) {
+        msg(document.getElementById('prefsMsg'), String(err), false);
+      }
+    }
+
+    document.getElementById('btnSavePrefs').addEventListener('click', async () => {
+      const payload = {
+        farNorthOnly: document.getElementById('p_farNorthOnly').value === 'true',
+        colourMin: document.getElementById('p_colourMin').value,
+        leadTimeHours: Number(document.getElementById('p_leadTimeHours').value || 0),
+        emailOnUpdates: document.getElementById('p_emailOnUpdates').value === 'true',
+        severityMin: document.getElementById('p_severityMin').value,
+        dailySummary: document.getElementById('p_dailySummary').value === 'true'
+      };
+      try {
+        const r = await authed('update_prefs', payload);
+        msg(document.getElementById('prefsMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+      } catch (err) {
+        msg(document.getElementById('prefsMsg'), String(err), false);
+      }
+    });
+
+    document.getElementById('btnUnsub').addEventListener('click', async () => {
+      if (!confirm('Unsubscribe this email from alerts')) return;
+      try {
+        const r = await authed('unsubscribe');
+        msg(document.getElementById('prefsMsg'), r.ok ? r.message : (r.error || 'Error'), r.ok);
+      } catch (err) {
+        msg(document.getElementById('prefsMsg'), String(err), false);
+      }
+    });
+
+    // Router
+    async function route() {
+      const view = getView();
+      const params = qs();
+      const email = params.get('email') || '';
+      const code = params.get('code') || '';
+
+      if (view === 'subscribe') {
+        showOnly('subscribeCard');
+        if (email) document.getElementById('subEmail').value = email;
+        return;
+      }
+
+      if (view === 'confirm') {
+        showOnly('confirmCard');
+        if (email) document.getElementById('confEmail').value = email;
+        if (code && email) {
+          // auto confirm
+          try {
+            const r = await postForm('confirm', { email, code });
+            msg(document.getElementById('confMsg'), r.ok ? 'Confirmed. You can now log in.' : (r.error || 'Error'), r.ok);
+            if (r.ok) setView('login', { email });
+          } catch (err) {
+            msg(document.getElementById('confMsg'), String(err), false);
+          }
+        }
+        return;
+      }
+
+      if (view === 'login') {
+        showOnly('loginCard');
+        if (email) document.getElementById('loginEmail').value = email;
+        return;
+      }
+
+      if (view === 'manage') {
+        // If code and email provided, auto-verify then open prefs
+        if (email && code) {
+          try {
+            const r = await postForm('verify_code', { email, code });
+            if (r.ok) {
+              AUTH.email = email;
+              AUTH.token = r.token;
+              await loadPrefs();
+              showOnly('prefsCard');
+              cleanUrlTo('manage'); // strip code from URL
+              return;
+            } else {
+              // fallback to login view
+              setView('login', { email });
+              return;
+            }
+          } catch (_) {
+            setView('login', { email });
+            return;
+          }
+        }
+        // else show login
+        setView('login');
+        return;
+      }
+
+      // default
+      setView('subscribe');
+    }
+
+    // Start
+    route();
+  </script>
+</body>
+</html>
