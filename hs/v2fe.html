@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Social Scheduler</title>
+  <style>
+    :root { --border:#e5e7eb; --muted:#f5f5f5; --text:#111827; --sub:#6b7280; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; color: var(--text); margin: 24px; }
+    h1, h2 { margin: 0 0 12px 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: white; }
+    label { font-weight: 600; display: block; margin-top: 10px; }
+    input, textarea, select, button { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid var(--border); border-radius: 8px; font: inherit; }
+    button { cursor: pointer; }
+    textarea { resize: vertical; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row > * { flex: 1; }
+    .inline { display: inline-flex; gap: 8px; align-items: center; }
+    .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--muted); color: #111; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid var(--border); padding: 8px; text-align: left; vertical-align: top; }
+    thead th { background: #fafafa; }
+    .actions button { width: auto; padding: 6px 10px; }
+    .hint { color: var(--sub); font-size: 12px; }
+    .success { color: #065f46; }
+    .error { color: #991b1b; }
+    .bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .small { font-size: 12px; }
+    .spacer { height: 8px; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>Social Scheduler</h1>
+
+  <div class="bar small">
+    <div><strong>Backend:</strong> <span id="apiBaseHint"></span></div>
+    <div>|</div>
+    <div><strong>Local TZ:</strong> <span id="tzHint"></span></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Compose</h2>
+      <label>Platforms</label>
+      <div class="inline">
+        <label class="inline"><input type="checkbox" id="p_fb"> Facebook</label>
+        <label class="inline"><input type="checkbox" id="p_ig"> Instagram</label>
+        <label class="inline"><input type="checkbox" id="p_li"> LinkedIn</label>
+      </div>
+
+      <label>Account</label>
+      <select id="account"></select>
+      <div class="hint">Accounts load from the Accounts sheet in your backend</div>
+
+      <label>Message</label>
+      <textarea id="message" rows="6" placeholder="Write your post"></textarea>
+
+      <label>Link URL</label>
+      <input id="link_url" placeholder="https://example.org/page" />
+
+      <label>Image</label>
+      <div class="row">
+        <input id="media_url" placeholder="Public image URL or use Upload" />
+        <input type="file" id="file" accept="image/*" style="max-width:260px" />
+      </div>
+      <div class="hint">If you upload, the file is stored in Drive and shared by link</div>
+
+      <label>Schedule Time</label>
+      <input id="when" type="datetime-local" />
+
+      <div class="row" style="margin-top:12px">
+        <button id="queue">Queue Post</button>
+        <button id="publish">Publish Now</button>
+        <button id="refresh">Refresh Queue</button>
+      </div>
+
+      <div id="status" class="small" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Queue</h2>
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Platforms</th>
+            <th>Account</th>
+            <th>Message</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+/** Configure this to point at your deployed Apps Script Web App exec URL */
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwR9bLkD6DVap3p7P9MjsUK19jHOadjWFrDg3ALauaXAp3StsRKngwlCHPtwCbIFE8pgQ/exec'; // Example: https://script.google.com/macros/s/AKfycbwR9bLkD6DVap3p7P9MjsUK19jHOadjWFrDg3ALauaXAp3StsRKngwlCHPtwCbIFE8pgQ/exec
+
+// Utility
+const $ = (id) => document.getElementById(id);
+function statusMsg(msg, cls='') {
+  const el = $('status');
+  el.className = 'small ' + cls;
+  el.textContent = msg;
+}
+$('apiBaseHint').textContent = API_BASE;
+$('tzHint').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+async function api(action, method='GET', payload) {
+  const url = API_BASE + '?action=' + encodeURIComponent(action);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: method === 'POST' ? JSON.stringify(payload || {}) : undefined
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } catch (e) {
+    statusMsg('Request failed: ' + e.message, 'error');
+    throw e;
+  }
+}
+
+async function loadAccounts(){
+  const data = await api('getAccounts');
+  const sel = $('account');
+  sel.innerHTML = '';
+  data.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.account_key;
+    opt.textContent = `${a.display_name} (${a.platform})`;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadQueue(){
+  const data = await api('listPosts');
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+  data.sort((a,b) => String(a.scheduled_at || '').localeCompare(String(b.scheduled_at || '')));
+  data.forEach(p => {
+    const tr = document.createElement('tr');
+    const preview = (p.message || '').replace(/\s+/g,' ').slice(0, 120);
+    tr.innerHTML = `
+      <td>${p.scheduled_at || ''}</td>
+      <td>${p.platforms || ''}</td>
+      <td>${p.account_key || ''}</td>
+      <td>${preview}</td>
+      <td><span class="pill">${p.status || ''}</span></td>
+      <td class="actions">
+        <button data-id="${p.id}" class="pub">Publish</button>
+        <button data-id="${p.id}" class="del">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Delegate clicks
+  tbody.onclick = async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const id = btn.getAttribute('data-id');
+    if (!id) return;
+    if (btn.classList.contains('pub')){
+      await api('publishNow', 'POST', { id });
+      statusMsg('Publish requested', 'success');
+    } else if (btn.classList.contains('del')){
+      await api('deletePost', 'POST', { id });
+      statusMsg('Post deleted', 'success');
+    }
+    await loadQueue();
+  };
+}
+
+$('file').addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    const b64 = await fileToDataUrl(f);
+    const res = await api('uploadMedia', 'POST', { data_url: b64, filename: f.name });
+    if (res.ok) {
+      $('media_url').value = res.url;
+      statusMsg('Image uploaded', 'success');
+    } else {
+      statusMsg('Upload failed', 'error');
+    }
+  } catch(err){
+    statusMsg('Upload failed: ' + err.message, 'error');
+  }
+});
+
+function fileToDataUrl(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+$('queue').addEventListener('click', async () => {
+  try {
+    const payload = collectForm('queued');
+    const res = await api('createOrUpdatePost', 'POST', payload);
+    if (res.ok) {
+      statusMsg('Queued ' + res.id, 'success');
+      await loadQueue();
+    } else {
+      statusMsg('Failed to queue', 'error');
+    }
+  } catch(e){}
+});
+
+$('publish').addEventListener('click', async () => {
+  try {
+    const payload = collectForm('publishing');
+    const res = await api('createOrUpdatePost', 'POST', payload);
+    if (res.ok){
+      await api('publishNow', 'POST', { id: res.id });
+      statusMsg('Publish requested', 'success');
+      await loadQueue();
+    } else {
+      statusMsg('Failed to publish', 'error');
+    }
+  } catch(e){}
+});
+
+$('refresh').addEventListener('click', loadQueue);
+
+function collectForm(status){
+  const platforms = [];
+  if ($('p_fb').checked) platforms.push('facebook');
+  if ($('p_ig').checked) platforms.push('instagram');
+  if ($('p_li').checked) platforms.push('linkedin');
+
+  const whenStr = $('when').value;
+  let whenIso;
+  if (whenStr) {
+    // Convert local datetime-local to ISO string
+    const dt = new Date(whenStr);
+    whenIso = dt.toISOString();
+  } else {
+    whenIso = new Date().toISOString();
+  }
+
+  return {
+    platforms: platforms.join(','),
+    account_key: $('account').value,
+    message: $('message').value,
+    link_url: $('link_url').value,
+    media_url: $('media_url').value,
+    scheduled_at: whenIso,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    status
+  };
+}
+
+// Init
+(async function init(){
+  try {
+    await loadAccounts();
+    await loadQueue();
+  } catch(e){
+    // already messaged
+  }
+})();
+</script>
+</body>
+</html>
