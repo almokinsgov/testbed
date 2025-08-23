@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Automated Offline Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 2rem; line-height: 1.45; }
+    .offline-badge {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: rgba(20,20,20,0.85);
+      color: #fff;
+      border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      transition: opacity 160ms ease, transform 160ms ease;
+      opacity: 0.85;
+      cursor: default;
+    }
+    .offline-badge:hover { opacity: 1; transform: translateY(-1px); }
+    .offline-dot { width: 10px; height: 10px; background: #ffcc00; border-radius: 50%; display: inline-block; }
+    .offline-text { font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>Automated Offline Page</h1>
+  <p>This page detects its loaded resources and asks the service worker to cache them. If offline, a small badge appears.</p>
+
+  <!-- Example assets to prove it works -->
+  <link rel="stylesheet" href="./styles.css">
+  <img src="./logo.svg" alt="Demo" width="120" height="120">
+  <script src="./page-extra.js" defer></script>
+
+  <!-- Offline hover badge -->
+  <div id="offlineBadge" class="offline-badge" aria-hidden="true" title="Offline">
+    <span class="offline-dot" aria-hidden="true"></span>
+    <span class="offline-text">Offline</span>
+  </div>
+
+  <!-- Inline automation script -->
+  <script>
+(function () {
+  const offlineBadge = document.getElementById("offlineBadge");
+  const SW_FILE = "./sw.js"; // keep sw.js next to this page
+
+  function setOfflineBadge(visible) {
+    offlineBadge.style.display = visible ? "flex" : "none";
+  }
+
+  function listLoadedResources() {
+    const urls = new Set();
+    urls.add(location.href);
+    document.querySelectorAll('link[rel="stylesheet"]').forEach(l => l.href && urls.add(new URL(l.href, location.href).href));
+    document.querySelectorAll('script[src]').forEach(s => s.src && urls.add(new URL(s.src, location.href).href));
+    document.querySelectorAll('img[src]').forEach(i => i.src && urls.add(new URL(i.src, location.href).href));
+    if (performance && performance.getEntriesByType) {
+      performance.getEntriesByType("resource").forEach(entry => {
+        try { if (entry.name) urls.add(new URL(entry.name, location.href).href); } catch {}
+      });
+    }
+    return [...urls].filter(u => {
+      try { return new URL(u).origin === location.origin; } catch { return false; }
+    });
+  }
+
+  async function ensureSW() {
+    if (!("serviceWorker" in navigator)) return null;
+    try {
+      const reg = await navigator.serviceWorker.register(SW_FILE, { scope: "./" });
+      if (!navigator.serviceWorker.controller) {
+        console.info("Service worker installed. Reload once to enable offline.");
+        return null;
+      }
+      return reg;
+    } catch (e) {
+      console.error("Service worker registration failed:", e);
+      return null;
+    }
+  }
+
+  // Option A: badge only when offline
+  function refreshBadge() {
+    setOfflineBadge(!navigator.onLine);
+  }
+
+  async function cacheDetectedResources() {
+    const reg = await ensureSW();
+    if (!reg || !navigator.serviceWorker.controller) return;
+    const resources = listLoadedResources();
+    navigator.serviceWorker.controller.postMessage({ type: "SET_DYNAMIC_ASSETS", urls: resources });
+    refreshBadge();
+  }
+
+  window.addEventListener("load", async () => {
+    await ensureSW();
+    cacheDetectedResources();
+    refreshBadge();
+  });
+
+  window.addEventListener("online", refreshBadge);
+  window.addEventListener("offline", refreshBadge);
+})();
+</script>
+
+</body>
+</html>
