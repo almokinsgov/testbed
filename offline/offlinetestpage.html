@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Offline Test Page</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    h1 { color: darkgreen; }
+    #status { margin-top: 1rem; padding: 0.5rem; background: #eee; }
+  </style>
+</head>
+<body>
+  <h1>Offline Test Page</h1>
+  <p>If everything is working, this page should load even when your internet is off.</p>
+
+  <div id="status">Checking service worker…</div>
+
+  <script>
+  (async function () {
+    const status = document.getElementById("status");
+
+    if (!("serviceWorker" in navigator)) {
+      status.textContent = "Service workers not supported in this browser.";
+      return;
+    }
+
+    try {
+      const reg = await navigator.serviceWorker.register("./sw2.js", { scope: "./" });
+
+      // Ensure there’s a controller before messaging
+      if (!navigator.serviceWorker.controller) {
+        status.textContent = "Service worker installed. Reload this page once to enable offline.";
+        return;
+      }
+
+      navigator.serviceWorker.controller.postMessage({
+        type: "SET_OFFLINE_PAGE",
+        url: location.href
+      });
+
+      status.textContent = "This page is cached for offline use.";
+    } catch (err) {
+      status.textContent = "Service worker failed: " + err;
+    }
+  })();
+  </script>
+</body>
+</html>

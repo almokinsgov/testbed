@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Offline Test Page</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    h1 { color: darkgreen; }
+    #status { margin-top: 1rem; padding: 0.5rem; background: #eee; }
+  </style>
+</head>
+<body>
+  <h1>Offline Test Page</h1>
+  <p>If everything is working, this page should load even when your internet is off.</p>
+
+  <div id="status">Checking service worker…</div>
+<script>
+(async function () {
+  if (!("serviceWorker" in navigator)) return;
+
+  try {
+    // Adjust the path to sw.js based on where you place it
+    const reg = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+
+    // Wait for an active controller so postMessage reaches the right worker
+    const sw = reg.active || reg.waiting || reg.installing;
+    if (!navigator.serviceWorker.controller && sw) {
+      await new Promise(r => setTimeout(r, 250));
+    }
+
+    // Tell the SW to cache THIS page URL and any page-specific assets you want
+    // Include only assets this page needs to work offline
+    const assetsForThisPage = [
+      // e.g. "./styles.css", "./page-only.js", "./logo.svg"
+    ];
+
+    navigator.serviceWorker.controller?.postMessage({
+      type: "SET_OFFLINE_PAGE",
+      url: location.href,         // cache this exact page
+      assets: assetsForThisPage   // optional extras for this page
+    });
+
+    console.log("Offline caching requested for this page.");
+  } catch (err) {
+    console.error("Service Worker setup failed:", err);
+  }
+})();
+</script>
+</body>
+</html>
