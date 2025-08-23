@@ -1,0 +1,40 @@
+/* Basic styles */
+:root { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+body { margin: 2rem; line-height: 1.45; }
+header { margin-bottom: 1rem; }
+h1 { margin: 0 0 0.5rem 0; }
+h2 { margin: 1.2rem 0 0.4rem 0; }
+section { margin-top: 1rem; }
+.buttons button { margin-right: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer; }
+.status { padding: 0.5rem 0.75rem; background: #f2f2f2; border-radius: 6px; display: inline-block; }
+
+/* Offline hover icon */
+.offline-badge {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  display: none;             /* becomes block when offline or cached */
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(20,20,20,0.85);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: opacity 160ms ease, transform 160ms ease;
+  opacity: 0.8;
+}
+.offline-badge:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.offline-dot {
+  width: 10px;
+  height: 10px;
+  background: #ffcc00;
+  border-radius: 50%;
+  display: inline-block;
+}
+.offline-text {
+  font-size: 0.9rem;
+}
