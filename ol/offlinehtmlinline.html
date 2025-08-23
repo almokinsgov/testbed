@@ -132,6 +132,13 @@
     window.addEventListener("online", refreshBadge);
     window.addEventListener("offline", refreshBadge);
   })();
+
+    async function refreshBadge() {
+  const isOffline = !navigator.onLine;
+  setOfflineBadge(isOffline);
+}
+window.addEventListener("online", refreshBadge);
+window.addEventListener("offline", refreshBadge);
   </script>
 </body>
 </html>
