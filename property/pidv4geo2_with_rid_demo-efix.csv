@@ -1,0 +1,421 @@
+property_id,address_short,address_full,valuation_number,centroid_lng,centroid_lat,owner1_name,owner1_postal_address,owner2_name,owner2_postal_address,last_valuation_date,land_value,improvements_value,capital_value,certificate_of_title,legal_description,land_area_sqm,nature_of_improvements,land_use,land_use_description,slope_of_land,type_of_view,year_built,total_area,decks_or_patios_DVP,other_substantial_improvements,car_spaces,covered_car_spaces,number_of_units,materials_walls_roof,building_condition,site_coverage,current_rates_date,current_rating_year,other_council_rates,iff_levy,water_rate_m3,R210_value,R210_rate,R210_amount,R210_remission,L010_value,L010_rate,L010_amount,L010_remission,S310_value,S310_rate,S310_amount,S310_remission,S110_value,S110_rate,S110_amount,S110_remission,R250_value,R250_rate,R250_amount,R250_remission,R110_value,R110_rate,R110_amount,R110_remission,R220_value,R220_rate,R220_amount,R220_remission,R040_value,R040_rate,R040_amount,R040_remission,total_rates_gst_incl,fy2025_land_value,fy2025_capital_value,fy2025_annual_rates,fy2024_land_value,fy2024_capital_value,fy2024_annual_rates,fy2023_land_value,fy2023_capital_value,fy2023_annual_rates,property_geo,rid_rate_1_type,rid_rate_1_description,rid_rate_1_value,rid_rate_1_rate_or_charge,rid_rate_1_amount,rid_rate_1_remission,rid_rate_2_type,rid_rate_2_description,rid_rate_2_value,rid_rate_2_rate_or_charge,rid_rate_2_amount,rid_rate_2_remission,rid_rate_3_type,rid_rate_3_description,rid_rate_3_value,rid_rate_3_rate_or_charge,rid_rate_3_amount,rid_rate_3_remission,rid_rate_4_type,rid_rate_4_description,rid_rate_4_value,rid_rate_4_rate_or_charge,rid_rate_4_amount,rid_rate_4_remission,rid_rate_5_type,rid_rate_5_description,rid_rate_5_value,rid_rate_5_rate_or_charge,rid_rate_5_amount,rid_rate_5_remission,rid_rate_6_type,rid_rate_6_description,rid_rate_6_value,rid_rate_6_rate_or_charge,rid_rate_6_amount,rid_rate_6_remission,rid_rate_7_type,rid_rate_7_description,rid_rate_7_value,rid_rate_7_rate_or_charge,rid_rate_7_amount,rid_rate_7_remission,rid_rate_8_type,rid_rate_8_description,rid_rate_8_value,rid_rate_8_rate_or_charge,rid_rate_8_amount,rid_rate_8_remission,rid_rate_9_type,rid_rate_9_description,rid_rate_9_value,rid_rate_9_rate_or_charge,rid_rate_9_amount,rid_rate_9_remission,rid_rate_10_type,rid_rate_10_description,rid_rate_10_value,rid_rate_10_rate_or_charge,rid_rate_10_amount,rid_rate_10_remission,rid_rate_11_type,rid_rate_11_description,rid_rate_11_value,rid_rate_11_rate_or_charge,rid_rate_11_amount,rid_rate_11_remission,rid_rate_12_type,rid_rate_12_description,rid_rate_12_value,rid_rate_12_rate_or_charge,rid_rate_12_amount,rid_rate_12_remission,rid_rate_13_type,rid_rate_13_description,rid_rate_13_value,rid_rate_13_rate_or_charge,rid_rate_13_amount,rid_rate_13_remission,rid_rate_14_type,rid_rate_14_description,rid_rate_14_value,rid_rate_14_rate_or_charge,rid_rate_14_amount,rid_rate_14_remission,rid_rate_15_type,rid_rate_15_description,rid_rate_15_value,rid_rate_15_rate_or_charge,rid_rate_15_amount,rid_rate_15_remission,rid_rate_16_type,rid_rate_16_description,rid_rate_16_value,rid_rate_16_rate_or_charge,rid_rate_16_amount,rid_rate_16_remission,rid_rate_17_type,rid_rate_17_description,rid_rate_17_value,rid_rate_17_rate_or_charge,rid_rate_17_amount,rid_rate_17_remission,rid_rate_18_type,rid_rate_18_description,rid_rate_18_value,rid_rate_18_rate_or_charge,rid_rate_18_amount,rid_rate_18_remission,rid_rate_19_type,rid_rate_19_description,rid_rate_19_value,rid_rate_19_rate_or_charge,rid_rate_19_amount,rid_rate_19_remission,rid_rate_20_type,rid_rate_20_description,rid_rate_20_value,rid_rate_20_rate_or_charge,rid_rate_20_amount,rid_rate_20_remission,rid_rate_21_type,rid_rate_21_description,rid_rate_21_value,rid_rate_21_rate_or_charge,rid_rate_21_amount,rid_rate_21_remission,rid_rate_22_type,rid_rate_22_description,rid_rate_22_value,rid_rate_22_rate_or_charge,rid_rate_22_amount,rid_rate_22_remission,rid_current_rates_date,rid_current_rating_year,rid_total_rates_gst_incl,rid_rates_url
+FNDC-0001,"11 Sample Street, Kaitaia","11 Sample Street, Kaitaia, Far North District 048X",5010000001,173.9545,-35.2268,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$225,000.00","$187,000.00","$412,000.00",NA12000/1,LOT 6 DP 7266,620,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1991,125 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$412,000.00",0.0032,"$1,318.40",,"$412,000.00",0.0001,$11.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$412,000.00",0.0009,$370.80,,UAGC,Flat,$450.00,,"$412,000.00",0.0004,$164.80,,"$412,000.00",0.0002,$82.40,,"$3,562.01","$225,000.00","$412,000.00","$3,097.40","$215,000.00","$394,000.00","$2,942.53","$209,000.00","$384,000.00","$2,787.66","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0002,"12 Sample Street, Kerikeri","12 Sample Street, Kerikeri, Far North District 048X",5010000002,174.315,-35.7242,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$230,000.00","$194,000.00","$424,000.00",NA12000/2,LOT 7 DP 7269,640,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1992,130 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$424,000.00",0.0032,"$1,356.80",,"$424,000.00",0.0001,$12.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$424,000.00",0.0009,$381.60,,UAGC,Flat,$450.00,,"$424,000.00",0.0004,$169.60,,"$424,000.00",0.0002,$84.80,,"$3,628.02","$230,000.00","$424,000.00","$3,154.80","$220,000.00","$406,000.00","$2,997.06","$214,000.00","$396,000.00","$2,839.32","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0003,"13 Sample Street, Ahipara","13 Sample Street, Ahipara, Far North District 048X",5010000003,174.094,-35.2869,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$235,000.00","$201,000.00","$436,000.00",NA12000/3,LOT 8 DP 7272,660,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1993,135 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$436,000.00",0.0032,"$1,395.20",,"$436,000.00",0.0001,$13.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$436,000.00",0.0009,$392.40,,UAGC,Flat,$450.00,,"$436,000.00",0.0004,$174.40,,"$436,000.00",0.0002,$87.20,,"$3,694.03","$235,000.00","$436,000.00","$3,212.20","$225,000.00","$418,000.00","$3,051.59","$219,000.00","$408,000.00","$2,890.98","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0004,"14 Sample Street, Kohukohu","14 Sample Street, Kohukohu, Far North District 048X",5010000004,173.6936,-34.9893,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$240,000.00","$208,000.00","$448,000.00",NA12000/4,LOT 9 DP 7275,680,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1994,140 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$448,000.00",0.0032,"$1,433.60",,"$448,000.00",0.0001,$14.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$448,000.00",0.0009,$403.20,,UAGC,Flat,$450.00,,"$448,000.00",0.0004,$179.20,,"$448,000.00",0.0002,$89.60,,"$3,760.04","$240,000.00","$448,000.00","$3,269.60","$230,000.00","$430,000.00","$3,106.12","$224,000.00","$420,000.00","$2,942.64","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0005,"15 Sample Street, Broadwood","15 Sample Street, Broadwood, Far North District 048X",5010000005,173.783,-35.2645,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$245,000.00","$215,000.00","$460,000.00",NA12000/5,LOT 10 DP 7278,700,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1995,145 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$460,000.00",0.0032,"$1,472.00",,"$460,000.00",0.0001,$15.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$460,000.00",0.0009,$414.00,,UAGC,Flat,$450.00,,"$460,000.00",0.0004,$184.00,,"$460,000.00",0.0002,$92.00,,"$3,826.05","$245,000.00","$460,000.00","$3,327.00","$235,000.00","$442,000.00","$3,160.65","$229,000.00","$432,000.00","$2,994.30","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0006,"16 Sample Street, Mangamuka","16 Sample Street, Mangamuka, Far North District 048X",5010000006,173.8902,-35.1621,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$250,000.00","$222,000.00","$472,000.00",NA12000/6,LOT 11 DP 7281,720,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1996,150 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$472,000.00",0.0032,"$1,510.40",,"$472,000.00",0.0001,$16.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$472,000.00",0.0009,$424.80,,UAGC,Flat,$450.00,,"$472,000.00",0.0004,$188.80,,"$472,000.00",0.0002,$94.40,,"$3,892.06","$250,000.00","$472,000.00","$3,384.40","$240,000.00","$454,000.00","$3,215.18","$234,000.00","$444,000.00","$3,045.96","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0007,"17 Sample Street, Kaikohe","17 Sample Street, Kaikohe, Far North District 048X",5010000007,174.1298,-35.234,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$255,000.00","$229,000.00","$484,000.00",NA12000/7,LOT 12 DP 7284,740,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1997,155 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$484,000.00",0.0032,"$1,548.80",,"$484,000.00",0.0001,$17.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$484,000.00",0.0009,$435.60,,UAGC,Flat,$450.00,,"$484,000.00",0.0004,$193.60,,"$484,000.00",0.0002,$96.80,,"$3,958.07","$255,000.00","$484,000.00","$3,441.80","$245,000.00","$466,000.00","$3,269.71","$239,000.00","$456,000.00","$3,097.62","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0008,"18 Sample Street, Opononi","18 Sample Street, Opononi, Far North District 048X",5010000008,174.0467,-35.5169,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$260,000.00","$236,000.00","$496,000.00",NA12000/8,LOT 13 DP 7287,760,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1998,160 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$496,000.00",0.0032,"$1,587.20",,"$496,000.00",0.0001,$18.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$496,000.00",0.0009,$446.40,,UAGC,Flat,$450.00,,"$496,000.00",0.0004,$198.40,,"$496,000.00",0.0002,$99.20,,"$4,024.08","$260,000.00","$496,000.00","$3,499.20","$250,000.00","$478,000.00","$3,324.24","$244,000.00","$468,000.00","$3,149.28","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0009,"19 Sample Street, Paihia","19 Sample Street, Paihia, Far North District 048X",5010000009,174.4495,-35.2593,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$265,000.00","$243,000.00","$508,000.00",NA12000/9,LOT 14 DP 7290,780,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,1999,165 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$508,000.00",0.0032,"$1,625.60",,"$508,000.00",0.0001,$19.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$508,000.00",0.0009,$457.20,,UAGC,Flat,$450.00,,"$508,000.00",0.0004,$203.20,,"$508,000.00",0.0002,$101.60,,"$4,090.09","$265,000.00","$508,000.00","$3,556.60","$255,000.00","$490,000.00","$3,378.77","$249,000.00","$480,000.00","$3,200.94","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
+FNDC-0010,"20 Sample Street, Houhora","20 Sample Street, Houhora, Far North District 048X",5010000010,174.1197,-35.0517,Alex Owner,"PO Box 100, Kaitaia 0410",Jamie Co-owner,"12 Main Rd, Kerikeri 0230",1/10/2024,"$270,000.00","$250,000.00","$520,000.00",NA12001/0,LOT 15 DP 7293,800,Dwelling and ancillary,Residential,Single dwelling,Moderate,Rural,2000,170 m²,Yes,Garden shed,2,1,1,"Weatherboard walls, iron roof",Good,32%,1/07/2025,2025/2026,$0.00,$15.00,$3.20,"$520,000.00",0.0032,"$1,664.00",,"$520,000.00",0.0001,$20.00,,Service,Flat,$180.00,,Connected,Flat,$520.00,,"$520,000.00",0.0009,$468.00,,UAGC,Flat,$450.00,,"$520,000.00",0.0004,$208.00,,"$520,000.00",0.0002,$104.00,,"$4,156.10","$270,000.00","$520,000.00","$3,614.00","$260,000.00","$502,000.00","$3,433.30","$254,000.00","$492,000.00","$3,252.60","{
+  ""type"": ""FeatureCollection"",
+  ""features"": [
+    {
+      ""type"": ""Feature"",
+      ""properties"": {
+        ""shape"": ""polygon""
+      },
+      ""geometry"": {
+        ""type"": ""Polygon"",
+        ""coordinates"": [
+          [
+            [
+              173.255572,
+              -35.048987
+            ],
+            [
+              173.255583,
+              -35.049176
+            ],
+            [
+              173.255803,
+              -35.049167
+            ],
+            [
+              173.25584,
+              -35.04896
+            ],
+            [
+              173.255623,
+              -35.048897
+            ],
+            [
+              173.255572,
+              -35.048987
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}",Rating Unit,Stormwater Rate General Differential,1,,187.5,,Rating Unit,Stormwater Public Good Rate,1,,10,,Rating Unit,Sewerage Public Good,1,,15,,Rating Unit,Water Public Good,1,,15,,Separate Part,Roading Rate Uniform Rate,1,100,100,,Land Value,Roading Residential Differential,119000,0.000005,11.35,,Separate Part,General Rate Uniform Annual General Charge,1,450,450,,Separate Part,Ward Services Rate Te Hiku Differential,1,497.1,497.1,,Separate Part,Sewerage Operating Connected Rate,1,917.06,917.06,,Land Value,General Rate General Differential,119000,0.0033654,400.48,,Separate Part,Sewerage Capital Kaitaia/Awanui Connected Rate,1,464.6,464.6,,Separate Part,Water Capital Kaitaia Connected Rate,1,538.76,538.76,,Separate Part,NRC Council Services Rate,1,195.63,195.63,,Separate Part,NRC Pest Management Rate,1,93.86,93.86,,Separate Part,NRC Flood Infrastructure Rate,1,41.66,41.66,,Separate Part,NRC Emergency and Hazard Management Rate,1,57.71,57.71,,Separate Part,NRC Regional Rescue Services Rate,1,8.87,8.87,,Separate Part,NRC Sporting Facilities Rate,1,16.09,16.09,,Separate Part,NRC Far North Transport Rate,1,8.54,8.54,,Land Value,NRC Economic Development Rate - Far North District,119000,0.0005,3.45,,Separate Part,NRC Awanui River Management Rate Urban A General,1,294.54,294.54,,Land Value,NRC Land and Freshwater Management Rate,119000,0.0002886,34.34,,18/08/2025,2026,"4,361.55",https://www.fndc.govt.nz/Services/Rates
