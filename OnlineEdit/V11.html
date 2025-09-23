@@ -941,10 +941,10 @@ async function findFileByExactName(parentId, name){
 /** New File */
 const MIME_BY_EXT = { html:"text/html", js:"application/javascript", json:"application/json", txt:"text/plain", link:"text/plain" };
 const DEFAULT_CONTENT = {
-  html: "<!doctype html>\\n<html><head><meta charset=\\"utf-8\\"><title>New Page</title></head><body><h1>Hello</h1><p>Edit this page</p></body></html>\\n",
-  js: "// New script\\nconsole.log('Hello');\\n",
-  json: "{\\n  \\"name\\": \\"example\\",\\n  \\"items\\": []\\n}\\n",
-  txt: "New text file\\n",
+  html: "",
+  js: "",
+  json: "",
+  txt: "",
   link: "https://example.com\\n"
 };
 el.newFileBtn.addEventListener("click", ()=>{
@@ -1132,4 +1132,5 @@ loadGis();
 
 </script>
 </body>
+
 </html>
