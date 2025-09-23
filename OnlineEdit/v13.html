@@ -1,0 +1,1154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drive Wysiwyg Editor v12</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0f172a; --panel:#111827; --muted:#334155; --text:#e5e7eb; --accent:#60a5fa; --ok:#22c55e; --warn:#f59e0b; }
+  * { box-sizing: border-box }
+  body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; background:var(--bg); color:var(--text) }
+  header { display:flex; align-items:center; gap:12px; padding:12px 16px; background:#0b1220; position:sticky; top:0; z-index:10 }
+  header h1 { font-size:16px; margin:0; font-weight:600 }
+  button, select, input[type="text"], input[type="number"] { background:#1f2937; color:var(--text); border:1px solid #243244; border-radius:10px; padding:8px 10px; font-size:14px }
+  button:hover { border-color:#34465f }
+  .accent { border-color:#60a5fa }
+  .layout { display:grid; grid-template-columns: 300px 1fr; gap:12px; padding:12px }
+  .left { background:var(--panel); border:1px solid #1e293b; border-radius:14px; padding:12px; display:flex; flex-direction:column; min-height:calc(100vh - 76px) }
+  .right { display:grid; grid-template-rows: auto auto 1fr; gap:10px }
+  .toolbar { background:var(--panel); border:1px solid #1e293b; border-radius:14px; padding:8px; display:flex; flex-direction:column; gap:8px }
+  .status { font-size:12px; color:#94a3b8; padding:0 4px }
+  .panes { display:grid; grid-template-columns: 1fr 42%; gap:12px; min-height:60vh }
+  .pane { background:var(--panel); border:1px solid #1e293b; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; min-height:300px }
+  .pane header { background:#121a2b; padding:8px 12px; border-bottom:1px solid #1e293b; display:flex; align-items:center; gap:10px }
+  .pane header h2 { margin:0; font-size:13px; font-weight:600 }
+  .tabs { display:flex; gap:6px; margin-left:auto }
+  .tab { padding:4px 10px; border:1px solid #243244; border-radius:999px; font-size:12px; cursor:pointer }
+  .tab.active { border-color:var(--accent); }
+  .filelist { margin-top:10px; overflow:auto; border-top:1px dashed #233048; padding-top:10px }
+  .file { display:flex; gap:8px; align-items:center; padding:8px; border:1px solid transparent; border-radius:10px; cursor:pointer }
+  .file:hover { border-color:#2a3a54; background:#0f1a2c }
+  .file.active { border-color:var(--accent); background:#0a1930 }
+  .muted { color:#94a3b8; font-size:12px }
+  .row { display:flex; gap:8px; align-items:center }
+  .grow { flex:1 }
+  .editor { flex:1; padding:12px; overflow:auto }
+  .editable { background:#0e1627; border:1px solid #1f2b42; border-radius:10px; padding:12px; min-height:420px; outline:none }
+  textarea.code { width:100%; height:100%; flex:1; background:#0e1627; color:#e5e7eb; border:1px solid #1f2b42; border-radius:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; padding:12px }
+  iframe.preview { flex:1; border:0; background:white }
+  .pill { font-size:11px; padding:2px 8px; border:1px solid #2a3a54; border-radius:999px; color:#cbd5e1 }
+  .ok { color:#86efac; border-color:#14532d; background:#052e16 }
+  .warn { color:#fde68a; border-color:#854d0e; background:#3b2606 }
+  .danger { color:#fecaca; border-color:#7f1d1d; background:#2a0a0a }
+  .footer { padding:8px 12px; border-top:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; background:#0e1627 }
+  dialog { border:1px solid #1e293b; border-radius:14px; background:#0b1220; color:#e5e7eb; padding:0; max-width:840px }
+  dialog .box { padding:16px; display:grid; gap:12px }
+  dialog::backdrop { background:rgba(0,0,0,.5) }
+  .hint { font-size:12px; color:#93a4bb }
+  .kbd { font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#111827; border:1px solid #1f2937; border-bottom-width:2px; padding:2px 6px; border-radius:6px }
+  .spacer { flex:1 }
+  .versions { flex:1; overflow:auto; padding:8px 12px; display:grid; gap:6px }
+  .version-item { display:flex; flex-direction:column; gap:8px; border:1px solid #1e293b; border-radius:12px; padding:8px }
+  .version-head { display:flex; align-items:center; gap:8px }
+  .version-item .name { font-size:13px }
+  .tiny { font-size:11px; opacity:.8 }
+  .comments-panel { display:none; border-top:1px dashed #233048; padding-top:8px; }
+  .comment-grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px }
+  .comment-block { border:1px solid #203047; border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:6px }
+  .comment-block h4 { margin:0; font-size:12px }
+  .comment-block textarea { width:100%; min-height:80px; background:#0e1627; color:#e5e7eb; border:1px solid #1f2b42; border-radius:8px; font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding:8px }
+  .chip { font-size:10px; padding:2px 6px; border:1px solid #30425e; border-radius:999px }
+  @media (max-width: 1100px){ .panes { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Drive Wysiwyg Editor</h1>
+  <button id="signinBtn">Sign In</button>
+  <span class="status" id="authStatus">Signed Out</span>
+  <div class="spacer"></div>
+  <button id="setFolderBtn">Set Folder</button>
+  <span class="status" id="folderStatus">No Folder</span>
+</header>
+
+<main class="layout">
+  <section class="left">
+    <div class="row" style="gap:6px; margin-bottom:8px">
+      <button id="newFileBtn" class="accent">New</button>
+      <button id="refreshBtn">Refresh</button>
+      <button id="toggleListBtn" title="Cycle: App -> All -> Non-App">Show: App</button>
+      <input id="searchInput" class="grow" type="text" placeholder="Search files in folder">
+    </div>
+    <div class="row muted" style="gap:6px; margin-bottom:8px">
+      <span>Folder:</span>
+      <span id="folderName" class="pill">None</span>
+      <span id="folderShort" class="pill">-</span>
+    </div>
+    <div id="fileList" class="filelist"></div>
+  </section>
+
+  <section class="right">
+    <div class="toolbar" id="toolbar" hidden>
+      <div class="row" style="gap:8px; flex-wrap:wrap">
+        <button data-cmd="bold"><b>B</b></button>
+        <button data-cmd="italic"><i>I</i></button>
+        <button data-cmd="underline"><u>U</u></button>
+        <button data-cmd="insertUnorderedList">• List</button>
+        <button data-cmd="insertOrderedList">1. List</button>
+        <button id="btnH1">H1</button>
+        <button id="btnH2">H2</button>
+        <button id="btnLink">Link</button>
+        <button id="btnCode">Code</button>
+        <button id="toggleSourceBtn" title="Toggle HTML Source">Source</button>
+        <span id="saveStatus" class="pill">Idle</span>
+      </div>
+      <div class="row" style="gap:8px; flex-wrap:wrap">
+        <button id="exportDocBtn" title="Create Google Doc from current HTML">Export To Google Doc</button>
+        <button id="copyLinkBtn">Copy Drive Link</button>
+        <button id="openDriveBtn">Open In Drive</button>
+        <div class="spacer"></div>
+        <button id="versionToggleBtn" title="Toggle Version Control Mode">Version Mode Off</button>
+        <button id="saveBtn" class="accent" title="Save Or Versioned Save">Save</button>
+      </div>
+      <div class="row tiny" style="gap:8px">
+        <span>Start Version:</span>
+        <input id="startVersionInput" type="number" min="1" value="1" style="width:80px">
+        <button id="applyStartVersionBtn">Apply</button>
+        <span class="hint">When Version Mode is on and the name has no version, applying sets the first version and renames the file.</span>
+      </div>
+    </div>
+
+    <div class="row muted" style="gap:8px">
+      <span id="currentFileName" class="pill">No File</span>
+      <span id="currentType" class="pill">Type</span>
+      <span id="fileIdShort" class="pill">Id</span>
+      <span id="mimePill" class="pill">Mime</span>
+      <div class="spacer"></div>
+      <button id="renameBtn">Rename</button>
+      <button id="deleteBtn" class="danger">Delete</button>
+    </div>
+
+    <div class="panes">
+      <div class="pane">
+        <header><h2>Editor</h2></header>
+        <div class="editor" id="editorWrap">
+          <div id="editable" class="editable" contenteditable="true" hidden></div>
+          <textarea id="codeArea" class="code" hidden></textarea>
+        </div>
+        <div class="footer">
+          <span class="hint" id="autosaveHint">Autosave is on. <span class="kbd">Ctrl</span> + <span class="kbd">S</span> to save. Local backup protects your edits if offline.</span>
+          <span id="lastSaved" class="hint"></span>
+        </div>
+      </div>
+
+      <div class="pane" id="sidePane" hidden>
+        <header>
+          <h2 id="sidePaneTitle">Preview</h2>
+          <div class="tabs">
+            <div id="tabPreview" class="tab active">Preview</div>
+            <div id="tabVersions" class="tab">Versions</div>
+          </div>
+        </header>
+        <div id="previewWrap">
+          <iframe id="previewFrame" class="preview" sandbox="allow-same-origin"></iframe>
+        </div>
+        <div id="versionsWrap" class="versions" style="display:none"></div>
+        <div class="footer">
+          <span class="hint" id="sideHint">HTML preview is sandboxed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Folder Picker Dialog -->
+<dialog id="folderDialog">
+  <form method="dialog" class="box" id="folderForm">
+    <h3 style="margin:0">Choose A Folder</h3>
+    <div class="row" style="gap:8px; flex-wrap:wrap">
+      <input id="folderSearch" type="text" placeholder="Search folders by name" class="grow">
+      <button id="searchFoldersBtn">Search</button>
+      <div class="spacer"></div>
+      <button id="newFolderBtn" title="Create folder in My Drive">New Folder</button>
+    </div>
+    <div id="foldersList" style="max-height:50vh; overflow:auto; border:1px solid #1e293b; border-radius:10px; padding:6px"></div>
+    <div class="row" style="justify-content:space-between; gap:8px">
+      <div class="row" style="gap:6px">
+        <button id="prevPageBtn">Prev</button>
+        <button id="nextPageBtn">Next</button>
+      </div>
+      <div class="row" style="gap:6px">
+        <button value="cancel">Cancel</button>
+        <button id="useFolderBtn" class="accent" value="ok">Use Folder</button>
+      </div>
+    </div>
+    <div class="hint">Versions folders are hidden from this list.</div>
+  </form>
+</dialog>
+
+<!-- New File Dialog -->
+<dialog id="newFileDialog">
+  <form method="dialog" class="box">
+    <h3 style="margin:0">Create New File</h3>
+    <label>Name
+      <input id="newFileName" type="text" placeholder="index.html">
+    </label>
+    <label>Type
+      <select id="newFileType">
+        <option value="html">HTML</option>
+        <option value="js">JS</option>
+        <option value="json">JSON</option>
+        <option value="txt">TXT</option>
+        <option value="link">LINK</option>
+      </select>
+    </label>
+    <div class="row" style="justify-content:flex-end; gap:8px">
+      <button value="cancel">Cancel</button>
+      <button id="createFileConfirm" value="ok" class="accent">Create</button>
+    </div>
+    <div class="hint">Files are created inside the chosen folder</div>
+  </form>
+</dialog>
+
+<!-- Rename Dialog -->
+<dialog id="renameDialog">
+  <form method="dialog" class="box">
+    <h3 style="margin:0">Rename File</h3>
+    <label>New Name
+      <input id="renameInput" type="text">
+    </label>
+    <div class="row" style="justify-content:flex-end; gap:8px">
+      <button value="cancel">Cancel</button>
+      <button id="renameConfirm" value="ok" class="accent">Rename</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Confirm Use As Next Version -->
+<dialog id="useAsNextDialog">
+  <form method="dialog" class="box">
+    <h3 style="margin:0">Use As Next Version</h3>
+    <p class="muted">This loads the selected version into the editor. It will not save until you click Versioned Save.</p>
+    <div class="row" style="justify-content:flex-end; gap:8px">
+      <button value="cancel">Cancel</button>
+      <button id="useAsNextConfirm" value="ok" class="accent">Load</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/** Guard */
+if (location.protocol === 'file:') {
+  alert('Serve this file over http. Example: http://localhost:8080');
+}
+
+/** App Config */
+const GOOGLE_CLIENT_ID = "953966911727-87ipv2o38qjvm5p9h5u5vvf2gthhpdch.apps.googleusercontent.com";
+const SCOPES = [
+  "https://www.googleapis.com/auth/drive.file",
+  "https://www.googleapis.com/auth/drive.metadata.readonly"
+].join(" ");
+const DRIVE_READONLY_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
+const APP_TAG = "wysi";
+const COMMENT_TYPES = ["Changes","Errors","Issues","Ideas","Notes"];
+
+/** State */
+const state = {
+  token: null,
+  folderId: localStorage.getItem("driveFolderId") || null,
+  folderName: localStorage.getItem("driveFolderName") || null,
+  files: [],
+  current: null, // {id,name,mimeType,ext}
+  dirty: false,
+  saveTimer: null,
+  sourceMode: false,
+  listMode: localStorage.getItem("listMode") || "app",
+  versionMode: false,
+  startVersion: parseInt(localStorage.getItem("startVersion") || "1", 10) || 1,
+  versionsFolderId: null,
+  versions: [], // [{id,name,version,modifiedTime}]
+  pendingUseAsNext: null,
+  // folder picker
+  fp: { nextToken:null, prevStack:[], selected:null, query:"" }
+};
+
+const el = {
+  // header
+  signinBtn: document.getElementById("signinBtn"),
+  authStatus: document.getElementById("authStatus"),
+  setFolderBtn: document.getElementById("setFolderBtn"),
+  folderStatus: document.getElementById("folderStatus"),
+  folderName: document.getElementById("folderName"),
+  folderShort: document.getElementById("folderShort"),
+  // left
+  newFileBtn: document.getElementById("newFileBtn"),
+  refreshBtn: document.getElementById("refreshBtn"),
+  toggleListBtn: document.getElementById("toggleListBtn"),
+  searchInput: document.getElementById("searchInput"),
+  fileList: document.getElementById("fileList"),
+  // editor
+  toolbar: document.getElementById("toolbar"),
+  saveStatus: document.getElementById("saveStatus"),
+  currentFileName: document.getElementById("currentFileName"),
+  currentType: document.getElementById("currentType"),
+  fileIdShort: document.getElementById("fileIdShort"),
+  mimePill: document.getElementById("mimePill"),
+  editable: document.getElementById("editable"),
+  codeArea: document.getElementById("codeArea"),
+  lastSaved: document.getElementById("lastSaved"),
+  toggleSourceBtn: document.getElementById("toggleSourceBtn"),
+  btnH1: document.getElementById("btnH1"),
+  btnH2: document.getElementById("btnH2"),
+  btnLink: document.getElementById("btnLink"),
+  btnCode: document.getElementById("btnCode"),
+  exportDocBtn: document.getElementById("exportDocBtn"),
+  copyLinkBtn: document.getElementById("copyLinkBtn"),
+  openDriveBtn: document.getElementById("openDriveBtn"),
+  renameDialog: document.getElementById("renameDialog"),
+  renameInput: document.getElementById("renameInput"),
+  renameBtn: document.getElementById("renameBtn"),
+  renameConfirm: document.getElementById("renameConfirm"),
+  deleteBtn: document.getElementById("deleteBtn"),
+  autosaveHint: document.getElementById("autosaveHint"),
+  // versioning
+  versionToggleBtn: document.getElementById("versionToggleBtn"),
+  saveBtn: document.getElementById("saveBtn"),
+  startVersionInput: document.getElementById("startVersionInput"),
+  applyStartVersionBtn: document.getElementById("applyStartVersionBtn"),
+  sidePane: document.getElementById("sidePane"),
+  sidePaneTitle: document.getElementById("sidePaneTitle"),
+  previewWrap: document.getElementById("previewWrap"),
+  versionsWrap: document.getElementById("versionsWrap"),
+  previewFrame: document.getElementById("previewFrame"),
+  sideHint: document.getElementById("sideHint"),
+  tabPreview: document.getElementById("tabPreview"),
+  tabVersions: document.getElementById("tabVersions"),
+  // folder dialog
+  folderDialog: document.getElementById("folderDialog"),
+  folderForm: document.getElementById("folderForm"),
+  folderSearch: document.getElementById("folderSearch"),
+  searchFoldersBtn: document.getElementById("searchFoldersBtn"),
+  foldersList: document.getElementById("foldersList"),
+  prevPageBtn: document.getElementById("prevPageBtn"),
+  nextPageBtn: document.getElementById("nextPageBtn"),
+  useFolderBtn: document.getElementById("useFolderBtn"),
+  newFolderBtn: document.getElementById("newFolderBtn"),
+  // new file dialog
+  newFileDialog: document.getElementById("newFileDialog"),
+  newFileType: document.getElementById("newFileType"),
+  newFileName: document.getElementById("newFileName"),
+  createFileConfirm: document.getElementById("createFileConfirm"),
+  useAsNextDialog: document.getElementById("useAsNextDialog"),
+  useAsNextConfirm: document.getElementById("useAsNextConfirm"),
+};
+
+/** Helpers */
+function setAuthStatus(s){ el.authStatus.textContent = s; }
+function setFolderStatus(s){ el.folderStatus.textContent = s; }
+function shortId(id){ return id ? id.slice(0,6) : "-"; }
+function colorForExt(ext){ return {html:"#60a5fa", js:"#f59e0b", json:"#22c55e", txt:"#e5e7eb", link:"#a78bfa"}[ext] || "#94a3b8"; }
+function escapeHtml(s){
+  return s.replace(/[&<>\"']/g, function(ch){
+    switch (ch) {
+      case "&": return "&amp;";
+      case "<": return "&lt;";
+      case ">": return "&gt;";
+      case "\"": return "&quot;";
+      case "'": return "&#39;";
+      default: return ch;
+    }
+  });
+}
+function extFromName(n){ return (n.split(".").pop() || "").toLowerCase(); }
+function isManaged(f){ return !!(f.appProperties && f.appProperties.app === APP_TAG); }
+function isEditableMime(m){ return m==="text/html"||m==="application/javascript"||m==="application/json"||m==="text/plain"; }
+function isConvertible(f){
+  const t=f.mimeType;
+  return t==="text/plain"||t==="text/html"||t==="application/javascript"||t==="application/json"||t==="application/vnd.google-apps.document";
+}
+function openInDrive(id){ window.open(`https://drive.google.com/file/d/${id}/view`,"_blank","noopener,noreferrer"); }
+function updateListModeLabel(){
+  const label = state.listMode==="app"?"Show: App":state.listMode==="all"?"Show: All":"Show: Non-App";
+  el.toggleListBtn.textContent = label;
+}
+function setVersionUI(){
+  el.versionToggleBtn.textContent = state.versionMode ? "Version Mode On" : "Version Mode Off";
+  el.autosaveHint.textContent = state.versionMode
+    ? "Version Mode is on. Autosave is disabled. Use Versioned Save."
+    : "Autosave is on. Ctrl + S to save. Local backup protects your edits if offline.";
+  el.saveBtn.textContent = state.versionMode ? "Versioned Save" : "Save";
+}
+function parseVersion(name){
+  const m = name.match(/^(.*?)(?:\\s+v(\\d+))?(\\.[^.]+)?$/i);
+  if (!m) return { base:name, version:null, ext:"" };
+  const base = (m[1]||"").trim();
+  const version = m[2] ? parseInt(m[2],10) : null;
+  const ext = m[3] || "";
+  return { base, version, ext };
+}
+function buildName(base, version, ext){ return `${base} v${version}${ext||""}`.trim(); }
+
+/** OAuth */
+let tokenClient;
+function initAuth(){
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: SCOPES,
+    callback: (resp) => {
+      if (resp.error) { alert("Google Sign In error: " + JSON.stringify(resp)); return; }
+      state.token = resp.access_token;
+      setAuthStatus("Signed In");
+      scheduleTokenRefresh(resp.expires_in || 3600);
+      if (state.folderId) { showFolderLabels(); listFiles().catch(console.error); }
+    }
+  });
+  el.signinBtn.addEventListener("click", () => tokenClient.requestAccessToken({ prompt: state.token ? "" : "consent" }));
+}
+function scheduleTokenRefresh(sec){
+  setTimeout(()=> tokenClient.requestAccessToken({ prompt: "" }), Math.max(1, (sec - 300) * 1000));
+}
+
+/** Fetch */
+async function gapiFetch(url, opts={}){
+  if (!state.token) throw new Error("Not authenticated");
+  const res = await fetch(url, {
+    ...opts,
+    headers: { ...(opts.headers||{}), Authorization: `Bearer ${state.token}` }
+  });
+  if (!res.ok){
+    const txt = await res.text();
+    throw new Error(`HTTP ${res.status} ${res.statusText}: ${txt}`);
+  }
+  return res;
+}
+
+/** Folder Picker */
+el.setFolderBtn.addEventListener("click", ()=>{
+  if (!state.token){ alert("Sign in first"); return; }
+  state.fp = { nextToken:null, prevStack:[], selected:null, query:"" };
+  el.folderSearch.value = "";
+  renderFolderRows([]);
+  el.prevPageBtn.disabled = true;
+  el.nextPageBtn.disabled = true;
+  el.folderDialog.showModal();
+  loadFolders();
+});
+el.searchFoldersBtn.addEventListener("click", (e)=>{ e.preventDefault(); state.fp.query = el.folderSearch.value.trim(); state.fp.prevStack = []; state.fp.nextToken=null; loadFolders(); });
+el.prevPageBtn.addEventListener("click", (e)=>{ e.preventDefault(); const prev = state.fp.prevStack.pop(); if (!prev) return; state.fp.nextToken = prev.next; loadFolders(prev.token, true); });
+el.nextPageBtn.addEventListener("click", (e)=>{ e.preventDefault(); if (!state.fp.nextToken) return; state.fp.prevStack.push({ token: state.fp.currentToken||"", next: state.fp.nextToken }); loadFolders(state.fp.nextToken); });
+el.useFolderBtn.addEventListener("click", (e)=>{
+  e.preventDefault();
+  if (!state.fp.selected){ alert("Select a folder"); return; }
+  const f = state.fp.selected;
+  state.folderId = f.id;
+  state.folderName = f.name;
+  localStorage.setItem("driveFolderId", f.id);
+  localStorage.setItem("driveFolderName", f.name);
+  showFolderLabels();
+  el.folderDialog.close();
+  listFiles().catch(console.error);
+});
+el.newFolderBtn.addEventListener("click", async (e)=>{
+  e.preventDefault();
+  const name = prompt("New Folder Name");
+  if (!name) return;
+  const res = await gapiFetch("https://www.googleapis.com/drive/v3/files", {
+    method:"POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ name, mimeType:"application/vnd.google-apps.folder", appProperties: { app: APP_TAG } })
+  });
+  const folder = await res.json();
+  state.fp.selected = folder;
+  alert("Folder created. It will appear in the list.");
+  loadFolders();
+});
+
+function showFolderLabels(){ el.folderName.textContent = state.folderName || "Folder"; el.folderShort.textContent = shortId(state.folderId); }
+
+async function loadFolders(pageToken="", isPrev=false){
+  const qParts = [
+    "mimeType = 'application/vnd.google-apps.folder'",
+    "trashed = false"
+  ];
+  if (state.fp.query){
+    const esc = state.fp.query.replace(/'/g,"\\\\'");
+    qParts.push(`name contains '${esc}'`);
+  }
+  // Hide versions folders
+  qParts.push("not name contains ' versions'");
+  const u = new URL("https://www.googleapis.com/drive/v3/files");
+  u.searchParams.set("q", qParts.join(" and "));
+  u.searchParams.set("fields","files(id,name,modifiedTime,appProperties),nextPageToken");
+  u.searchParams.set("orderBy","modifiedTime desc,name");
+  u.searchParams.set("pageSize","50");
+  u.searchParams.set("includeItemsFromAllDrives","true");
+  u.searchParams.set("supportsAllDrives","true");
+  if (pageToken) u.searchParams.set("pageToken", pageToken);
+  const res = await gapiFetch(u.toString());
+  const data = await res.json();
+  state.fp.currentToken = pageToken;
+  state.fp.nextToken = data.nextPageToken || null;
+  el.prevPageBtn.disabled = state.fp.prevStack.length===0;
+  el.nextPageBtn.disabled = !state.fp.nextToken;
+  renderFolderRows(data.files || []);
+}
+
+function renderFolderRows(files){
+  const wrap = el.foldersList;
+  wrap.innerHTML = "";
+  if (!files.length){ wrap.innerHTML = `<div class="muted">No folders found</div>`; return; }
+  files.forEach(f=>{
+    const item = document.createElement("div");
+    item.className = "file";
+    item.style.cursor = "pointer";
+    item.innerHTML = `
+      <div style="width:6px;height:24px;border-radius:4px;background:#22c55e"></div>
+      <div class="grow">
+        <div>${escapeHtml(f.name)}</div>
+        <div class="muted tiny">${new Date(f.modifiedTime).toLocaleString()}</div>
+      </div>
+      <div class="muted pill">${shortId(f.id)}</div>`;
+    item.addEventListener("click", ()=>{
+      // select
+      [...wrap.children].forEach(ch=>ch.classList.remove("active"));
+      item.classList.add("active");
+      state.fp.selected = f;
+    });
+    wrap.appendChild(item);
+  });
+}
+
+/** List Files */
+updateListModeLabel();
+el.toggleListBtn.addEventListener("click", ()=>{
+  state.listMode = state.listMode==="app" ? "all" : state.listMode==="all" ? "nonapp" : "app";
+  localStorage.setItem("listMode", state.listMode);
+  updateListModeLabel();
+  listFiles(el.searchInput.value).catch(()=>{});
+});
+
+async function listFiles(queryText=""){
+  if (!state.folderId){ el.fileList.innerHTML = `<div class="muted">Choose a folder</div>`; return; }
+  el.fileList.innerHTML = `<div class="muted">Loading...</div>`;
+  const parts = [`'${state.folderId}' in parents`, "trashed = false"];
+  if (state.listMode==="app"){ parts.push(`appProperties has { key='app' and value='${APP_TAG}' }`); }
+  if (queryText.trim()){ const esc=queryText.replace(/'/g,"\\\\'"); parts.push(`name contains '${esc}'`); }
+  const q = parts.join(" and ");
+  const u = new URL("https://www.googleapis.com/drive/v3/files");
+  u.searchParams.set("q", q);
+  u.searchParams.set("fields","files(id,name,mimeType,modifiedTime,appProperties),nextPageToken");
+  u.searchParams.set("orderBy","modifiedTime desc,name");
+  u.searchParams.set("includeItemsFromAllDrives","true");
+  u.searchParams.set("supportsAllDrives","true");
+  const res = await gapiFetch(u.toString());
+  const data = await res.json();
+  let files = data.files || [];
+  if (state.listMode==="nonapp"){ files = files.filter(f=>!isManaged(f)); }
+  files = files.filter(f => !(f.mimeType === "application/vnd.google-apps.folder" &&
+     ((f.appProperties && f.appProperties.role === "versions") || / versions$/i.test(f.name))));
+  state.files = files;
+  renderFileList();
+}
+
+function renderFileList(){
+  el.fileList.innerHTML = "";
+  if (!state.files.length){
+    const msg = state.listMode==="app"?"No app files in this folder":state.listMode==="nonapp"?"No non-app files in this folder":"No files in this folder";
+    el.fileList.innerHTML = `<div class="muted">${msg}</div>`; return;
+  }
+  state.files.forEach(f=>{
+    const managed = isManaged(f);
+    const ext = extFromName(f.name);
+    const editable = managed && isEditableMime(f.mimeType);
+    const convertible = !managed && isConvertible(f);
+    const item = document.createElement("div");
+    item.className = "file";
+    item.innerHTML = `
+      <div style="width:6px;height:24px;border-radius:4px;background:${colorForExt(ext)}"></div>
+      <div class="grow">
+        <div>${escapeHtml(f.name)}</div>
+        <div class="muted" style="font-size:11px">${f.mimeType}${managed?" • app":""}</div>
+      </div>
+      <div class="row" style="gap:6px">
+        ${convertible?`<button class="accent" data-act="convert" title="Convert To App">Convert</button>`:""}
+        <div class="muted pill">${shortId(f.id)}</div>
+      </div>`;
+    item.addEventListener("click",(ev)=>{
+      if (ev.target && ev.target.getAttribute("data-act")==="convert") return;
+      // Immediate highlight
+      [...el.fileList.children].forEach(ch=>ch.classList.remove("active"));
+      item.classList.add("active");
+      if (editable) openFile(f.id); else openInDrive(f.id);
+    });
+    const btn = item.querySelector("[data-act='convert']");
+    if (btn) btn.addEventListener("click",(e)=>{ e.stopPropagation(); convertToApp(f); });
+    if (state.current?.id===f.id) item.classList.add("active");
+    el.fileList.appendChild(item);
+  });
+}
+
+/** Open File */
+async function openFile(fileId){
+  const metaRes = await gapiFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,modifiedTime,parents`);
+  const meta = await metaRes.json();
+  const dlRes = await gapiFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+  const text = await dlRes.text();
+  const ext = extFromName(meta.name);
+  state.current = { id: meta.id, name: meta.name, mimeType: meta.mimeType, ext, parents: meta.parents||[] };
+  const pv = parseVersion(meta.name);
+  state.versionsFolderId = null;
+  state.versions = [];
+  el.currentFileName.textContent = meta.name;
+  el.currentType.textContent = (ext||"").toUpperCase();
+  el.fileIdShort.textContent = shortId(meta.id);
+  el.mimePill.textContent = meta.mimeType;
+  setEditorForExt(ext, text);
+  el.toolbar.hidden = false;
+  el.sidePane.hidden = ext==="html" ? false : true;
+  setSideTab("preview");
+  setVersionUI();
+  if (state.versionMode) { ensureVersionNamingOnEnable(pv).catch(console.error); }
+  if (ext==="html") updatePreviewFromFullHtml(el.codeArea.value);
+  if (pv.base) { await refreshVersions(); }
+  // Keep selection in sync
+  renderFileList();
+}
+
+/** Editor */
+function setEditorForExt(ext, text){
+  state.dirty = false; setSaveStatus("Idle"); el.lastSaved.textContent = "";
+  el.editable.hidden = true; el.codeArea.hidden = true;
+  state.sourceMode = false; el.toggleSourceBtn.textContent = "Source";
+  if (ext==="html"){
+    el.editable.hidden = false;
+    const bodyMatch = text.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const bodyHtml = bodyMatch ? bodyMatch[1].trim() : text;
+    try { el.editable.innerHTML = bodyHtml || "<p></p>"; } catch { el.editable.innerText = text; }
+    el.codeArea.value = text;
+  } else {
+    el.codeArea.hidden = false;
+    el.codeArea.value = text;
+  }
+}
+function exec(cmd, val=null){ document.execCommand(cmd, false, val); markDirty(); }
+["bold","italic","underline","insertUnorderedList","insertOrderedList"].forEach(c=>{
+  document.querySelector(`[data-cmd="${c}"]`)?.addEventListener("click", ()=>exec(c));
+});
+el.btnH1.addEventListener("click", ()=> exec("formatBlock","H1"));
+el.btnH2.addEventListener("click", ()=> exec("formatBlock","H2"));
+el.btnLink.addEventListener("click", ()=>{ const url=prompt("Enter URL"); if (url) exec("createLink", url); });
+el.btnCode.addEventListener("click", ()=>{ document.execCommand("insertHTML", false, `<code>${document.getSelection()}</code>`); markDirty(); });
+el.toggleSourceBtn.addEventListener("click", ()=>{
+  if (!state.current || state.current.ext!=="html") return;
+  state.sourceMode = !state.sourceMode;
+  if (state.sourceMode){
+    el.codeArea.value = mergeEditableIntoFullHtml(el.codeArea.value, el.editable.innerHTML);
+    el.editable.hidden = true; el.codeArea.hidden = false; el.toggleSourceBtn.textContent = "Design";
+  } else {
+    el.editable.innerHTML = extractBodyHtml(el.codeArea.value) || "<p></p>";
+    el.codeArea.hidden = true; el.editable.hidden = false; el.toggleSourceBtn.textContent = "Source";
+  }
+});
+
+/** Save and Backup */
+function setSaveStatus(label, cls=""){ el.saveStatus.textContent = label; el.saveStatus.className = "pill " + (cls||""); }
+function scheduleAutosave(){
+  clearTimeout(state.saveTimer);
+  if (!state.versionMode) state.saveTimer = setTimeout(()=> saveCurrent().catch(onSaveError), 1200);
+}
+function onSaveError(err){ console.error(err); setSaveStatus("Error","danger"); }
+function markDirty(){
+  state.dirty = true; setSaveStatus("Editing");
+  if (state.current?.ext==="html"){
+    if (!state.sourceMode){
+      const full = mergeEditableIntoFullHtml(el.codeArea.value, el.editable.innerHTML);
+      el.codeArea.value = full; if (!state.sidePane.hidden) updatePreviewFromFullHtml(full);
+    } else {
+      if (!state.sidePane.hidden) updatePreviewFromFullHtml(el.codeArea.value);
+    }
+  }
+  backupLocally();
+  scheduleAutosave();
+}
+function backupKey(){ return `backup:${state.current?.id || "none"}`; }
+function backupLocally(){ try { localStorage.setItem(backupKey(), JSON.stringify({ t: Date.now(), content: el.codeArea.value })); } catch {} }
+function clearBackup(){ try { localStorage.removeItem(backupKey()); } catch {} }
+
+async function saveCurrent(){
+  if (!state.dirty || !state.current) return;
+  const content = el.codeArea.value;
+  await gapiFetch(`https://www.googleapis.com/upload/drive/v3/files/${state.current.id}?uploadType=media`, {
+    method: "PATCH",
+    headers: { "Content-Type": state.current.mimeType || "text/plain" },
+    body: content
+  });
+  state.dirty = false; setSaveStatus("Saved","ok");
+  el.lastSaved.textContent = `Saved at ${new Date().toLocaleTimeString()}`;
+  clearBackup();
+  listFiles(el.searchInput.value).catch(()=>{});
+}
+
+/** Version Mode */
+el.versionToggleBtn.addEventListener("click", async ()=>{
+  state.versionMode = !state.versionMode;
+  localStorage.setItem("vmode:"+state.current?.id, state.versionMode ? "1" : "0");
+  setVersionUI();
+  if (state.versionMode && state.current){
+    const pv = parseVersion(state.current.name);
+    await ensureVersionNamingOnEnable(pv);
+    await refreshVersions();
+  }
+});
+el.saveBtn.addEventListener("click", ()=>{
+  if (!state.current) return;
+  if (state.versionMode) saveAsNextVersion().catch(onSaveError);
+  else saveCurrent().catch(onSaveError);
+});
+el.applyStartVersionBtn.addEventListener("click", async ()=>{
+  const n = Math.max(1, parseInt(el.startVersionInput.value||"1",10)||1);
+  state.startVersion = n;
+  localStorage.setItem("startVersion", String(n));
+  if (state.versionMode && state.current){
+    const pv = parseVersion(state.current.name);
+    if (pv.version==null){ await renameCurrent(buildName(pv.base, n, pv.ext)); el.currentFileName.textContent = state.current.name; await refreshVersions(); }
+  }
+});
+
+async function ensureVersionNamingOnEnable(pv){
+  if (pv.version==null){
+    const v = state.startVersion || 1;
+    const newName = buildName(pv.base, v, pv.ext);
+    await renameCurrent(newName);
+    el.currentFileName.textContent = state.current.name;
+  }
+}
+
+async function renameCurrent(newName){
+  await gapiFetch(`https://www.googleapis.com/drive/v3/files/${state.current.id}?supportsAllDrives=true`, {
+    method: "PATCH", headers: { "Content-Type":"application/json" }, body: JSON.stringify({ name: newName })
+  });
+  state.current.name = newName;
+}
+
+async function ensureVersionsFolder(){
+  const { base } = parseVersion(state.current.name);
+  const folderName = `${base} versions`;
+  if (state.versionsFolderId) return state.versionsFolderId;
+  const u = new URL("https://www.googleapis.com/drive/v3/files");
+  const q = [`'${state.folderId}' in parents`, "trashed = false", "mimeType = 'application/vnd.google-apps.folder'", `name = '${folderName.replace(/'/g,"\\\\'")}'`].join(" and ");
+  u.searchParams.set("q", q);
+  u.searchParams.set("fields", "files(id,name,appProperties)");
+  u.searchParams.set("includeItemsFromAllDrives","true");
+  u.searchParams.set("supportsAllDrives","true");
+  const found = await (await gapiFetch(u.toString())).json();
+  if (found.files && found.files.length){
+    state.versionsFolderId = found.files[0].id; return state.versionsFolderId;
+  }
+  const res = await gapiFetch("https://www.googleapis.com/drive/v3/files?supportsAllDrives=true", {
+    method:"POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ name: folderName, mimeType: "application/vnd.google-apps.folder", parents: [state.folderId], appProperties: { app: APP_TAG, role: "versions" } })
+  });
+  const data = await res.json();
+  state.versionsFolderId = data.id;
+  return state.versionsFolderId;
+}
+
+async function refreshVersions(){
+  const { base } = parseVersion(state.current.name);
+  const folderId = await ensureVersionsFolder();
+  const u = new URL("https://www.googleapis.com/drive/v3/files");
+  const q = [`'${folderId}' in parents`, "trashed = false"].join(" and ");
+  u.searchParams.set("q", q);
+  u.searchParams.set("fields", "files(id,name,modifiedTime),nextPageToken");
+  u.searchParams.set("orderBy", "modifiedTime desc,name");
+  u.searchParams.set("pageSize","1000");
+  const res = await gapiFetch(u.toString());
+  const data = await res.json();
+  const items = (data.files||[]).map(f=>{
+    const pv = parseVersion(f.name);
+    return { id:f.id, name:f.name, modifiedTime:f.modifiedTime, version: pv.version||0 };
+  }).sort((a,b)=> b.version - a.version || new Date(b.modifiedTime)-new Date(a.modifiedTime));
+  state.versions = items;
+  renderVersions();
+}
+
+function renderVersions(){
+  const wrap = el.versionsWrap;
+  wrap.innerHTML = "";
+  if (!state.versions.length){
+    wrap.innerHTML = `<div class="muted">No versions yet</div>`; return;
+  }
+  state.versions.forEach(v=>{
+    const row = document.createElement("div");
+    row.className = "version-item";
+    const head = document.createElement("div");
+    head.className = "version-head";
+    head.innerHTML = `
+      <div class="pill">v${v.version}</div>
+      <div class="name grow">${escapeHtml(v.name)}</div>
+      <div class="tiny">${new Date(v.modifiedTime).toLocaleString()}</div>
+      <button data-act="restore">Restore</button>
+      <button class="accent" data-act="use">Use As Next</button>
+      <button data-act="comments">Comments</button>`;
+    row.appendChild(head);
+    const panel = document.createElement("div");
+    panel.className = "comments-panel";
+    const grid = document.createElement("div");
+    grid.className = "comment-grid";
+    panel.appendChild(grid);
+    ["Changes","Errors","Issues","Ideas","Notes"].forEach(type=>{
+      const block = document.createElement("div");
+      block.className = "comment-block";
+      block.innerHTML = `
+        <h4>${type}</h4>
+        <textarea placeholder="${type} for v${v.version}"></textarea>
+        <div class="row" style="gap:6px">
+          <button data-act="load-one">Refresh</button>
+          <button class="accent" data-act="save-one">Save</button>
+          <span class="chip" data-role="status"></span>
+        </div>`;
+      const ta = block.querySelector("textarea");
+      const status = block.querySelector('[data-role="status"]');
+      block.querySelector('[data-act="load-one"]').addEventListener("click", async ()=>{
+        status.textContent = "Loading…";
+        const txt = await loadCommentForVersion(v.version, type).catch(()=>null);
+        ta.value = txt || "";
+        status.textContent = txt ? "Loaded" : "None";
+      });
+      block.querySelector('[data-act="save-one"]').addEventListener("click", async ()=>{
+        status.textContent = "Saving…";
+        await saveCommentForVersion(v.version, type, ta.value || "");
+        status.textContent = "Saved";
+        setSaveStatus(`${type} Saved`,"ok");
+      });
+      grid.appendChild(block);
+    });
+    row.appendChild(panel);
+    head.querySelector("[data-act='comments']").addEventListener("click", ()=>{
+      panel.style.display = panel.style.display==="none" || !panel.style.display ? "block" : "none";
+      if (panel.style.display==="block"){
+        panel.querySelectorAll('[data-act="load-one"]').forEach(btn=>btn.click());
+      }
+    });
+    head.querySelector("[data-act='restore']").addEventListener("click",()=> restoreFromVersion(v).catch(onSaveError));
+    head.querySelector("[data-act='use']").addEventListener("click",()=>{
+      state.pendingUseAsNext = v;
+      el.useAsNextDialog.showModal();
+    });
+    wrap.appendChild(row);
+  });
+}
+
+el.useAsNextConfirm.addEventListener("click", async (e)=>{
+  e.preventDefault();
+  if (!state.pendingUseAsNext) { el.useAsNextDialog.close(); return; }
+  try {
+    const text = await (await gapiFetch(`https://www.googleapis.com/drive/v3/files/${state.pendingUseAsNext.id}?alt=media`)).text();
+    if (state.current.ext==="html"){
+      el.codeArea.value = text;
+      el.editable.innerHTML = extractBodyHtml(text) || "<p></p>";
+      updatePreviewFromFullHtml(el.codeArea.value);
+    } else {
+      el.codeArea.value = text;
+    }
+    setSaveStatus("Loaded As Next","ok");
+    state.dirty = true;
+  } finally {
+    state.pendingUseAsNext = null;
+    el.useAsNextDialog.close();
+  }
+});
+
+async function restoreFromVersion(v){
+  if (!confirm(`Restore version v${v.version} into current file? This will overwrite current content.`)) return;
+  const text = await (await gapiFetch(`https://www.googleapis.com/drive/v3/files/${v.id}?alt=media`)).text();
+  if (state.current.ext==="html"){
+    el.codeArea.value = text;
+    el.editable.innerHTML = extractBodyHtml(text) || "<p></p>";
+  } else {
+    el.codeArea.value = text;
+  }
+  await saveCurrent();
+  setSaveStatus(`Restored v${v.version}`,"ok");
+}
+
+/** Versioned Save */
+async function saveAsNextVersion(){
+  if (!state.current) return;
+  const { base, version, ext } = parseVersion(state.current.name);
+  const curV = version==null ? (state.startVersion||1) : version;
+  const nextV = curV + 1;
+  const folderId = await ensureVersionsFolder();
+  await gapiFetch(`https://www.googleapis.com/drive/v3/files/${state.current.id}/copy?supportsAllDrives=true`, {
+    method:"POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ name: state.current.name, parents: [folderId], appProperties: { app: APP_TAG } })
+  });
+  const newName = buildName(base, nextV, ext);
+  await renameCurrent(newName);
+  el.currentFileName.textContent = state.current.name;
+  await saveCurrent();
+  await refreshVersions();
+  setSaveStatus(`Saved v${nextV}`,"ok");
+}
+
+/** Comment helpers */
+async function loadCommentForVersion(versionNumber, type){
+  const folderId = await ensureVersionsFolder();
+  const base = parseVersion(state.current.name).base;
+  const nameUpper = `${base} V${versionNumber} ${type}.txt`;
+  const nameLower = `${base} v${versionNumber} ${type}.txt`;
+  let file = await findFileByExactName(folderId, nameUpper);
+  if (!file) file = await findFileByExactName(folderId, nameLower);
+  if (!file) return "";
+  const txt = await (await gapiFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`)).text();
+  return txt;
+}
+async function saveCommentForVersion(versionNumber, type, text){
+  const folderId = await ensureVersionsFolder();
+  const base = parseVersion(state.current.name).base;
+  const name = `${base} V${versionNumber} ${type}.txt`;
+  let file = await findFileByExactName(folderId, name);
+  if (file){
+    await gapiFetch(`https://www.googleapis.com/upload/drive/v3/files/${file.id}?uploadType=media`, {
+      method:"PATCH",
+      headers: { "Content-Type": "text/plain" },
+      body: text
+    });
+  } else {
+    const boundary="-------314159265358979323846", delimiter=`\\r\\n--${boundary}\\r\\n`, closeDelim=`\\r\\n--${boundary}--`;
+    const metadata={ name, mimeType:"text/plain", parents:[folderId], appProperties:{ app: APP_TAG, role: "version-comment", version:String(versionNumber), type } };
+    const body = delimiter + "Content-Type: application/json; charset=UTF-8\\r\\n\\r\\n" + JSON.stringify(metadata) +
+                 delimiter + "Content-Type: text/plain; charset=UTF-8\\r\\n\\r\\n" + text + closeDelim;
+    await gapiFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+      method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body
+    });
+  }
+}
+async function findFileByExactName(parentId, name){
+  const u = new URL("https://www.googleapis.com/drive/v3/files");
+  const q = [`'${parentId}' in parents`, "trashed = false", `name = '${name.replace(/'/g,"\\\\'")}'`].join(" and ");
+  u.searchParams.set("q", q);
+  u.searchParams.set("fields","files(id,name)");
+  u.searchParams.set("pageSize","1");
+  u.searchParams.set("includeItemsFromAllDrives","true");
+  u.searchParams.set("supportsAllDrives","true");
+  const res = await gapiFetch(u.toString()); const data = await res.json();
+  return (data.files && data.files[0]) || null;
+}
+
+/** New File */
+const MIME_BY_EXT = { html:"text/html", js:"application/javascript", json:"application/json", txt:"text/plain", link:"text/plain" };
+const DEFAULT_CONTENT = {
+  html: `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>New Page</title>
+  </head>
+  <body>
+    <h1>Hello</h1>
+    <p>Edit this page</p>
+  </body>
+</html>
+`,
+  js: `// New script
+console.log('Hello');
+`,
+  json: `{
+  "name": "example",
+  "items": []
+}
+`,
+  txt: `New text file
+`,
+  link: `https://example.com
+`
+};
+el.newFileBtn.addEventListener("click", ()=>{
+  if (!state.folderId){ alert("Set a folder first"); return; }
+  el.newFileName.value = ""; el.newFileType.value = "html"; el.newFileDialog.showModal();
+});
+el.createFileConfirm.addEventListener("click", async (e)=>{
+  e.preventDefault();
+  try { await createFile(); } catch(err){ alert(err.message || err); } el.newFileDialog.close();
+});
+async function createFile(){
+  const type = el.newFileType.value;
+  let name = el.newFileName.value.trim(); if (!name) name = `untitled.${type}`; if (!name.includes(".")) name += `.${type}`;
+  const mimeType = MIME_BY_EXT[type] || "text/plain"; const content = DEFAULT_CONTENT[type] || "";
+  const boundary="-------314159265358979323846", delimiter=`\\r\\n--${boundary}\\r\\n`, closeDelim=`\\r\\n--${boundary}--`;
+  const metadata={ name, mimeType, parents:[state.folderId], appProperties:{ app: APP_TAG } };
+  const body = delimiter + "Content-Type: application/json; charset=UTF-8\\r\\n\\r\\n" + JSON.stringify(metadata) +
+               delimiter + `Content-Type: ${mimeType}\\r\\n\\r\\n` + content + closeDelim;
+  const res = await gapiFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",{ method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body });
+  const file = await res.json();
+  await listFiles(el.searchInput.value);
+  await openFile(file.id);
+}
+
+/** Preview Helpers */
+function updatePreviewFromFullHtml(html){
+  showSidePane();
+  const doc = `<!doctype html><html><head><meta charset="utf-8"></head><body>${extractBodyHtml(html)}</body></html>`;
+  const blob = new Blob([doc], { type:"text/html" });
+  const url = URL.createObjectURL(blob);
+  el.previewFrame.src = url;
+  setTimeout(()=> URL.revokeObjectURL(url), 1500);
+}
+function extractBodyHtml(html){ const m = html.match(/<body[^>]*>([\s\S]*)<\/body>/i); return m ? m[1] : html; }
+function mergeEditableIntoFullHtml(full, bodyHtml){
+  if (/<html[\s\S]*<\/html>/i.test(full) && /<body[\s\S]*<\/body>/i.test(full)){
+    return full.replace(/<body[^>]*>[\s\S]*<\/body>/i, `<body>${bodyHtml}</body>`);
+  }
+  return bodyHtml;
+}
+function showSidePane(){ el.sidePane.hidden = false; }
+
+/** Tabs */
+el.tabPreview.addEventListener("click", ()=> setSideTab("preview"));
+el.tabVersions.addEventListener("click", ()=> setSideTab("versions"));
+function setSideTab(which){
+  if (which==="preview"){
+    el.tabPreview.classList.add("active"); el.tabVersions.classList.remove("active");
+    el.previewWrap.style.display="block"; el.versionsWrap.style.display="none";
+    el.sidePaneTitle.textContent = "Preview"; el.sideHint.textContent = "HTML preview is sandboxed";
+  } else {
+    el.tabVersions.classList.add("active"); el.tabPreview.classList.remove("active");
+    el.previewWrap.style.display="none"; el.versionsWrap.style.display="grid";
+    el.sidePaneTitle.textContent = "Versions"; el.sideHint.textContent = "Restore or comment on versions";
+    if (state.current) refreshVersions().catch(console.error);
+  }
+}
+
+/** Rename and Delete */
+el.renameBtn.addEventListener("click", ()=>{
+  if (!state.current) return;
+  el.renameInput.value = state.current.name;
+  el.renameDialog.showModal();
+});
+el.renameConfirm.addEventListener("click", async (e)=>{
+  e.preventDefault();
+  if (!state.current) return;
+  const newName = el.renameInput.value.trim();
+  if (!newName) return;
+  await renameCurrent(newName);
+  el.currentFileName.textContent = newName;
+  el.renameDialog.close();
+  listFiles(el.searchInput.value).catch(()=>{});
+});
+el.deleteBtn.addEventListener("click", async ()=>{
+  if (!state.current) return;
+  if (!confirm("Delete this file")) return;
+  await gapiFetch(`https://www.googleapis.com/drive/v3/files/${state.current.id}?supportsAllDrives=true`, { method:"DELETE" });
+  state.current = null;
+  el.currentFileName.textContent = "No File";
+  el.currentType.textContent = "Type";
+  el.fileIdShort.textContent = "Id";
+  el.mimePill.textContent = "Mime";
+  el.editable.innerHTML = ""; el.codeArea.value = "";
+  el.toolbar.hidden = true; el.sidePane.hidden = true;
+  listFiles(el.searchInput.value).catch(()=>{});
+});
+
+/** Copy link and open in Drive */
+el.copyLinkBtn.addEventListener("click", ()=>{
+  if (!state.current) return;
+  const url = `https://drive.google.com/file/d/${state.current.id}/view`;
+  navigator.clipboard.writeText(url).then(()=> setSaveStatus("Link Copied","ok"));
+});
+el.openDriveBtn.addEventListener("click", ()=>{
+  if (!state.current) return;
+  window.open(`https://drive.google.com/file/d/${state.current.id}/view`, "_blank","noopener,noreferrer");
+});
+
+/** Export HTML to Google Doc */
+el.exportDocBtn.addEventListener("click", async ()=>{
+  if (!state.current || state.current.ext!=="html"){ alert("Open an HTML file first"); return; }
+  const name = state.current.name.replace(/\\.html?$/i,"") + " (Doc)";
+  try {
+    const boundary = "-------314159265358979323846";
+    const delimiter = `\\r\\n--${boundary}\\r\\n`;
+    const closeDelim = `\\r\\n--${boundary}--`;
+    const metadata = { name, mimeType: "application/vnd.google-apps.document", parents: [state.folderId], appProperties: { app: APP_TAG } };
+    const body = delimiter + "Content-Type: application/json; charset=UTF-8\\r\\n\\r\\n" + JSON.stringify(metadata) +
+                 delimiter + "Content-Type: text/html; charset=UTF-8\\r\\n\\r\\n" + el.codeArea.value + closeDelim;
+    await gapiFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+      method:"POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` }, body
+    });
+    setSaveStatus("Doc Created","ok");
+    listFiles(el.searchInput.value).catch(()=>{});
+  } catch(err){ console.error(err); alert("Export failed"); }
+});
+
+/** Search and Refresh */
+el.refreshBtn.addEventListener("click", ()=> listFiles(el.searchInput.value).catch(err=>alert(err.message)));
+el.searchInput.addEventListener("input", ()=> listFiles(el.searchInput.value).catch(()=>{}));
+
+/** Input Listeners */
+el.editable.addEventListener("input", markDirty);
+el.codeArea.addEventListener("input", markDirty);
+window.addEventListener("keydown", (e)=>{
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="s"){ e.preventDefault(); if (state.versionMode) saveAsNextVersion().catch(onSaveError); else saveCurrent().catch(onSaveError); }
+});
+
+/** Convert Non-App (adopt or copy) */
+async function convertToApp(file){
+  try { await adoptAppTag(file.id); setSaveStatus("Converted","ok"); await listFiles(el.searchInput.value); return; } catch(e){}
+  const ok = await requestReadonlyScope(); if (!ok) return;
+  try {
+    const { content, newMime, newName } = await readAndPlanCopy(file);
+    const created = await createAppFileFromContent(newName, newMime, content);
+    setSaveStatus("App Copy Created","ok");
+    await listFiles(el.searchInput.value);
+    await openFile(created.id);
+  } catch(err){ console.error(err); alert("Convert failed: " + (err?.message||err)); }
+}
+async function adoptAppTag(fileId){
+  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`;
+  await gapiFetch(url,{ method:"PATCH", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ appProperties:{ app: APP_TAG } }) });
+}
+function requestReadonlyScope(){
+  return new Promise((resolve)=>{
+    const tc = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID, scope: SCOPES + " " + DRIVE_READONLY_SCOPE,
+      callback: (resp)=>{ if (resp.error){ alert("Additional permission denied. Cannot copy content."); resolve(false); } else { state.token = resp.access_token; resolve(true); } }
+    });
+    tc.requestAccessToken({ prompt:"consent" });
+  });
+}
+async function readAndPlanCopy(file){
+  let content="", newMime="text/plain", newName=file.name;
+  if (file.mimeType==="application/vnd.google-apps.document"){
+    const exp = await gapiFetch(`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/html&supportsAllDrives=true`);
+    content = await exp.text(); newMime="text/html";
+    if (!/\\.(html?|txt|json|js)$/i.test(newName)) newName = newName.replace(/\\.[^.]+$/,"") + ".html";
+  } else {
+    const dl = await gapiFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`);
+    content = await dl.text();
+    if (file.mimeType==="text/html"||file.mimeType==="application/javascript"||file.mimeType==="application/json"||file.mimeType==="text/plain") newMime = file.mimeType;
+    if (!/\\./.test(newName)){
+      const ext = newMime==="text/html"?".html":newMime==="application/javascript"?".js":newMime==="application/json"?".json":".txt";
+      newName += ext;
+    }
+  }
+  if (newName===file.name){ const base=newName.replace(/\\.[^.]+$/,""); const ext=(newName.match(/\\.[^.]+$/)||[""])[0]; newName = `${base} (App)${ext}`; }
+  return { content, newMime, newName };
+}
+async function createAppFileFromContent(name, mimeType, content){
+  const boundary="-------314159265358979323846", delimiter=`\\r\\n--${boundary}\\r\\n`, closeDelim=`\\r\\n--${boundary}--`;
+  const metadata={ name, mimeType, parents:[state.folderId], appProperties:{ app: APP_TAG } };
+  const body = delimiter + "Content-Type: application/json; charset=UTF-8\\r\\n\\r\\n" + JSON.stringify(metadata) +
+               delimiter + `Content-Type: ${mimeType}; charset=UTF-8\\r\\n\\r\\n` + content + closeDelim;
+  const res = await gapiFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",{ method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body });
+  return res.json();
+}
+
+/** Load GIS */
+function loadGis(){ const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.onload=initAuth; document.body.appendChild(s); }
+loadGis();
+
+</script>
+</body>
+</html>
