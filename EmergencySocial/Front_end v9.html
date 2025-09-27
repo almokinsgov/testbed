@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>EOC Social v2.3.1 – CIMS Roles</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root { --bg:#0b1220; --card:#101a30; --muted:#7f8aad; --ink:#e7ecff; --accent:#6aa0ff; --ok:#31c48d; --warn:#f0b429; --bad:#f98080; }
+    * { box-sizing:border-box }
+    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial }
+    a { color:var(--accent); text-decoration:none }
+    .app { display:grid; grid-template-columns:260px 1fr; min-height:100vh }
+    .left { border-right:1px solid #1d2a4a; padding:16px; background:var(--card); position:sticky; top:0; height:100vh; overflow:auto }
+    .right { padding:16px }
+    .brand { font-weight:700; font-size:18px; margin-bottom:8px }
+    .muted { color:var(--muted) }
+    .btn { background:#182648; border:1px solid #23345e; color:var(--ink); padding:8px 12px; border-radius:10px; cursor:pointer }
+    .btn.primary { background:#21407a; border-color:#25509b }
+    .btn.ghost { background:transparent; border-color:#2b3c65 }
+    .row { display:flex; gap:8px; align-items:center }
+    .col { display:flex; flex-direction:column; gap:8px }
+    .card { background:var(--card); border:1px solid #1d2a4a; border-radius:14px; padding:14px }
+    .grid { display:grid; gap:12px }
+    .list { display:flex; flex-direction:column; gap:12px }
+    input,select,textarea { width:100%; padding:8px 10px; border-radius:10px; border:1px solid #2b3c65; background:#0f182e; color:#fff }
+    textarea { min-height:120px }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#1a2747; color:#c5d3ff; font-size:12px; margin-right:6px }
+    .feed-item h3 { margin:0 0 6px 0; font-size:16px }
+    .feed-item .meta { font-size:12px; color:var(--muted) }
+    .toolbar { position:sticky; top:0; background:var(--bg); padding:10px 0; margin:-16px -16px 16px -16px; border-bottom:1px solid #1d2a4a; z-index:5 }
+    .toolbar-inner { padding:0 16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+    .inline { display:inline-flex; gap:6px; align-items:center }
+    .spacer { flex:1 }
+    .hidden { display:none !important }
+    @media (max-width:920px){ .app { grid-template-columns:1fr } .left { height:auto; position:relative } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="left">
+    <div class="brand">EOC Social v2.3.1</div>
+    <div class="muted" id="authStatus">Not signed in</div>
+    <div class="row" style="margin:8px 0 16px 0">
+      <div id="signin"></div>
+      <button class="btn ghost hidden" id="signoutBtn">Sign Out</button>
+    </div>
+
+    <div class="col card">
+      <label>Organisation</label>
+      <select id="orgSelect"></select>
+      <label>Role</label>
+      <select id="roleSelect">
+        <option value="">Select role</option>
+        <option value="CTRL">Controller</option>
+        <option value="OPS">Operations</option>
+        <option value="PLAN">Planning</option>
+        <option value="INTEL">Intelligence</option>
+        <option value="LOG">Logistics</option>
+        <option value="PIM">Public Information</option>
+        <option value="WEL">Welfare</option>
+        <option value="SAFE">Safety</option>
+        <option value="RECV">Recovery</option>
+      </select>
+      <button class="btn" id="saveProfileBtn">Save Profile</button>
+    </div>
+
+    <div class="col" style="margin-top:16px">
+      <div class="muted">Navigation</div>
+      <!-- Keep hrefs but we’ll intercept clicks for SPA routing -->
+      <a class="btn ghost" href="?view=feed">General Feed</a>
+      <a class="btn ghost" href="?view=groups">Groups</a>
+      <a class="btn ghost" href="?view=newpost">New Post</a>
+      <a class="btn ghost" href="?view=public">Public Info</a>
+      <a class="btn ghost" href="?view=admin">Admin</a>
+    </div>
+
+    <div class="col card" style="margin-top:16px">
+      <div class="muted">Filters</div>
+      <input id="searchInput" placeholder="Search">
+      <input id="tagsInput" placeholder="Tags comma separated">
+      <button class="btn" id="applyFiltersBtn">Apply</button>
+    </div>
+  </aside>
+
+  <main class="right">
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <strong id="viewTitle">Feed</strong>
+        <span class="spacer"></span>
+        <span class="inline muted">Org:</span>
+        <span id="orgBadge" class="pill">Public</span>
+        <span class="inline muted">Role:</span>
+        <span id="roleBadge" class="pill">Guest</span>
+      </div>
+    </div>
+    <div id="page" class="grid"></div>
+  </main>
+</div>
+
+<script>
+const CONFIG = {
+  API_BASE: "https://script.google.com/macros/s/AKfycbwpyNgECbLv4wPq3fgKB4a-m2GFGDn81p6hq0m_FXURU1NHaZLvuBuWCZdscjl7Ds4p/exec", // e.g. https://script.google.com/macros/s/XXXX/exec
+  CLIENT_ID: "494714357268-t8t4740mdb9kfr4ki0em1vvh128r41vc.apps.googleusercontent.com"
+};
+
+
+const STORAGE_KEY = "eoc_auth_v1";
+let auth = { token:null, profile:null, org_id:null, role_id:null };
+
+/* Utilities */
+function qs(name){ const u=new URL(location.href); return u.searchParams.get(name); }
+function setSearchParam(key,val){ const u=new URL(location.href); if(!val)u.searchParams.delete(key); else u.searchParams.set(key,val); history.pushState({}, "", u.toString()); }
+function updateChrome(){ document.getElementById("orgBadge").textContent = auth.org_id || "Public"; document.getElementById("roleBadge").textContent = auth.role_id || "Guest"; }
+function persistAuth(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(auth)); }catch(_){} }
+function loadAuth(){ try{ const s=localStorage.getItem(STORAGE_KEY); if(!s) return; const a=JSON.parse(s); if (a && a.token) auth = a; }catch(_){} }
+
+/* JSONP core */
+function jsonp(url, params = {}) {
+  return new Promise((resolve, reject) => {
+    const cb = "__jp" + Math.random().toString(36).slice(2);
+    params.callback = cb;
+    const qs = new URLSearchParams(params).toString();
+    const s = document.createElement("script");
+    s.src = url + "?" + qs;
+    s.onerror = () => { delete window[cb]; s.remove(); reject(new Error("JSONP failed")); };
+    window[cb] = (data) => { delete window[cb]; s.remove(); resolve(data); };
+    document.head.appendChild(s);
+  });
+}
+
+/* Unified API over JSONP */
+async function api(payload) {
+  const a = auth.token ? { ...payload, auth: auth.token } : payload;
+  return jsonp(CONFIG.API_BASE, { a: JSON.stringify(a) });
+}
+
+/* Router */
+function route(){
+  const view = qs("view") || "feed";
+  document.getElementById("viewTitle").textContent = view.charAt(0).toUpperCase() + view.slice(1);
+  const page = document.getElementById("page");
+  page.innerHTML = "";
+  if (view==="feed") return renderFeed(page);
+  if (view==="group") return renderGroup(page, qs("group_id"));
+  if (view==="post") return renderPost(page, qs("post_id"));
+  if (view==="newpost") return renderNewPost(page, qs("group_id"));
+  if (view==="groups") return renderGroups(page);
+  if (view==="public") return renderPublic(page);
+  if (view==="admin") return renderAdmin(page);
+  page.innerHTML = `<div class="card">Unknown view</div>`;
+}
+
+/* Pages */
+function renderFeed(node){
+  const q = { action:"listPosts", scope:"orgOrPublic", org_id:auth.org_id, tags:(qs("tags")||""), search:(qs("search")||"") };
+  api(q).then(r => node.appendChild(feedList(r.posts||[]))).catch(()=> node.innerHTML=`<div class="card bad">Failed to load feed</div>`);
+}
+function renderPublic(node){
+  const q = { action:"listPosts", scope:"public", tags:(qs("tags")||""), search:(qs("search")||"") };
+  api(q).then(r => node.appendChild(feedList(r.posts||[]))).catch(()=> node.innerHTML=`<div class="card bad">Failed to load public</div>`);
+}
+function renderGroups(node){
+  api({ action:"listMyGroups" }).then(r => {
+    const list=document.createElement("div"); list.className="list";
+    (r.groups||[]).forEach(g=>{
+      const it=document.createElement("div"); it.className="card";
+      it.innerHTML=`<h3>${g.name}</h3><div class="muted">Visibility: ${g.visibility}</div>
+      <div class="row" style="margin-top:8px"><a class="btn" href="?view=group&group_id=${g.group_id}">Open</a></div>`;
+      list.appendChild(it);
+    }); node.appendChild(list);
+  });
+}
+function renderGroup(node, group_id){
+  if(!group_id){ node.innerHTML=`<div class="card">No group selected</div>`; return; }
+  api({ action:"getGroup", group_id }).then(r=>{
+    const h=document.createElement("div"); h.className="card";
+    h.innerHTML=`<h3>${r.group.name}</h3><div class="muted">Visibility: ${r.group.visibility}</div>
+    <div class="row" style="margin-top:8px"><a class="btn" href="?view=newpost&group_id=${group_id}">New Post</a></div>`;
+    node.appendChild(h);
+  });
+  api({ action:"listPosts", scope:"group", group_id }).then(r=> node.appendChild(feedList(r.posts||[])));
+}
+function renderPost(node, post_id){
+  api({ action:"getPost", post_id }).then(res=>{
+    const p=res.post; const card=document.createElement("div"); card.className="card";
+    card.innerHTML=`
+      <h2>${escapeHtml(p.title)}</h2>
+      <div class="meta">${new Date(p.created_at).toLocaleString()} ${p.tags? " • " + p.tags.split(',').map(t=>`<span class="pill">${t.trim()}</span>`).join(' ') : ""}</div>
+      <p>${linkify(escapeHtml(p.body)).replace(/\n/g,"<br>")}</p>
+      <div class="row"><button class="btn" id="replyBtn">Reply</button></div>
+      <div id="comments" class="list" style="margin-top:12px"></div>
+      <div id="replyBox" class="card hidden">
+        <textarea id="replyText" placeholder="Write a comment"></textarea>
+        <div class="row">
+          <button class="btn primary" id="sendReply">Send</button>
+          <button class="btn ghost" id="cancelReply">Cancel</button>
+        </div>
+      </div>`;
+    node.appendChild(card);
+    const commentsNode=card.querySelector("#comments");
+    api({ action:"listComments", post_id }).then(r=>{
+      (r.comments||[]).forEach(c=>{
+        const ci=document.createElement("div"); ci.className="card";
+        ci.innerHTML=`<div class="meta">${new Date(c.created_at).toLocaleString()}</div><div>${linkify(escapeHtml(c.body)).replace(/\n/g,"<br>")}</div>`;
+        commentsNode.appendChild(ci);
+      });
+    });
+    card.querySelector("#replyBtn").onclick=()=> card.querySelector("#replyBox").classList.remove("hidden");
+    card.querySelector("#cancelReply").onclick=()=> card.querySelector("#replyBox").classList.add("hidden");
+    card.querySelector("#sendReply").onclick=()=>{
+      const body=card.querySelector("#replyText").value.trim(); if(!body) return;
+      api({ action:"addComment", post_id, body }).then(()=> location.reload());
+    };
+  });
+}
+function renderNewPost(node, group_id){
+  const wrap=document.createElement("div"); wrap.className="card";
+  wrap.innerHTML=`
+    <h3>New Post</h3>
+    <div class="grid">
+      <label>Group</label><select id="postGroup"></select>
+      <label>Title</label><input id="postTitle" placeholder="Brief descriptive title">
+      <label>Body</label><textarea id="postBody" placeholder="Write your message"></textarea>
+      <label>Tags</label><input id="postTags" placeholder="comma,separated,tags">
+      <label>Visibility</label>
+      <select id="postVis"><option value="group">Group</option><option value="org">Org</option><option value="public">Public</option></select>
+      <div class="row"><button class="btn primary" id="createPostBtn">Create</button></div>
+    </div>`;
+  node.appendChild(wrap);
+  api({ action:"listGroupsForUser" }).then(res=>{
+    const sel=wrap.querySelector("#postGroup");
+    (res.groups||[]).forEach(g=>{ const o=document.createElement("option"); o.value=g.group_id; o.textContent=g.name; sel.appendChild(o); });
+    if(group_id) sel.value=group_id;
+  });
+  wrap.querySelector("#createPostBtn").onclick=()=>{
+    const payload={
+      action:"addPost",
+      group_id: wrap.querySelector("#postGroup").value,
+      title: wrap.querySelector("#postTitle").value.trim(),
+      body: wrap.querySelector("#postBody").value.trim(),
+      tags: wrap.querySelector("#postTags").value.trim(),
+      visibility: wrap.querySelector("#postVis").value
+    };
+    api(payload).then(r=> location.href = `?view=post&post_id=${r.post_id}`);
+  };
+}
+function renderAdmin(node){
+  api({ action:"whoami" }).then(me=>{
+    if (!me.is_admin) { node.innerHTML = `<div class="card">Admin only</div>`; return; }
+    const box=document.createElement("div"); box.className="grid";
+    box.innerHTML=`
+      <div class="card">
+        <h3>Create Group</h3>
+        <input id="agName" placeholder="Name">
+        <select id="agVis"><option value="private">Private</option><option value="org">Org</option><option value="public">Public</option></select>
+        <button class="btn" id="agBtn">Create</button>
+      </div>
+      <div class="card">
+        <h3>Add User</h3>
+        <input id="auEmail" placeholder="Email">
+        <button class="btn" id="auBtn">Invite</button>
+      </div>`;
+    node.appendChild(box);
+    box.querySelector("#agBtn").onclick=()=>{
+      api({ action:"createGroup", name: box.querySelector("#agName").value.trim(), visibility: box.querySelector("#agVis").value })
+        .then(()=> alert("Group created"));
+    };
+    box.querySelector("#auBtn").onclick=()=>{
+      api({ action:"addUser", email: box.querySelector("#auEmail").value.trim() })
+        .then(()=> alert("User added"));
+    };
+  });
+}
+
+/* Rendering Helpers */
+function feedList(posts){
+  const list=document.createElement("div"); list.className="list";
+  posts.forEach(p=>{
+    const it=document.createElement("div"); it.className="card feed-item";
+    const snip = escapeHtml(p.body||"").slice(0,240);
+    it.innerHTML=`
+      <h3><a href="?view=post&post_id=${p.post_id}">${escapeHtml(p.title)}</a></h3>
+      <div class="meta">${new Date(p.created_at).toLocaleString()} • ${p.group_name || "General"} ${p.tags? " • " + p.tags.split(',').map(t=>`<span class="pill">${t.trim()}</span>`).join(' ') : ""}</div>
+      <div>${linkify(snip)}${p.body && p.body.length>240 ? "..." : ""}</div>`;
+    list.appendChild(it);
+  }); return list;
+}
+function escapeHtml(s){
+  return s
+    ? s.replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[c])
+    : "";
+}
+function linkify(s){
+  return s.replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+}
+
+/* UI Wiring */
+document.getElementById("applyFiltersBtn").onclick=()=>{ setSearchParam("search", document.getElementById("searchInput").value.trim()); setSearchParam("tags", document.getElementById("tagsInput").value.trim()); route(); };
+document.getElementById("saveProfileBtn").onclick=async ()=>{
+  auth.org_id = document.getElementById("orgSelect").value || null;
+  auth.role_id = document.getElementById("roleSelect").value || null;
+  updateChrome();
+  persistAuth();
+  if (auth.token) await api({ action:"saveProfile", org_id:auth.org_id, role_id:auth.role_id });
+  route();
+};
+
+/* SPA Navigation: intercept ?view=... links so we don't reload */
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a");
+  if (!a) return;
+  const href = a.getAttribute("href");
+  if (href && href.startsWith("?")) {
+    e.preventDefault();
+    const base = location.origin + location.pathname;
+    history.pushState({}, "", base + href);
+    route();
+  }
+});
+window.addEventListener("popstate", route);
+
+/* Google Sign In */
+function initSignIn() {
+  // If we already have a token, don't prompt again
+  if (auth && auth.token) return;
+
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.initialize({ client_id: CONFIG.CLIENT_ID, callback: handleCredentialResponse });
+    google.accounts.id.renderButton(document.getElementById("signin"), { theme: "filled_blue", size: "medium" });
+    google.accounts.id.prompt();
+  } else {
+    setTimeout(initSignIn, 100);
+  }
+}
+
+async function handleCredentialResponse(resp){
+  try{
+    const r = await api({ action:"login", id_token: resp.credential });
+    if (r.error) throw new Error(r.error);
+    auth.token = r.session_token;
+    auth.profile = r.profile;
+    auth.org_id = r.profile.org_id || null;
+    auth.role_id = r.profile.role_id || null;
+    persistAuth();
+    if (window.google && google.accounts && google.accounts.id) {
+      google.accounts.id.disableAutoSelect(); // no more prompts this session
+    }
+    document.getElementById("authStatus").textContent = `Signed in as ${r.profile.email}`;
+    document.getElementById("signoutBtn").classList.remove("hidden");
+    await loadOrgs(); updateChrome(); route();
+  } catch(e){
+    console.error(e); alert("Sign in failed");
+  }
+}
+
+window.onload = () => {
+  // Restore session if present
+  loadAuth();
+  if (auth && auth.token && auth.profile) {
+    document.getElementById("authStatus").textContent = `Signed in as ${auth.profile.email}`;
+    document.getElementById("signoutBtn").classList.remove("hidden");
+  }
+  // Load initial data and route
+  loadOrgs().then(route);
+  initSignIn();
+
+  document.getElementById("signoutBtn").onclick=()=>{
+    auth = { token:null, profile:null, org_id:null, role_id:null };
+    localStorage.removeItem(STORAGE_KEY);
+    document.getElementById("authStatus").textContent = "Not signed in";
+    document.getElementById("signoutBtn").classList.add("hidden");
+    updateChrome(); route();
+  };
+};
+
+async function loadOrgs(){
+  const res = await api({ action:"listOrgs" });
+  const sel = document.getElementById("orgSelect");
+  sel.innerHTML = `<option value="">Select org</option>`;
+  (res.orgs||[]).forEach(o=>{ const op=document.createElement("option"); op.value=o.org_id; op.textContent=o.name; sel.appendChild(op); });
+  sel.value = auth.org_id || "";
+}
+</script>
+</body>
+</html>
