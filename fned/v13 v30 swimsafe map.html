@@ -1,0 +1,5064 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+  <meta charset="UTF-8">
+  <title>Far North Disaster And Emergency Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+  <style>
+    :root {
+      --bg-page: #eceff1;
+      --bg-main: #f7f7f7;
+      --bg-header: #152238;
+      --bg-hero: #1e3653;
+      --bg-panel: #ffffff;
+      --text-main: #111827;
+      --text-muted: #4b5563;
+      --accent-red: #d84343;
+      --accent-blue: #1976d2;
+      --accent-teal: #00897b;
+      --accent-grey: #455a64;
+      --shadow-soft: 0 3px 10px rgba(0, 0, 0, 0.18);
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -999px;
+      top: 0.75rem;
+      z-index: 1000;
+      padding: 0.6rem 1rem;
+      background: #000000;
+      color: #ffffff;
+      font-size: 0.9rem;
+      border-radius: var(--radius-pill);
+      text-decoration: none;
+    }
+
+    .skip-link:focus {
+      left: 1rem;
+      outline: 3px solid #ffc107;
+      outline-offset: 2px;
+    }
+
+    /* Header */
+
+    .site-header {
+      background: var(--bg-header);
+      color: #ffffff;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.7rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #ffb300, #ff7043);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: #111827;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .brand-text h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand-text p {
+      margin: 0.1rem 0 0;
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+
+    .header-right {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.82rem;
+    }
+
+    .header-right span {
+      opacity: 0.9;
+    }
+
+    /* Hero */
+
+    .hero {
+      background: url("https://images.pexels.com/photos/240040/pexels-photo-240040.jpeg?auto=compress&cs=tinysrgb&w=1600") center/cover no-repeat;
+      position: relative;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(7, 26, 48, 0.88), rgba(7, 26, 48, 0.35));
+    }
+
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.2rem 1.25rem 1.4rem;
+      position: relative;
+      color: #ffffff;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .hero-text h2 {
+      margin: 0 0 0.3rem;
+      font-size: 1.5rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hero-text p {
+      margin: 0;
+      font-size: 0.95rem;
+      max-width: 480px;
+    }
+
+    .hero-status {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
+      font-size: 0.85rem;
+    }
+
+    .hero-pill {
+      padding: 0.3rem 0.8rem;
+      border-radius: var(--radius-pill);
+      background: #ffd54f;
+      color: #4e342e;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .hero-emergency {
+      font-weight: 600;
+    }
+
+    /* Main */
+
+    .page-main {
+      background: var(--bg-main);
+      box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .main-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 2.5rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    /* Top action buttons */
+
+    .cta-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      color: #ffffff;
+      background: var(--accent-red);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .cta-btn.secondary {
+      background: var(--accent-grey);
+    }
+
+    .cta-btn span.icon {
+      font-size: 1.1rem;
+    }
+
+    .cta-btn:focus-visible {
+      outline: 3px solid #ffeb3b;
+      outline-offset: 2px;
+    }
+
+    /* Situation overview */
+
+    .situation-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr);
+      gap: 1rem;
+    }
+
+    .map-panel,
+    .alert-panel {
+      background: var(--bg-panel);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 0.9rem;
+    }
+
+    .map-panel-header,
+    .alert-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+    }
+
+    .map-panel-header h3,
+    .alert-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .map-panel-header span,
+    .alert-panel-header span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .map-placeholder {
+      border-radius: var(--radius-md);
+      background: #e0e7ef;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4b5563;
+      font-size: 0.9rem;
+      border: 1px solid #cfd8dc;
+    }
+
+    .alert-body {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .alert-body strong {
+      color: var(--text-main);
+    }
+
+    .alert-list {
+      list-style: none;
+      padding: 0;
+      margin: 0.6rem 0 0;
+      font-size: 0.85rem;
+    }
+
+    .alert-list li {
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .alert-list li:last-child {
+      border-bottom: none;
+    }
+
+    .alert-label {
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+
+    .alert-tag {
+      display: inline-block;
+      margin-left: 0.25rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.75rem;
+      background: #ffe082;
+      color: #6d4c41;
+    }
+
+    /* Alert summary panel */
+
+    .summary-panel {
+      background: var(--bg-panel);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .summary-panel h3 {
+      margin: 0 0 0.25rem;
+      font-size: 1rem;
+    }
+
+    .summary-panel p {
+      margin: 0.1rem 0;
+      color: var(--text-muted);
+    }
+	
+	.summary-banner {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.summary-banner-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.summary-banner-body p {
+  margin: 0.15rem 0;
+}
+
+
+    /* Stats and counters */
+
+    .stats-section {
+      background: var(--bg-panel);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 0.9rem 0.9rem 1rem;
+    }
+
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 0 0 0.6rem;
+      padding: 0 0.2rem;
+    }
+
+    .stats-header h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .stats-header span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+
+    .stat-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.6rem;
+      align-items: center;
+      padding: 0.75rem 0.8rem;
+      border-radius: var(--radius-md);
+      background: #ffffff;
+      text-decoration: none;
+      color: var(--text-main);
+      box-shadow: var(--shadow-soft);
+      border-left: 4px solid var(--accent-blue);
+    }
+
+    .stat-card.red {
+      border-left-color: var(--accent-red);
+    }
+
+    .stat-card.teal {
+      border-left-color: var(--accent-teal);
+    }
+
+    .stat-card.grey {
+      border-left-color: var(--accent-grey);
+    }
+
+    .stat-card:focus-visible {
+      outline: 3px solid #ffeb3b;
+      outline-offset: 2px;
+    }
+
+    .stat-number {
+      font-size: 1.4rem;
+      font-weight: 700;
+      min-width: 2.5rem;
+      text-align: center;
+    }
+
+    .stat-info {
+      font-size: 0.85rem;
+    }
+
+    .stat-label {
+      font-weight: 600;
+      margin-bottom: 0.1rem;
+    }
+
+    .stat-desc {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* Tiles row */
+
+    .tiles-section {
+      background: var(--bg-panel);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 0.9rem 0.9rem 1rem;
+    }
+
+    .tiles-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 0 0 0.7rem;
+      padding: 0 0.2rem;
+    }
+
+    .tiles-header h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .tiles-header span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .tile-group {
+      margin-bottom: 1.1rem;
+    }
+
+    .tile-group:last-of-type {
+      margin-bottom: 0.4rem;
+    }
+
+    .tile-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 0 0 0.4rem;
+      padding: 0 0.2rem;
+    }
+
+    .tile-group-header h4 {
+      margin: 0;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .tile-group-header span {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .tile-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+
+    .tile {
+      border-radius: var(--radius-md);
+      padding: 0.9rem 0.9rem;
+      color: #ffffff;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .tile .icon {
+      font-size: 1.4rem;
+    }
+
+    .tile-main {
+      font-size: 0.9rem;
+    }
+
+    .tile-main h4 {
+      margin: 0 0 0.2rem;
+      font-size: 0.98rem;
+    }
+
+    .tile-main p {
+      margin: 0;
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+
+    .tile-meta {
+      text-align: right;
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+
+    .tile-meta strong {
+      display: block;
+      font-size: 1.15rem;
+    }
+
+    .tile.red {
+      background: var(--accent-red);
+    }
+
+    .tile.blue {
+      background: var(--accent-blue);
+    }
+
+    .tile.teal {
+      background: var(--accent-teal);
+    }
+
+    .tile.grey {
+      background: var(--accent-grey);
+    }
+
+    .tile:focus-visible {
+      outline: 3px solid #ffeb3b;
+      outline-offset: 2px;
+    }
+
+    /* Secondary links bar */
+
+    .link-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+    }
+
+    .link-chip {
+      flex: 1 1 150px;
+      text-align: center;
+      padding: 0.45rem 0.5rem;
+      border-radius: var(--radius-md);
+      background: #263238;
+      color: #eceff1;
+      font-size: 0.8rem;
+      text-decoration: none;
+    }
+
+    .link-chip:focus-visible {
+      outline: 3px solid #ffeb3b;
+      outline-offset: 2px;
+    }
+
+    /* Footer */
+
+    .site-footer {
+      background: #1c1c1c;
+      color: #e0e0e0;
+      font-size: 0.78rem;
+      padding: 0.7rem 1.2rem;
+      text-align: center;
+    }
+
+    .site-footer span + span {
+      margin-left: 0.2rem;
+    }
+
+    .site-footer a {
+      color: #ffeb3b;
+      text-decoration: none;
+    }
+
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (min-width: 720px) {
+      .cta-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .situation-row {
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+      }
+
+      .map-placeholder {
+        height: 450px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .tile-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+	
+	/* Situation map legend */
+ .map-legend {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .map-legend h2 {
+      font-size: 0.9rem;
+      margin: 0 0 0.25rem;
+    }
+
+    .map-legend ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .map-legend li {
+      margin: 0.1rem 0;
+    }
+
+    .layer-pill {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: #e0e0e0;
+      margin-right: 0.25rem;
+    }
+	
+	    .legend-item {
+      display: flex;
+      align-items: center;
+      margin: 0.15rem 0;
+    }
+
+    .legend-swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 0.4rem;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    }
+/* Ensure the situation map fills the map panel */
+#situation-map {
+  width: 100%;
+  height: 100%;
+}
+.legend-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  width: 100%;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.legend-title {
+  flex: 1;
+  text-align: left;
+}
+
+.legend-toggle-icon {
+  font-size: 0.75rem;
+  transition: transform 0.15s ease-in-out;
+}
+
+.map-legend.legend-collapsed .legend-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.legend-content {
+  margin-top: 0.35rem;
+}
+
+	/* Hide standalone RWAS popup and toggle now that alerts live in the panel */
+#floating-alerts-container,
+#toggle-alerts-btn {
+  display: none !important;
+}
+
+/* Let RWAS cards sit nicely inside the dashboard list */
+.alert-list .alert-item {
+  padding: 0;
+  border-bottom: none;
+  margin-bottom: 0.6rem;
+}
+
+.alert-list .alert-item:last-child {
+  margin-bottom: 0;
+}
+
+.alert-list-meta {
+  padding-top: 0.3rem;
+  border-bottom: none;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+  </style>
+  <style>/* //Region warning and alerts - created by Amorangi Mathews 
+ //version and current functionality 
+  //1.2.1.7 to 1.3.2.0 single html file to JS,CSS and HTML, hosted in Github served with a CDN  */
+
+    .alert-card {
+      background: #fff0f0;
+      border-left: 5px solid #ffa500;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+    .far-north {
+      border-left-color: #dc3545;
+      /* background: #fff0f0; */
+    }
+
+    /* Floating alerts window and toggle icon */
+    #floating-alerts-container {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      width: 450px;
+      max-height: 70vh;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      border: #8f8f8f;
+    border-style: solid;
+    border-width: thin;
+      background: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      /*border-left: 4px solid #FFFFFF;*/
+      border-radius: 8px;
+      padding: 1rem;
+          font-size: 13.8px;
+    line-height: normal;
+    }
+
+    #toggle-alerts-btn {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      width: 48px;
+      height: 48px;
+      background: #ffcc00;
+          background: linear-gradient(to right, #ed0017, #ed0017);
+    border-radius: 50%;
+    /*border: black;
+    border-style: solid;
+      border-width: thin;*/
+        border-style: solid;
+  border-width: medium;
+  border-color: #750000;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      font-size: 24px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1001;
+    }
+
+    #toggle-alerts-btn:hover {
+      background: #ffaa00;
+      background: linear-gradient(to right, #ffeb00, #ed0017);
+    }
+    
+    @media (max-width: 600px) {
+  #floating-alerts-container {
+    width: 90vw;
+    right: 0.5rem;
+    left: 0.5rem;
+    bottom: 4rem;
+    max-height: 60vh;
+    border-left-width: 3px;
+    font-size: 0.95em;
+        font-size: 13.8px;
+    line-height: normal;
+  }}
+
+/* first badge work*/
+
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  margin-top: 4px;
+}
+
+.active-now {
+ /*  border-left-color: #e53935 !important;
+  background: #ffeaea;  */
+}
+
+.upcoming {
+/*  border-left-color: #0288d1 !important;
+  background: #e3f2fd; */
+}
+
+.active-badge {
+  background: #e53935;
+  color: white;
+}
+
+.upcoming-badge {
+  background: #e53935;
+  color: white;
+}
+/* Default fallback */
+.alert-default {
+  border-left-color: #ffa500;
+  background: #fffaf0;
+}
+
+.alert-orange {
+  border-left-color: #FF8918;
+  background: #fff3e0;
+}
+ 
+.alert-red {
+  border-left-color: #d32f2f;
+  background: #fdecea;
+}
+
+.alert-cd {
+  border-left-color: #d32f2f;
+  background: #123c59;
+      border: solid;
+    border-width: thin;
+    border-color: #fffc38;
+}
+
+    
+    
+.alert-yellow {
+  border-left-color: #fbc02d;
+  background: #fffde7;
+}
+
+.alert-green {
+  border-left-color: #388e3c;
+  background: #e8f5e9;
+}
+
+/* Badge styles */
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  margin-top: 4px;
+  font-weight: 600;
+  color: white;
+}
+
+    .badge.alert-met {background: #172344;}   
+.badge.alert-orange { background: #FF8918; border: solid; border-width: thin; border-color: #000000; }
+.badge.alert-red { background: #d32f2f;  border: solid; border-width: thin;    border-color: #000000;}
+.badge.alert-yellow { background: #fbc02d; color: black;  border: solid; border-width: thin; border-color: #000000;}
+.badge.alert-cd {color: white; }
+.badge.alert-green { background: #388e3c; }
+
+.active-now {
+  /* optional override styles */
+}
+
+.upcoming {
+  /* optional override styles */
+}
+
+    .expired-badge {
+  background: #464951;
+  color: white;
+       border: solid;
+    border-width: thin;
+    border-color: #000000;
+}
+    /*style for initial header and footer*/
+.alert-header {
+    background: #868687;
+    margin-bottom: 1rem;
+    color: #000000;
+  border-radius: 10px;
+    padding: 10px 10px 10px 10px;
+  /*  font-size: 14.2px; 
+    line-height: 1.4;*/
+     
+}
+.alert-header hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin-top: 0.5rem;
+}
+    .alert-footer {
+  margin-top: 1rem;
+  /*font-size: 12.2px;*/
+ background: #868687;
+    margin-bottom: 1rem;
+    color: #000000;
+  border-radius: 10px;
+    padding: 10px 1px 10px 10px;
+  line-height: 1.4;
+}
+.alert-footer a {
+  color: #004d99;
+  text-decoration: underline;
+}
+.alert-footer hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin-top: 1rem;
+  
+}
+
+/*style for modern header and footer*/
+.alert-header {
+  background: linear-gradient(to right, #dc3545, #dc3545);
+  color: white;
+  border-style: solid;
+  border-width: medium;
+  border-color: #750000;
+  padding: 0.75rem 1rem;
+  border-radius: 8px 8px 0 0;
+  /*font-size: 1rem;
+  font-weight: 600;*/
+  line-height: 1.4;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.alert-header em {
+  font-style: normal;
+  font-weight: 400;
+  opacity: 0.95;
+}
+
+.alert-footer {
+  background: #f4f6f8;
+  border-top: 1px solid #e0e0e0;
+  padding: 0.75rem 1rem;
+  border-radius: 0 0 8px 8px;
+  /*font-size: 0.85rem;
+  color: #555;*/
+  text-align: left;
+  margin-top: 1rem;
+}
+
+.alert-footer a {
+  color: #dc3545;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.alert-footer a:hover {
+  text-decoration: underline;
+}
+
+/*cancelled badge for cd alerts*/
+.cancelled-badge {
+  background: #616161;
+  color: white;
+   border: solid;
+    border-width: thin;
+    border-color: #000000;
+}
+
+.leaflet-left .leaflet-control {
+    max-height: 100vh !important;
+ }
+</style>
+  <link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+  
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <div class="brand-block">
+        <div class="brand-logo" aria-hidden="true" id="brand-logo"></div>
+        <div class="brand-text">
+          <h1 id="brand-council"></h1>
+          <p id="brand-dashboard"></p>
+        </div>
+      </div>
+      <div class="header-right" aria-label="Contact and language">
+        <span id="header-contact"></span>
+        <span aria-hidden="true">|</span>
+        <span id="header-emergency"></span>
+      </div>
+    </div>
+
+    <div class="hero" role="img" aria-label="Far North coastline with town and sea under changing weather">
+      <div class="hero-inner">
+        <div class="hero-text">
+          <h2 id="hero-title"></h2>
+          <p id="hero-description"></p>
+        </div>
+        <div class="hero-status" aria-label="Current dashboard status">
+          <span class="hero-pill" id="hero-pill"></span>
+          <span class="hero-emergency" id="hero-emergency-message"></span>
+          <span id="hero-last-updated"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+<div id="floating-alerts-container"></div>
+<button id="toggle-alerts-btn" title="Weather Alerts">⛈️</button
+  <main id="main-content" class="page-main" role="main" aria-label="Far North emergency information">
+    <div class="main-inner">
+      <!-- CTA buttons -->
+      <section class="cta-row" aria-label="Alert registration and key actions" id="cta-row"></section>
+
+      <!-- Situation overview -->
+      <section class="situation-row" aria-label="Situation overview map and current alerts">
+        <div class="map-panel" role="group" aria-labelledby="map-heading">
+          <div class="map-panel-header">
+            <h3 id="map-heading"></h3>
+            <span id="map-subtitle"></span>
+          </div>
+          <div class="map-placeholder" id="map-placeholder"></div>
+        </div>
+
+        <aside class="alert-panel" role="complementary" aria-labelledby="alerts-heading">
+          <div class="alert-panel-header">
+            <h3 id="alerts-heading"></h3>
+            <span id="alerts-subtitle"></span>
+          </div>
+          <div class="alert-body">
+            <p id="alerts-lead"></p>
+            <ul class="alert-list" id="alert-list"></ul>
+          </div>
+        </aside>
+      </section>
+
+      <!-- District alert summary -->
+      <section class="summary-panel" aria-label="District alert summary">
+        <h3 id="summary-title"></h3>
+        <div id="summary-paragraphs"></div>
+      </section>
+
+      <!-- Stats and counters -->
+      <section class="stats-section" aria-label="Far North status counters">
+        <div class="stats-header">
+          <h3 id="stats-title"></h3>
+          <span id="stats-subtitle"></span>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+      </section>
+
+      <!-- Tiles with levels -->
+      <section class="tiles-section" aria-label="Key emergency information tiles grouped by level">
+        <div class="tiles-header">
+          <h3 id="tiles-title"></h3>
+          <span id="tiles-subtitle"></span>
+        </div>
+
+        <div id="tile-groups"></div>
+
+        <div class="link-bar" aria-label="Additional quick links" id="quick-links"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <span id="footer-line-1"></span>
+    <span id="footer-line-2"></span>
+  </footer>
+
+  <!-- JSON configuration for all content -->
+  <script id="dashboard-data" type="application/json">
+  {
+    "meta": {
+      "pageTitle": "Far North Disaster And Emergency Dashboard",
+      "contactNumber": "0800 920 029",
+      "emergencyNumber": "111",
+      "lastUpdated": "18 November 2025 7.15 pm"
+    },
+    "brand": {
+      "shortCode": "FN",
+      "councilName": "Far North District Council",
+      "dashboardTitle": "Disaster And Emergency Dashboard"
+    },
+    "hero": {
+      "taglineTitle": "Plan. Prepare. Act.",
+      "description": "Check live information about weather, roads, power, water and civil defence for the Far North. Always follow official advice from Northland Civil Defence and emergency services.",
+      "statusPill": "Sample status Normal Monitoring",
+      "emergencyMessage": "In a life threatening emergency call 111"
+    },
+    "ctaButtons": [
+      {
+        "label": "Sign Up For Civil Defence Alerts",
+        "icon": "🔔",
+        "url": "#",
+        "style": "primary",
+        "external": false
+      },
+      {
+        "label": "View Northland Civil Defence Updates",
+        "icon": "📣",
+        "url": "https://www.facebook.com/civildefencenorthland/",
+        "style": "secondary",
+        "external": true
+      }
+    ],
+    "mapPanel": {
+      "title": "Situation Overview Map",
+      "subtitle": "Example map placeholder",
+      "placeholderText": "Map placeholder for FNDC or regional GIS viewer"
+    },
+    "alertsPanel": {
+      "title": "Current Warnings And Alerts",
+      "subtitle": "Live summary",
+      "lead": "In an emergency call 111. For evacuation and shelter information follow Northland Civil Defence messages.",
+      "items": [
+        {
+          "label": "Example",
+          "description": "",
+          "tag": ""
+        }
+      ]
+    },
+    "summaryPanel": {
+      "title": "Far North Alerts",
+      "paragraphs": [
+        "",
+        "Localised issues can still affect roads, power, water and communications. Use the status cards and tiles below for detailed information."
+      ]
+    },
+    "statsSection": {
+      "title": "Current Status",
+      "subtitle": "Numbers are examples. In production these will update from live feeds.",
+      "cards": [
+        {
+          "label": "Road Closures Local",
+          "number": 12,
+          "description": "Current closures on Far North local roads.",
+          "url": "#",
+          "colorClass": "red",
+          "external": true,
+          "ariaLabel": "12 local road closures. View Far North local road closure information."
+        },
+        {
+          "label": "Road Closures NZTA",
+          "number": 5,
+          "description": "Key impacts on state highways and regional routes.",
+          "url": "https://www.journeys.nzta.govt.nz/journey-planner",
+          "colorClass": "teal",
+          "external": true,
+          "ariaLabel": "5 state highway issues. View NZTA state highway information."
+        },
+        {
+          "label": "Power Outages",
+          "number": 2,
+          "description": "Outages and restoration times on the Top Energy network.",
+          "url": "https://outages.topenergy.co.nz/",
+          "colorClass": "blue",
+          "external": true,
+          "ariaLabel": "2 power outages. View Top Energy outage information."
+        },
+        {
+          "label": "Water Outages",
+          "number": 1,
+          "description": "Planned and unplanned interruptions to council water supply.",
+          "url": "https://www.fndc.govt.nz/services/water/Water-outage-updates",
+          "colorClass": "blue",
+          "external": true,
+          "ariaLabel": "1 water outage. View Far North water outage information."
+        },
+        {
+          "label": "Emergency News Stories",
+          "number": 3,
+          "description": "Recent news stories that relate to emergency events or recovery.",
+          "url": "https://www.fndc.govt.nz/council/Latest-news",
+          "colorClass": "grey",
+          "external": true,
+          "ariaLabel": "3 emergency news stories. View Far North emergency news stories."
+        },
+        {
+          "label": "FNDC Alerts",
+          "number": 1,
+          "description": "Formal council alerts for the Far North District.",
+          "url": "https://www.fndc.govt.nz/council/Latest-news",
+          "colorClass": "grey",
+          "external": true,
+          "ariaLabel": "1 Far North District Council alert. View Far North alerts."
+        },
+        {
+          "label": "Weather Warnings",
+          "number": 2,
+          "description": "MetService warnings that include parts of Northland.",
+          "url": "https://www.metservice.com/warnings/home",
+          "colorClass": "teal",
+          "external": true,
+          "ariaLabel": "2 weather warnings. View MetService weather warnings."
+        },
+        {
+          "label": "Civil Defence Warnings",
+          "number": 0,
+          "description": "National or regional civil defence warnings that affect the Far North.",
+          "url": "https://www.civildefence.govt.nz/",
+          "colorClass": "red",
+          "external": true,
+          "ariaLabel": "0 civil defence warnings. View national civil defence information."
+        }
+      ]
+    },
+    "tilesSection": {
+      "title": "Key Information",
+      "subtitle": "Tiles are grouped by local, district, regional and national level services",
+      "groups": [
+        {
+          "id": "local",
+          "title": "Local",
+          "description": "Facilities and services close to where you live",
+          "tiles": [
+            {
+              "title": "Marae And Halls",
+              "description": "Local marae and community facilities that may support response and recovery.",
+              "icon": "⛺",
+              "colorClass": "grey",
+              "url": "https://maorimaps.com/en/marae-map",
+              "external": true,
+              "metaTop": "",
+              "metaBottom": "External site"
+            }
+          ]
+        },
+        {
+          "id": "district",
+          "title": "District",
+          "description": "Far North District Council information",
+          "tiles": [
+            {
+              "title": "Latest News",
+              "description": "Service updates and council alerts.",
+              "icon": "📰",
+              "colorClass": "red",
+              "url": "https://www.fndc.govt.nz/council/Latest-news",
+              "external": true,
+              "metaTop": "",
+              "metaBottom": "FNDC"
+            },
+            {
+              "title": "Road Closures",
+              "description": "Far North local roads, slips and closures.",
+              "icon": "🛣️",
+              "colorClass": "grey",
+              "url": "#",
+              "external": true,
+              "metaTop": "32",
+              "metaBottom": "Example closures"
+            },
+            {
+              "title": "Water Outages",
+              "description": "Planned and unplanned interruptions to council water supply.",
+              "icon": "🚰",
+              "colorClass": "blue",
+              "url": "https://www.fndc.govt.nz/services/water/Water-outage-updates",
+              "external": true,
+              "metaTop": "",
+              "metaBottom": "FNDC"
+            }
+          ]
+        },
+        {
+          "id": "regional",
+          "title": "Regional",
+          "description": "Northland wide services and lifelines",
+          "tiles": [
+            {
+              "title": "Power Outages",
+              "description": "Current outages on the Top Energy network in the Far North.",
+              "icon": "⚡",
+              "colorClass": "blue",
+              "url": "https://outages.topenergy.co.nz/",
+              "external": true,
+              "metaTop": "0",
+              "metaBottom": "Sample outages"
+            },
+            {
+              "title": "Local Hazards",
+              "description": "NRC river levels, rainfall gauges and coastal monitoring.",
+              "icon": "💧",
+              "colorClass": "red",
+              "url": "https://www.nrc.govt.nz/environment/environmental-data/environmental-data-hub/",
+              "external": true,
+              "metaTop": "",
+              "metaBottom": "NRC data"
+            }
+          ]
+        },
+        {
+          "id": "national",
+          "title": "National",
+          "description": "Nationwide networks and guidance",
+          "tiles": [
+            {
+              "title": "State Highways",
+              "description": "NZTA journey planner for highways in and out of the district.",
+              "icon": "🚗",
+              "colorClass": "teal",
+              "url": "https://www.journeys.nzta.govt.nz/journey-planner",
+              "external": true,
+              "metaTop": "",
+              "metaBottom": "NZTA"
+            },
+            {
+              "title": "Get Ready",
+              "description": "Preparedness guides and checklists for your whanau.",
+              "icon": "✅",
+              "colorClass": "teal",
+              "url": "https://getready.govt.nz/",
+              "external": true,
+              "metaTop": "",
+              "metaBottom": "National guidance"
+            }
+          ]
+        }
+      ],
+      "quickLinks": [
+        {
+          "label": "Weather Warnings",
+          "url": "https://www.metservice.com/warnings/home"
+        },
+        {
+          "label": "GeoNet Earthquakes",
+          "url": "https://www.geonet.org.nz/"
+        },
+        {
+          "label": "Fire And Burning Rules",
+          "url": "https://www.checkitsalright.nz/"
+        },
+        {
+          "label": "Local Radio Stations",
+          "url": "https://en.wikipedia.org/wiki/List_of_radio_stations_in_Northland#Upper_Northland"
+        }
+      ]
+    },
+    "footer": {
+      "line1": "Accessibility | Far North District Council disaster and emergency dashboard example.",
+      "line2": "Data links open external sites in a new tab."
+    }
+  }
+  </script>
+
+  <!-- Renderer -->
+  <script>
+    (function () {
+      const dataEl = document.getElementById("dashboard-data");
+      const data = JSON.parse(dataEl.textContent);
+
+
+
+      // Endpoint for emergency banners that drive the summary panel
+      const EMERGENCY_BANNERS_ENDPOINT = "https://www.fndc.govt.nz/Apps/emergencybanners";
+      const EMERGENCY_BANNERS_URL =
+        (location.hostname === "www.fndc.govt.nz" || location.hostname.endsWith(".fndc.govt.nz"))
+          ? EMERGENCY_BANNERS_ENDPOINT
+          : "https://corsproxy.io/?url=" + encodeURIComponent(EMERGENCY_BANNERS_ENDPOINT);
+		  
+		  
+      // Meta and brand
+      document.title = data.meta.pageTitle;
+      document.getElementById("brand-logo").textContent = data.brand.shortCode;
+      document.getElementById("brand-council").textContent = data.brand.councilName;
+      document.getElementById("brand-dashboard").textContent = data.brand.dashboardTitle;
+
+      document.getElementById("header-contact").textContent =
+        "Contact council " + data.meta.contactNumber;
+      document.getElementById("header-emergency").textContent =
+        "In an emergency call " + data.meta.emergencyNumber;
+
+      // Hero
+      document.getElementById("hero-title").textContent = data.hero.taglineTitle;
+      document.getElementById("hero-description").textContent = data.hero.description;
+      document.getElementById("hero-pill").textContent = data.hero.statusPill;
+      document.getElementById("hero-emergency-message").textContent = data.hero.emergencyMessage;
+      document.getElementById("hero-last-updated").textContent =
+        "Last updated " + data.meta.lastUpdated;
+
+      // CTA buttons
+      const ctaRow = document.getElementById("cta-row");
+      data.ctaButtons.forEach(function (btn) {
+        const a = document.createElement("a");
+        a.className = "cta-btn" + (btn.style === "secondary" ? " secondary" : "");
+        a.href = btn.url || "#";
+        if (btn.external) {
+          a.target = "_blank";
+          a.rel = "noopener";
+        }
+        a.setAttribute("role", "button");
+
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "icon";
+        iconSpan.setAttribute("aria-hidden", "true");
+        iconSpan.textContent = btn.icon || "";
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = btn.label;
+
+        a.appendChild(iconSpan);
+        a.appendChild(textSpan);
+        ctaRow.appendChild(a);
+      });
+
+      // Map panel
+// Map panel
+if (data.mapPanel) {
+  var mapHeadingEl = document.getElementById("map-heading");
+  var mapSubtitleEl = document.getElementById("map-subtitle");
+  var mapPlaceholder = document.getElementById("map-placeholder");
+
+  if (mapHeadingEl) {
+    mapHeadingEl.textContent = data.mapPanel.title || "";
+  }
+  if (mapSubtitleEl) {
+    mapSubtitleEl.textContent = data.mapPanel.subtitle || "";
+  }
+
+  if (mapPlaceholder) {
+    var ariaLabel =
+      data.mapPanel.placeholderText ||
+      "Far North situation overview map";
+
+    mapPlaceholder.innerHTML =
+      '<div id="situation-map" role="region" aria-label="' +
+      ariaLabel +
+      '"></div>';
+  }
+}
+
+
+      // Alerts panel
+document.getElementById("alerts-heading").textContent = data.alertsPanel.title;
+document.getElementById("alerts-subtitle").textContent = data.alertsPanel.subtitle;
+document.getElementById("alerts-lead").innerHTML =
+  "<strong>" + data.alertsPanel.lead.split(".")[0] + ".</strong> " +
+  data.alertsPanel.lead.split(".").slice(1).join(".").trim();
+
+// Let Region Warnings And Alerts populate the list once feeds are loaded
+const alertList = document.getElementById("alert-list");
+if (alertList) {
+  alertList.innerHTML = "<li class=\"alert-list-meta\"><small>Loading live region warnings and alerts...</small></li>";
+}
+
+
+            // Summary panel
+      document.getElementById("summary-title").textContent = data.summaryPanel.title;
+      const summaryContainer = document.getElementById("summary-paragraphs");
+      data.summaryPanel.paragraphs.forEach(function (text) {
+        const p = document.createElement("p");
+        p.textContent = text;
+        summaryContainer.appendChild(p);
+      });
+
+      // Pull any current emergency banners into the summary panel as extra lines
+      loadEmergencyBannersIntoSummary(summaryContainer);
+
+      // Stats section
+
+
+      // Stats section
+      document.getElementById("stats-title").textContent = data.statsSection.title;
+      document.getElementById("stats-subtitle").textContent = data.statsSection.subtitle;
+
+      const statsGrid = document.getElementById("stats-grid");
+      data.statsSection.cards.forEach(function (card) {
+        const a = document.createElement("a");
+        a.className = "stat-card" + (card.colorClass ? " " + card.colorClass : "");
+        a.href = card.url || "#";
+        if (card.external) {
+          a.target = "_blank";
+          a.rel = "noopener";
+        }
+        if (card.ariaLabel) {
+          a.setAttribute("aria-label", card.ariaLabel);
+        }
+
+        const numberDiv = document.createElement("div");
+        numberDiv.className = "stat-number";
+        numberDiv.textContent = card.number;
+
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "stat-info";
+
+        const labelDiv = document.createElement("div");
+        labelDiv.className = "stat-label";
+        labelDiv.textContent = card.label;
+
+        const descP = document.createElement("p");
+        descP.className = "stat-desc";
+        descP.textContent = card.description;
+
+        infoDiv.appendChild(labelDiv);
+        infoDiv.appendChild(descP);
+
+        a.appendChild(numberDiv);
+        a.appendChild(infoDiv);
+
+        statsGrid.appendChild(a);
+      });
+
+      // Tiles section and groups
+      document.getElementById("tiles-title").textContent = data.tilesSection.title;
+      document.getElementById("tiles-subtitle").textContent = data.tilesSection.subtitle;
+
+      const tileGroupsContainer = document.getElementById("tile-groups");
+      data.tilesSection.groups.forEach(function (group) {
+        const groupSection = document.createElement("section");
+        groupSection.className = "tile-group";
+        groupSection.setAttribute("aria-label", group.title + " level information");
+
+        const headerDiv = document.createElement("div");
+        headerDiv.className = "tile-group-header";
+
+        const h4 = document.createElement("h4");
+        h4.textContent = group.title;
+
+        const spanDesc = document.createElement("span");
+        spanDesc.textContent = group.description;
+
+        headerDiv.appendChild(h4);
+        headerDiv.appendChild(spanDesc);
+
+        const gridDiv = document.createElement("div");
+        gridDiv.className = "tile-grid";
+
+        group.tiles.forEach(function (tile) {
+          const a = document.createElement("a");
+          a.className = "tile" + (tile.colorClass ? " " + tile.colorClass : "");
+          a.href = tile.url || "#";
+          if (tile.external) {
+            a.target = "_blank";
+            a.rel = "noopener";
+          }
+
+          const iconSpan = document.createElement("span");
+          iconSpan.className = "icon";
+          iconSpan.setAttribute("aria-hidden", "true");
+          iconSpan.textContent = tile.icon || "";
+
+          const mainDiv = document.createElement("div");
+          mainDiv.className = "tile-main";
+
+          const titleH4 = document.createElement("h4");
+          titleH4.textContent = tile.title;
+          const descP = document.createElement("p");
+          descP.textContent = tile.description;
+
+          mainDiv.appendChild(titleH4);
+          mainDiv.appendChild(descP);
+
+          let metaDiv = null;
+          if (tile.metaTop || tile.metaBottom) {
+            metaDiv = document.createElement("div");
+            metaDiv.className = "tile-meta";
+
+            if (tile.metaTop) {
+              const strong = document.createElement("strong");
+              strong.textContent = tile.metaTop;
+              metaDiv.appendChild(strong);
+            }
+
+            if (tile.metaBottom) {
+              const span = document.createElement("span");
+              span.textContent = tile.metaBottom;
+              metaDiv.appendChild(span);
+            }
+          }
+
+          a.appendChild(iconSpan);
+          a.appendChild(mainDiv);
+          if (metaDiv) {
+            a.appendChild(metaDiv);
+          }
+
+          gridDiv.appendChild(a);
+        });
+
+        groupSection.appendChild(headerDiv);
+        groupSection.appendChild(gridDiv);
+        tileGroupsContainer.appendChild(groupSection);
+      });
+
+      // Quick links
+      const quickLinksContainer = document.getElementById("quick-links");
+      data.tilesSection.quickLinks.forEach(function (link) {
+        const a = document.createElement("a");
+        a.className = "link-chip";
+        a.href = link.url || "#";
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.textContent = link.label;
+        quickLinksContainer.appendChild(a);
+      });
+
+           /**
+       * Fetch and append emergency banner items into the summary panel.
+       * Uses the /Apps/emergencybanners feed which is not strict JSON.
+       */
+           /**
+       * Fetch and append emergency banner items into the summary panel.
+       * Uses the /Apps/emergencybanners feed which is not strict JSON.
+       */
+      function loadEmergencyBannersIntoSummary(container) {
+        if (!container || !window.fetch) {
+          return;
+        }
+
+        fetch(EMERGENCY_BANNERS_URL, { cache: "no-store" })
+          .then(function (response) {
+            return response.text();
+          })
+          .then(function (rawText) {
+            var items = parseEmergencyBannerFeed(rawText);
+            if (!items || !items.length) {
+              return;
+            }
+
+            // Remove the first empty placeholder paragraph if it exists
+            var firstChild = container.firstElementChild;
+            if (firstChild && !firstChild.textContent.trim()) {
+              container.removeChild(firstChild);
+            }
+
+            // Take the first few items in feed order which is newest first
+            var topItems = items.slice(0, 5);
+            topItems.forEach(function (item) {
+              var wrapper = document.createElement("div");
+              wrapper.className =
+                "summary-banner alert-card " + mapBannerCardClass(item.alertType);
+
+              var heading = document.createElement("div");
+              heading.className = "summary-banner-heading";
+
+              var badgeSpan = document.createElement("span");
+              badgeSpan.className =
+                "badge " + mapBannerBadgeClass(item.alertType);
+              badgeSpan.textContent = item.alertType
+                ? capitaliseFirst(item.alertType)
+                : "Alert";
+
+              var titleStrong = document.createElement("strong");
+              titleStrong.textContent = item.title || "";
+
+              heading.appendChild(badgeSpan);
+              heading.appendChild(document.createTextNode(" "));
+              heading.appendChild(titleStrong);
+
+              var body = document.createElement("div");
+              body.className = "summary-banner-body";
+
+              // Description contains HTML from the feed so use innerHTML on purpose
+              if (item.description) {
+                body.innerHTML = item.description;
+              }
+
+              wrapper.appendChild(heading);
+              wrapper.appendChild(body);
+
+              container.appendChild(wrapper);
+            });
+          })
+          .catch(function (error) {
+            console.warn("Could not load emergency banners for summary panel", error);
+          });
+      }
+
+	  
+	        function mapBannerCardClass(alertType) {
+        var t = (alertType || "").toLowerCase();
+        if (t === "warning") {
+          return "alert-orange";
+        }
+        if (t === "info") {
+          return "alert-yellow";
+        }
+        return "alert-default";
+      }
+
+      function mapBannerBadgeClass(alertType) {
+        var t = (alertType || "").toLowerCase();
+        if (t === "warning") {
+          return "alert-orange";
+        }
+        if (t === "info") {
+          return "alert-yellow";
+        }
+        return "alert-default";
+      }
+
+      function capitaliseFirst(str) {
+        if (!str) return "";
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+      }
+
+
+            /**
+       * Very small parser for the emergency banner feed.
+       * The feed looks like:
+       * {{ "Title":"..", "Description":"..", "AlertType":"..", "PublishDate":"..", "EndDate":".." },{ ... },}
+       * It is not valid JSON so this extracts the key fields with a regular expression.
+       */
+      function parseEmergencyBannerFeed(rawText) {
+        if (!rawText) {
+          return [];
+        }
+        var text = String(rawText).trim();
+        if (!text) {
+          return [];
+        }
+
+        var items = [];
+        var pattern = /{\s*"Title":"([^"]+)"([\s\S]*?)"Description":"([^"]*?)"([\s\S]*?)"AlertType":"([^"]+)"([\s\S]*?)"PublishDate":"([^"]+)"([\s\S]*?)"EndDate":"([^"]+)"\s*}/g;
+        var match;
+        while ((match = pattern.exec(text)) !== null) {
+          items.push({
+            title: match[1].trim(),
+            description: match[3].trim(),
+            alertType: match[5].trim(),
+            publishDate: match[7].trim(),
+            endDate: match[9].trim()
+          });
+        }
+        return items;
+      }
+
+
+      // Footer
+      document.getElementById("footer-line-1").textContent = data.footer.line1;
+      document.getElementById("footer-line-2").textContent = data.footer.line2;
+    })();
+  </script>
+
+  
+   <script>
+    // Base map
+  var map = L.map("situation-map", {
+  center: [-35.15, 173.65],
+  zoom: 8
+});
+
+    var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    // Overlay layer containers
+    var layerMetServiceWarnings = L.layerGroup();
+    var layerCivilDefenceAlerts = L.layerGroup();
+    var layerPowerOutages = L.layerGroup();
+    var layerWaterOutages = L.layerGroup();
+    var layerRoadWarnings = L.layerGroup();
+    var layerMarae = L.layerGroup();
+    var layerCommunityHalls = L.layerGroup();
+	var layerServiceCentres = L.layerGroup(); // new
+	var layerSwimsafe = L.layerGroup();        // new
+    var layerWeatherAreas = L.layerGroup();
+    var layerTides = L.layerGroup();
+    var layerRivers = L.layerGroup();
+	 var layerEarthquakes = L.layerGroup(); // GeoNet earthquakes
+   var layerGeoNetWarnings = L.layerGroup(); // GeoNet quake warnings (CAP)
+
+    // Add layers to control
+    var baseLayers = {
+      "OpenStreetMap": osm
+    };
+
+    var overlays = {
+      "MetService Weather Warnings": layerMetServiceWarnings,
+      "Civil Defence Alerts": layerCivilDefenceAlerts,
+      "Power Outages": layerPowerOutages,
+      "Water Outages": layerWaterOutages,
+      "NZTA Road Warnings and Closures": layerRoadWarnings,
+      "Marae locations": layerMarae,
+      "Community Hall locations": layerCommunityHalls,
+	  "Service Centre locations": layerServiceCentres, // new
+	    "Swimsafe Locations": layerSwimsafe,              // new
+      "Weather": layerWeatherAreas,
+      "Tides": layerTides,
+      "NRC River Data": layerRivers,
+	   "GeoNet Earthquakes": layerEarthquakes,// new,
+	         "GeoNet Quake Warnings (CAP)": layerGeoNetWarnings
+    };
+
+    var layersControl = L.control.layers(baseLayers, overlays, { collapsed: true }).addTo(map);
+
+
+   
+
+
+    // Helper: basic icon factory
+    function makeIcon(color) {
+      return L.divIcon({
+        className: "custom-marker",
+        html: '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + color + ';border:2px solid white;box-shadow:0 0 2px rgba(0,0,0,0.6);"></span>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+    }
+
+    // Helper: tide icon with direction arrow
+function makeTideIcon(color, direction) {
+  var arrowChar =
+    direction === "rising" ? "⬆" :
+    direction === "falling" ? "⬇" :
+    "";
+
+  var arrowHtml = arrowChar
+    ? '<span style="margin-left:4px;font-size:18px;line-height:1;">' + arrowChar + "</span>"
+    : "";
+
+  return L.divIcon({
+    className: "custom-marker custom-marker-tide",
+    html:
+      '<div style="display:flex;align-items:center;">' +
+        '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:' +
+          color +
+          ';border:2px solid white;box-shadow:0 0 2px rgba(0,0,0,0.6);"></span>' +
+        arrowHtml +
+      "</div>",
+    iconSize: [28, 22],
+    iconAnchor: [14, 11]
+  });
+}
+
+
+
+    // Marker style configuration
+    // Polygons have their own styling further down
+    var MARKER_CONFIG = {
+      weatherAreas: {
+        color: "#1976d2"
+      },
+      tides: {
+        // Default tide marker colour
+        defaultColor: "#009688",
+        // Optional different colours by tide state if your data includes it
+        // For example site.state or site.tideType
+        colorByState: {
+          high: "#2196f3",
+          low: "#ff9800"
+        }
+      },
+      powerOutages: {
+        // Keys match statusType passed into colourForStatus
+        unplanned: "#e91e63",
+        plannedActive: "#d81b60",
+        planned: "#ffb300",
+        defaultColor: "#9e9e9e"
+      },
+      waterOutages: {
+        defaultColor: "#2196f3",
+        // Keys match item.status from the asset listing
+        colorByStatus: {
+          "New": " #0277bd",
+          "Reported": "#0288d1",
+          "Under repairs": "#f57c00",
+          "Planned": "#7b1fa2",
+          "Restored": "#2e7d32"
+        }
+      },
+      nzta: {
+        // Point marker colours by NZTA event type
+        point: {
+          closures: "#b71c1c",
+          warnings: "#ff9800",
+          roadworks: "#009688",
+          hazards: "#ff5722",
+          defaultColor: "#1976d2"
+        }
+      },
+      marae: {
+        color: "#795548"
+      },
+      communityHalls: {
+        color: "#9c27b0"
+      },
+      serviceCentres: {
+        color: "#ff9800"   // new service centre colour
+      },
+      rivers: {
+        // Colour by flow or trend from Icon.Name
+        defaultColor: "#4caf50",
+        colorByTrend: {
+          rising: "#1976d2",
+          falling: "#f44336"
+        }
+      },
+swimsafe: {
+  defaultColor: "#00bcd4",
+  colorByRiskClass: {
+    // Very low
+    "risk-vlow-overall": "#4caf50",
+    "risk-vlow-weekly": "#4caf50",
+    "risk-vlow-special": "#4caf50",
+
+    // Low
+    "risk-low-overall": "#8bc34a",
+    "risk-low-weekly": "#cddc39",
+    "risk-low-special": "#cddc39",
+
+    // Medium / moderate
+    "risk-medium-overall": "#ff9800",
+    "risk-medium-weekly": "#ff9800",
+    "risk-medium-special": "#ff9800",
+
+    // High
+    "risk-high-overall": "#f44336",
+    "risk-high-weekly": "#f44336",
+    "risk-high-special": "#f44336",
+
+    // No data
+    "nodata-overall": "#9e9e9e"
+  }
+},
+      earthquakes: {
+        // Colours by magnitude band
+        minor: "#4caf50",      // mag < 2.5
+        light: "#ff9800",      // 2.5 ≤ mag < 4
+        moderate: "#f44336",   // mag ≥ 4
+        defaultColor: "#795548"
+        },
+       geonetCap: {
+         // Marker / circle colour for GeoNet CAP quake warnings
+         color: "#fbc02d"
+       }
+    };
+
+// Legend configuration: which overlays contribute which legend items
+var LEGEND_CONFIG = {
+  "Weather": {
+    group: "Weather",
+    items: [
+      { color: MARKER_CONFIG.weatherAreas.color, label: "Weather location" }
+    ]
+  },
+  "Tides": {
+    group: "Tides",
+    items: [
+      { color: MARKER_CONFIG.tides.defaultColor, label: "Tide site" },
+      {
+        color: (MARKER_CONFIG.tides.colorByState && MARKER_CONFIG.tides.colorByState.high) || "#2196f3",
+        label: "High tide phase"
+      },
+      {
+        color: (MARKER_CONFIG.tides.colorByState && MARKER_CONFIG.tides.colorByState.low) || "#ff9800",
+        label: "Low tide phase"
+      }
+    ]
+  },
+  "Power Outages": {
+    group: "Power outages (Top Energy)",
+    items: [
+      { color: MARKER_CONFIG.powerOutages.unplanned, label: "Unplanned outage" },
+      { color: MARKER_CONFIG.powerOutages.plannedActive, label: "Planned outage active" },
+      { color: MARKER_CONFIG.powerOutages.planned, label: "Planned outage scheduled" }
+    ]
+  },
+  "Water Outages": {
+    group: "Water outages (FNDC)",
+    items: [
+      {
+        color: MARKER_CONFIG.waterOutages.colorByStatus["New"],
+        label: "New"
+      },
+      {
+        color: MARKER_CONFIG.waterOutages.colorByStatus["Reported"],
+        label: "Reported"
+      },
+      {
+        color: MARKER_CONFIG.waterOutages.colorByStatus["Under repairs"],
+        label: "Under repairs"
+      },
+      {
+        color: MARKER_CONFIG.waterOutages.colorByStatus["Planned"],
+        label: "Planned"
+      },
+      {
+        color: MARKER_CONFIG.waterOutages.colorByStatus["Restored"],
+        label: "Restored"
+      }
+    ]
+  },
+  "NZTA Road Warnings and Closures": {
+    group: "Road events (NZTA)",
+    items: [
+      { color: MARKER_CONFIG.nzta.point.closures, label: "Closure" },
+      { color: MARKER_CONFIG.nzta.point.warnings, label: "Warning or caution" },
+      { color: MARKER_CONFIG.nzta.point.roadworks, label: "Roadworks" },
+      { color: MARKER_CONFIG.nzta.point.hazards, label: "Hazard" }
+    ]
+  },
+  "Marae locations": {
+    group: "Community",
+    items: [
+      { color: MARKER_CONFIG.marae.color, label: "Marae" }
+    ]
+  },
+  "Community Hall locations": {
+    group: "Community",
+    items: [
+      { color: MARKER_CONFIG.communityHalls.color, label: "Community hall" }
+    ]
+  },
+  "Service Centre locations": {
+    group: "Community",
+    items: [
+      { color: MARKER_CONFIG.serviceCentres.color, label: "Service centre" }
+    ]
+  },
+"Swimsafe Locations": {
+  group: "Community",
+  items: [
+    {
+      color: MARKER_CONFIG.swimsafe.colorByRiskClass["risk-vlow-overall"],
+      label: "Very low risk"
+    },
+    {
+      color: MARKER_CONFIG.swimsafe.colorByRiskClass["risk-low-weekly"],
+      label: "Low risk"
+    },
+    {
+      color: MARKER_CONFIG.swimsafe.colorByRiskClass["risk-medium-overall"],
+      label: "Moderate risk"
+    },
+    {
+      color: MARKER_CONFIG.swimsafe.colorByRiskClass["risk-high-overall"],
+      label: "High risk"
+    },
+    {
+      color: MARKER_CONFIG.swimsafe.colorByRiskClass["nodata-overall"],
+      label: "No recent risk data"
+    }
+  ]
+},
+  "GeoNet Earthquakes": {
+    group: "Earthquakes (GeoNet)",
+    items: [
+      { color: "#f44336", label: "Earthquake (size by magnitude)" }
+    ]
+  },
+  "GeoNet Quake Warnings (CAP)": {
+    group: "GeoNet warnings (CAP)",
+    items: [
+      { color: MARKER_CONFIG.geonetCap.color, label: "Quake warning area (CAP)" }
+    ]
+  },
+  "NRC River Data": {
+    group: "Rivers (NRC)",
+    items: [
+      { color: MARKER_CONFIG.rivers.defaultColor, label: "River site" },
+      {
+        color: (MARKER_CONFIG.rivers.colorByTrend && MARKER_CONFIG.rivers.colorByTrend.rising) || "#1976d2",
+        label: "River rising"
+      },
+      {
+        color: (MARKER_CONFIG.rivers.colorByTrend && MARKER_CONFIG.rivers.colorByTrend.falling) || "#f44336",
+        label: "River falling"
+      }
+    ]
+  },
+  "MetService Weather Warnings": {
+    group: "MetService weather warnings",
+    items: [
+      { color: "#f44336", label: "Severe weather polygon" }
+    ]
+  },
+  "Civil Defence Alerts": {
+    group: "Civil Defence alerts",
+    items: [
+      { color: "#ff9800", label: "Civil Defence alert area" }
+    ]
+  }
+};
+
+// Will hold a reference to the legend content element once the legend is added
+var legendContentEl = null;
+
+// Update legend content based on which overlays are currently visible
+function updateLegend() {
+  if (!legendContentEl) {
+    return;
+  }
+
+  var groupsByName = {};
+  var groupList = [];
+
+  // Build grouped legend entries in overlay order
+  Object.keys(overlays).forEach(function (overlayName) {
+    var layer = overlays[overlayName];
+    if (!map.hasLayer(layer)) {
+      return;
+    }
+
+    var cfg = LEGEND_CONFIG[overlayName];
+    if (!cfg) {
+      return;
+    }
+
+    var groupName = cfg.group;
+    var group = groupsByName[groupName];
+    if (!group) {
+      group = { name: groupName, items: [] };
+      groupsByName[groupName] = group;
+      groupList.push(group);
+    }
+
+    cfg.items.forEach(function (item) {
+      group.items.push(item);
+    });
+  });
+
+  if (!groupList.length) {
+    legendContentEl.innerHTML =
+      '<p style="margin:0;font-size:0.8rem;">No overlay layers are selected.</p>';
+    return;
+  }
+
+  var html = "<ul>";
+  groupList.forEach(function (group) {
+    html += "<li><strong>" + group.name + "</strong></li>";
+    group.items.forEach(function (item) {
+      html +=
+        '<li class="legend-item">' +
+          '<span class="legend-swatch" style="background:' +
+          item.color +
+          ';"></span>' +
+          item.label +
+        "</li>";
+    });
+  });
+  html += "</ul>";
+
+  legendContentEl.innerHTML = html;
+}
+
+// Collapsible marker legend driven by visible overlay layers
+var legend = L.control({ position: "bottomleft" });
+
+legend.onAdd = function () {
+  var div = L.DomUtil.create("div", "map-legend");
+
+  div.innerHTML =
+    '<button type="button" class="legend-toggle" aria-expanded="true">' +
+      '<span class="legend-title">Legend</span>' +
+      '<span class="legend-toggle-icon" aria-hidden="true">▾</span>' +
+    "</button>" +
+    '<div class="legend-content"></div>';
+
+  legendContentEl = div.querySelector(".legend-content");
+
+  var toggleBtn = div.querySelector(".legend-toggle");
+
+  // Stop map drag when interacting with the legend
+  L.DomEvent.disableClickPropagation(div);
+
+  L.DomEvent.on(toggleBtn, "click", function (e) {
+    L.DomEvent.stopPropagation(e);
+
+    var expanded = toggleBtn.getAttribute("aria-expanded") === "true";
+    var newExpanded = !expanded;
+
+    toggleBtn.setAttribute("aria-expanded", newExpanded ? "true" : "false");
+
+    if (newExpanded) {
+      div.classList.remove("legend-collapsed");
+      legendContentEl.style.display = "";
+    } else {
+      div.classList.add("legend-collapsed");
+      legendContentEl.style.display = "none";
+    }
+  });
+
+  // Populate initial legend content (in case any overlays are on by default)
+  updateLegend();
+
+  return div;
+};
+
+legend.addTo(map);
+
+// Keep legend in sync with layer visibility
+map.on("overlayadd", function () {
+  updateLegend();
+});
+map.on("overlayremove", function () {
+  updateLegend();
+});
+
+
+// NZTA event visibility by feature.properties.type
+// Valid values in delays.json are usually: closures, warnings, roadworks, hazards
+var NZTA_EVENT_TYPE_VISIBILITY = {
+  closures: true,
+  warnings: true,
+  roadworks: true,
+  hazards: true
+};
+
+function nztaEventIsVisible(feature) {
+  var p = feature && feature.properties ? feature.properties : {};
+  var typeKey = (p.type || "").toLowerCase();
+
+  // If there is no type just show it
+  if (!typeKey) return true;
+
+  if (Object.prototype.hasOwnProperty.call(NZTA_EVENT_TYPE_VISIBILITY, typeKey)) {
+    return !!NZTA_EVENT_TYPE_VISIBILITY[typeKey];
+  }
+
+  // Unknown type defaults to visible
+  return true;
+}
+
+
+        // 1. Weather From Open Meteo For Key Locations
+
+    // Live Open Meteo API for six Far North locations
+    var OPEN_METEO_URL =
+      "https://api.open-meteo.com/v1/forecast?latitude=-35.111,-35.415307,-35.1034116,-35.27075,-34.834066,-34.511518,-35.2268,-35.4022&longitude=173.265,173.797135,173.7109356,173.215174,173.106533,172.890875,173.9472,173.5041&daily=weather_code&hourly=precipitation_probability,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,weather_code,wind_gusts_10m,precipitation&timezone=Pacific%2FAuckland&forecast_days=3";
+
+    // Local test option: use your saved Open Meteo response file instead of live API
+    // var OPEN_METEO_URL = "forecast.json";
+
+    // Locations in the same order as the Open Meteo latitude and longitude lists
+    var WEATHER_LOCATIONS = [
+      { name: "Kaitaia",     lat: -35.111,     lng: 173.265 },
+      { name: "Kaikohe",     lat: -35.415307,  lng: 173.797135 },
+	  { name: "Kerikeri",     lat: -35.2268,  lng: 173.9472 },
+	  { name: "Rawene",     lat: -35.4022,  lng: 173.5041 },
+      { name: "Kaeo",        lat: -35.1034116, lng: 173.7109356 },
+      { name: "Herekino",    lat: -35.27075,   lng: 173.215174 },
+      { name: "Waiharara",   lat: -34.834066,  lng: 173.106533 },
+      { name: "Cape Reinga", lat: -34.511518,  lng: 172.890875 }
+    ];
+
+    // Translate WMO weather code to a simple description
+    function wmoToText(code) {
+      var map = {
+        0:  "Clear sky",
+        1:  "Mainly clear",
+        2:  "Partly cloudy",
+        3:  "Overcast",
+        45: "Fog",
+        48: "Depositing rime fog",
+        51: "Light drizzle",
+        53: "Moderate drizzle",
+        55: "Dense drizzle",
+        56: "Light freezing drizzle",
+        57: "Dense freezing drizzle",
+        61: "Slight rain",
+        63: "Moderate rain",
+        65: "Heavy rain",
+        66: "Light freezing rain",
+        67: "Heavy freezing rain",
+        71: "Slight snowfall",
+        73: "Moderate snowfall",
+        75: "Heavy snowfall",
+        77: "Snow grains",
+        80: "Slight rain showers",
+        81: "Moderate rain showers",
+        82: "Violent rain showers",
+        85: "Slight snow showers",
+        86: "Heavy snow showers",
+        95: "Thunderstorm",
+        96: "Thunderstorm with slight hail",
+        99: "Thunderstorm with heavy hail"
+      };
+      return map[code] || "Unknown conditions";
+    }
+
+    function buildWeatherPopupHtml(site, forecast) {
+      var current = forecast.current || {};
+      var dailyCode =
+        forecast.daily &&
+        Array.isArray(forecast.daily.weather_code) &&
+        forecast.daily.weather_code.length
+          ? forecast.daily.weather_code[0]
+          : null;
+
+      var currentDesc =
+        typeof current.weather_code === "number"
+          ? wmoToText(current.weather_code)
+          : "";
+
+      var dailyDesc =
+        typeof dailyCode === "number"
+          ? wmoToText(dailyCode)
+          : "";
+
+      var html =
+        "<strong>" + site.name + "</strong><br>" +
+        (currentDesc ? "Now: " + currentDesc + "<br>" : "") +
+        "Temperature: " +
+        (current.temperature_2m != null
+          ? current.temperature_2m.toFixed(1) + " °C"
+          : "n/a") +
+        "<br>" +
+        "Feels like: " +
+        (current.apparent_temperature != null
+          ? current.apparent_temperature.toFixed(1) + " °C"
+          : "n/a") +
+        "<br>" +
+        "Humidity: " +
+        (current.relative_humidity_2m != null
+          ? current.relative_humidity_2m + " %"
+          : "n/a") +
+        "<br>" +
+        "Wind: " +
+        (current.wind_speed_10m != null
+          ? current.wind_speed_10m + " km/h"
+          : "n/a") +
+        (current.wind_direction_10m != null
+          ? " (" + current.wind_direction_10m + "°)"
+          : "") +
+        "<br>";
+
+      if (current.wind_gusts_10m != null) {
+        html += "Gusts: " + current.wind_gusts_10m + " km/h<br>";
+      }
+
+      if (current.precipitation != null) {
+        html += "Precipitation: " + current.precipitation + " mm<br>";
+      }
+
+      if (dailyDesc) {
+        html += "<br>Today: " + dailyDesc;
+      }
+
+      return html;
+    }
+
+    function addWeatherMarker(site, forecast) {
+      var popupHtml = buildWeatherPopupHtml(site, forecast);
+
+      var marker = L.marker([site.lat, site.lng], {
+        icon: makeIcon(MARKER_CONFIG.weatherAreas.color)
+      });
+
+      // Hover popup behaviour for the Weather layer
+      marker.bindPopup(popupHtml);
+      marker.on("mouseover", function () {
+        this.openPopup();
+      });
+      marker.on("mouseout", function () {
+        this.closePopup();
+      });
+
+      layerWeatherAreas.addLayer(marker);
+    }
+
+    function loadWeatherFromOpenMeteo() {
+      fetch(OPEN_METEO_URL)
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (data) {
+          // Open Meteo multi location responses are an array
+          // Your saved forecast.json has this format
+          var forecasts = Array.isArray(data) ? data : [data];
+
+          if (!forecasts.length) {
+            console.warn("Open Meteo weather data empty");
+            return;
+          }
+
+          WEATHER_LOCATIONS.forEach(function (site, idx) {
+            var forecast = forecasts[idx];
+            if (!forecast || !forecast.current) {
+              return;
+            }
+            addWeatherMarker(site, forecast);
+          });
+        })
+        .catch(function (err) {
+          console.warn("Open Meteo weather load failed", err);
+        });
+    }
+
+    // Kick off weather load
+    loadWeatherFromOpenMeteo();
+
+
+        // 2. Tides from NIWA Tide API and CSV locations
+
+    // CSV containing place name and coordinates
+    // Format (single header, then repeating "Name,lat,lng" groups):
+    // Place, Latitude, Longitude Cape Maria van Diemen,-34.40...,172.62... Ngatehe Point,-34.52...,173.41...
+    var TIDES_CSV_URL =
+      "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Testing/Tides%20-%20Tides.csv";
+
+    // NIWA Tides API endpoint and key
+    var NIWA_TIDES_API_URL = "https://api.niwa.co.nz/tides/data";
+    var NIWA_TIDES_API_KEY = "qMPsVJPmEXB1b0YQtGJE5i9bnzOWOq1O";
+
+    // Build NIWA request URL for one site, wrapped through CORS proxy
+    function buildNiwaTideUrl(lat, lng) {
+      var now = new Date();
+      var startDate = now.toISOString().slice(0, 10); // yyyy-mm-dd (UTC)
+
+      var baseUrl =
+        NIWA_TIDES_API_URL +
+        "?lat=" +
+        encodeURIComponent(lat) +
+        "&long=" +
+        encodeURIComponent(lng) +
+        "&numberOfDays=2" +
+        "&startDate=" +
+        encodeURIComponent(startDate) +
+        "&datum=LAT" +
+        "&apikey=" +
+        encodeURIComponent(NIWA_TIDES_API_KEY);
+
+      // Use same proxy pattern as other feeds
+      return "https://corsproxy.io/?url=" + encodeURIComponent(baseUrl);
+    }
+
+    // Parse your compact CSV into [{ name, lat, lng }, ...]
+    function parseTideCsv(text) {
+      if (!text) {
+        return [];
+      }
+
+      var raw = text.trim();
+
+      // Remove header "Place, Latitude, Longitude"
+      raw = raw.replace(/^Place,\s*Latitude,\s*Longitude\s*/i, "");
+
+      var sites = [];
+
+      // Remaining string is repeating: Name,lat,lng [space] Name2,lat2,lng2 ...
+      while (raw.length) {
+        var firstComma = raw.indexOf(",");
+        if (firstComma === -1) {
+          break;
+        }
+        var name = raw.slice(0, firstComma).trim();
+        var rest = raw.slice(firstComma + 1).trim();
+
+        var secondComma = rest.indexOf(",");
+        if (secondComma === -1) {
+          break;
+        }
+        var latStr = rest.slice(0, secondComma).trim();
+        rest = rest.slice(secondComma + 1).trim();
+
+        var nextSpace = rest.indexOf(" ");
+        var lngStr;
+        var remainder;
+        if (nextSpace === -1) {
+          lngStr = rest.trim();
+          remainder = "";
+        } else {
+          lngStr = rest.slice(0, nextSpace).trim();
+          remainder = rest.slice(nextSpace + 1).trim();
+        }
+
+        var lat = parseFloat(latStr);
+        var lng = parseFloat(lngStr);
+
+        if (!isNaN(lat) && !isNaN(lng) && name) {
+          sites.push({ name: name, lat: lat, lng: lng });
+        }
+
+        raw = remainder;
+      }
+
+      return sites;
+    }
+
+    // Normalise NIWA response into sorted [{ time: Date, height: number }, ...]
+    function normaliseNiwaTideValues(data) {
+      if (!data || !data.values) {
+        return [];
+      }
+
+      var series = [];
+      var rawValues = data.values;
+
+      for (var i = 0; i < rawValues.length; i++) {
+        var v = rawValues[i];
+        var timeStr;
+        var height;
+
+        if (Array.isArray(v)) {
+          timeStr = v[0];
+          height = parseFloat(v[1]);
+        } else {
+          timeStr = v.time || v.dateTime || v[0];
+          if (v.value != null) {
+            height = parseFloat(v.value);
+          } else if (v.height != null) {
+            height = parseFloat(v.height);
+          } else {
+            height = parseFloat(v[1]);
+          }
+        }
+
+        if (!timeStr || !isFinite(height)) {
+          continue;
+        }
+
+        var t = new Date(timeStr);
+        if (isNaN(t.getTime())) {
+          continue;
+        }
+
+        series.push({ time: t, height: height });
+      }
+
+      series.sort(function (a, b) {
+        return a.time - b.time;
+      });
+
+      return series;
+    }
+
+    // Detect local high and low tide events from a height time series
+    function detectTideEvents(series) {
+      var events = [];
+      if (!series || series.length < 3) {
+        return events;
+      }
+
+      for (var i = 1; i < series.length - 1; i++) {
+        var prev = series[i - 1];
+        var cur = series[i];
+        var next = series[i + 1];
+
+        var type = null;
+        if (cur.height >= prev.height && cur.height >= next.height) {
+          type = "H"; // high
+        } else if (cur.height <= prev.height && cur.height <= next.height) {
+          type = "L"; // low
+        }
+
+        if (type) {
+          events.push({
+            type: type,
+            time: cur.time,
+            height: cur.height
+          });
+        }
+      }
+
+      return events;
+    }
+
+    // Summarise: last high, last low, next high, next low, and current height
+        // Summarise: last high, last low, next high, next low, and current height
+    function summariseTideState(series) {
+      var events = detectTideEvents(series);
+      if (!events.length) {
+        return null;
+      }
+
+      var now = new Date();
+
+      var lastEvent = null;
+      var nextEvent = null;
+      var lastHigh = null;
+      var nextHigh = null;
+      var lastLow = null;
+      var nextLow = null;
+
+      for (var i = 0; i < events.length; i++) {
+        var e = events[i];
+
+        if (e.time <= now) {
+          if (!lastEvent || e.time > lastEvent.time) {
+            lastEvent = e;
+          }
+          if (e.type === "H" && (!lastHigh || e.time > lastHigh.time)) {
+            lastHigh = e;
+          }
+          if (e.type === "L" && (!lastLow || e.time > lastLow.time)) {
+            lastLow = e;
+          }
+        }
+
+        if (e.time >= now) {
+          if (!nextEvent || e.time < nextEvent.time) {
+            nextEvent = e;
+          }
+          if (e.type === "H" && (!nextHigh || e.time < nextHigh.time)) {
+            nextHigh = e;
+          }
+          if (e.type === "L" && (!nextLow || e.time < nextLow.time)) {
+            nextLow = e;
+          }
+        }
+      }
+
+      var currentHeight = null;
+      var betweenPercent = null;
+
+      if (
+        lastEvent &&
+        nextEvent &&
+        nextEvent.time.getTime() > lastEvent.time.getTime()
+      ) {
+        var totalMs = nextEvent.time.getTime() - lastEvent.time.getTime();
+        var elapsedMs = now.getTime() - lastEvent.time.getTime();
+        var frac = elapsedMs / totalMs;
+
+        if (frac < 0) {
+          frac = 0;
+        }
+        if (frac > 1) {
+          frac = 1;
+        }
+
+        betweenPercent = Math.round(frac * 100);
+        currentHeight =
+          lastEvent.height + frac * (nextEvent.height - lastEvent.height);
+      }
+
+      // Determine tide direction (going in or out) from last and next events
+      var direction = null;
+      if (lastEvent && nextEvent) {
+        if (lastEvent.type === "L" && nextEvent.type === "H") {
+          direction = "rising"; // tide coming in
+        } else if (lastEvent.type === "H" && nextEvent.type === "L") {
+          direction = "falling"; // tide going out
+        }
+      }
+
+      return {
+        lastHigh: lastHigh,
+        lastLow: lastLow,
+        nextHigh: nextHigh,
+        nextLow: nextLow,
+        currentHeight: currentHeight,
+        betweenPercent: betweenPercent,
+        direction: direction
+      };
+    }
+
+
+ function formatTideTime(evt) {
+  if (!evt || !evt.time) {
+    return "n/a";
+  }
+  var d = evt.time;
+  var timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  var day = String(d.getDate()).padStart(2, "0");
+  var month = String(d.getMonth() + 1).padStart(2, "0");
+  return timeStr + " " + day + "/" + month;
+}
+
+
+    function formatTideHeight(evt) {
+      if (!evt || typeof evt.height !== "number" || isNaN(evt.height)) {
+        return "";
+      }
+      return evt.height.toFixed(2) + " m";
+    }
+
+    function formatCurrentHeight(h) {
+      if (typeof h !== "number" || !isFinite(h)) {
+        return "n/a";
+      }
+      return h.toFixed(2) + " m";
+    }
+
+       function addTideMarker(site, summary) {
+  var direction = summary.direction;
+  var arrowChar =
+    direction === "rising" ? "⬆" :
+    direction === "falling" ? "⬇" :
+    "•";
+
+  var directionLabel =
+    direction === "rising"
+      ? "Incoming (rising)"
+      : direction === "falling"
+      ? "Outgoing (falling)"
+      : "Unknown";
+
+  // Collect last/next high and low then sort chronologically
+  var events = [
+    { label: "Last high", evt: summary.lastHigh },
+    { label: "Last low",  evt: summary.lastLow },
+    { label: "Next high", evt: summary.nextHigh },
+    { label: "Next low",  evt: summary.nextLow }
+  ].filter(function (item) {
+    return item.evt && item.evt.time;
+  });
+
+  events.sort(function (a, b) {
+    return a.evt.time - b.evt.time;
+  });
+
+  var eventsHtml = events.map(function (item) {
+    var timeStr = formatTideTime(item.evt);
+    var heightStr = formatTideHeight(item.evt);
+    if (heightStr) {
+      return "<strong>" + item.label + ":</strong> " + timeStr + " (" + heightStr + ")";
+    }
+    return "<strong>" + item.label + ":</strong> " + timeStr;
+  }).join("<br>");
+
+  var popupHtml =
+    "<strong>" + site.name + "</strong><br>" +
+    "Estimated current height: " +
+    formatCurrentHeight(summary.currentHeight) +
+    "<br>" +
+    "Tide direction: " + arrowChar + " " + directionLabel + "<br>" +
+    (summary.betweenPercent != null
+      ? "Between last and next tide: " +
+        summary.betweenPercent +
+        "% of the way<br><br>"
+      : "<br>") +
+    eventsHtml;
+
+  // Use tide specific icon with arrow
+  var marker = L.marker([site.lat, site.lng], {
+    icon: makeTideIcon(MARKER_CONFIG.tides.defaultColor, direction)
+  }).bindPopup(popupHtml);
+
+  layerTides.addLayer(marker);
+}
+
+
+    function loadTides() {
+      fetch(TIDES_CSV_URL)
+        .then(function (res) {
+          return res.text();
+        })
+        .then(function (csvText) {
+          var sites = parseTideCsv(csvText);
+          if (!sites.length) {
+            console.warn("No tide sites parsed from CSV");
+            return;
+          }
+
+          sites.forEach(function (site) {
+            var url = buildNiwaTideUrl(site.lat, site.lng);
+
+            fetch(url)
+              .then(function (res) {
+                return res.json();
+              })
+              .then(function (data) {
+                var series = normaliseNiwaTideValues(data);
+                if (!series.length) {
+                  return;
+                }
+                var summary = summariseTideState(series);
+                if (!summary) {
+                  return;
+                }
+                addTideMarker(site, summary);
+              })
+              .catch(function (err) {
+                console.warn("Tide data load failed for site", site.name, err);
+              });
+          });
+        })
+        .catch(function (err) {
+          console.warn("Tide CSV load failed", err);
+        });
+    }
+
+    // Kick off tide load
+    loadTides();
+
+
+    // 3. MetService Severe Weather Watches, Warnings and Advisories (Atom + CAP)
+var METSERVICE_ATOM_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent("https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/alerts/archive/latest_2025-11-08T06-24-52-084Z.xml");
+
+// Colour helper based on title text
+function metserviceColourForTitle(title) {
+  var t = (title || "").toLowerCase();
+  var color = "#1976d2";
+
+  if (t.indexOf("warning") !== -1) {
+    color = "#f44336";
+  }
+  if (t.indexOf("watch") !== -1) {
+    color = "#2196f3";
+  }
+  if (t.indexOf("orange") !== -1) {
+    color = "#ff9800";
+  }
+  if (t.indexOf("red") !== -1) {
+    color = "#b71c1c";
+  }
+
+  return color;
+}
+
+// Use your existing Far North bounding box if available
+function polygonTouchesFarNorth(latlngs) {
+  if (typeof isInFarNorth !== "function") {
+    return true; // if no helper, keep everything
+  }
+  for (var i = 0; i < latlngs.length; i++) {
+    var pt = latlngs[i];
+    if (isInFarNorth(pt[0], pt[1])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function loadMetserviceWeatherAlerts(atomUrl, targetLayer) {
+  fetch(atomUrl)
+    .then(function (res) { return res.text(); })
+    .then(function (atomText) {
+      var parser = new DOMParser();
+      var atom = parser.parseFromString(atomText, "application/xml");
+
+      var entries = atom.getElementsByTagName("entry");
+      var tasks = [];
+
+      for (var i = 0; i < entries.length; i++) {
+        (function (entry) {
+          var titleEl = entry.getElementsByTagName("title")[0];
+          var summaryEl = entry.getElementsByTagName("summary")[0];
+
+          var links = entry.getElementsByTagName("link");
+          var capLinkEl = null;
+          for (var j = 0; j < links.length; j++) {
+            var rel = links[j].getAttribute("rel") || "";
+            var type = links[j].getAttribute("type") || "";
+            if (type.indexOf("cap+xml") !== -1) {
+              capLinkEl = links[j];
+              break;
+            }
+          }
+          if (!capLinkEl && links.length) {
+            capLinkEl = links[0];
+          }
+
+          var title = titleEl ? titleEl.textContent : "MetService Weather Alert";
+          var summary = summaryEl ? summaryEl.textContent : "";
+          var capUrl = capLinkEl ? capLinkEl.getAttribute("href") : null;
+
+          if (!capUrl) {
+            return;
+          }
+
+          var proxiedCapUrl = "https://corsproxy.io/?url=" + encodeURIComponent(capUrl);
+
+          var task = fetch(proxiedCapUrl)
+            .then(function (res) { return res.text(); })
+            .then(function (capText) {
+              var capDoc = parser.parseFromString(capText, "application/xml");
+
+              var infoEl = capDoc.getElementsByTagName("info")[0];
+              if (!infoEl) {
+                return;
+              }
+
+              var eventEl = infoEl.getElementsByTagName("event")[0];
+              var headlineEl = infoEl.getElementsByTagName("headline")[0];
+              var descriptionEl = infoEl.getElementsByTagName("description")[0];
+              var effectiveEl = infoEl.getElementsByTagName("effective")[0];
+              var expiresEl = infoEl.getElementsByTagName("expires")[0];
+
+              var eventName = eventEl ? eventEl.textContent : title;
+              var headline = headlineEl ? headlineEl.textContent : title;
+              var description = descriptionEl ? descriptionEl.textContent : summary;
+              var effective = effectiveEl ? effectiveEl.textContent : "";
+              var expires = expiresEl ? expiresEl.textContent : "";
+
+              var colour = metserviceColourForTitle(title || eventName);
+
+              var areaEls = infoEl.getElementsByTagName("area");
+              var polygonsAddedForAlert = 0;
+
+              for (var a = 0; a < areaEls.length; a++) {
+                var areaEl = areaEls[a];
+                var areaDescEl = areaEl.getElementsByTagName("areaDesc")[0];
+                var areaDesc = areaDescEl ? areaDescEl.textContent : "";
+                var polyEls = areaEl.getElementsByTagName("polygon");
+
+                if (!polyEls.length) {
+                  continue;
+                }
+
+                for (var pIdx = 0; pIdx < polyEls.length; pIdx++) {
+                  var coordsStr = polyEls[pIdx].textContent.trim();
+                  if (!coordsStr) {
+                    continue;
+                  }
+
+                  var pointPairs = coordsStr.split(/\s+/);
+                  var latlngs = [];
+
+                  for (var k = 0; k < pointPairs.length; k++) {
+                    var pair = pointPairs[k].split(",");
+                    if (pair.length !== 2) {
+                      continue;
+                    }
+                    var lat = parseFloat(pair[0]);
+                    var lng = parseFloat(pair[1]);
+                    if (isNaN(lat) || isNaN(lng)) {
+                      continue;
+                    }
+                    latlngs.push([lat, lng]);
+                  }
+
+                  if (!latlngs.length) {
+                    continue;
+                  }
+
+                  // Only keep polygons that touch the Far North
+                  if (!polygonTouchesFarNorth(latlngs)) {
+                    continue;
+                  }
+
+                  var popupHtml =
+                    "<strong>" + headline + "</strong><br>" +
+                    "<em>" + eventName + "</em><br><br>" +
+                    (areaDesc ? "<strong>Area:</strong> " + areaDesc + "<br><br>" : "") +
+                    (description ? nl2br(description) + "<br><br>" : "") +
+                    (effective ? "<strong>From:</strong> " + effective + "<br>" : "") +
+                    (expires ? "<strong>Until:</strong> " + expires + "<br>" : "");
+
+                  var polygon = L.polygon(latlngs, {
+                    color: colour,
+                    weight: 2,
+                    fillOpacity: 0.15
+                  }).bindPopup(popupHtml);
+
+                  polygon.addTo(targetLayer);
+                  polygonsAddedForAlert++;
+                }
+              }
+
+              // Fallback marker when no polygons were added for this alert
+              if (!polygonsAddedForAlert) {
+                var marker = L.marker(map.getCenter(), {
+                  icon: makeIcon(colour)
+                }).bindPopup(
+                  "<strong>" + headline + "</strong><br>" +
+                  "<em>" + eventName + "</em><br><br>" +
+                  (description ? nl2br(description) + "<br><br>" : "") +
+                  (effective ? "<strong>From:</strong> " + effective + "<br>" : "") +
+                  (expires ? "<strong>Until:</strong> " + expires + "<br>" : "")
+                );
+                targetLayer.addLayer(marker);
+              }
+            })
+            .catch(function (err) {
+              console.warn("MetService CAP alert load failed", err);
+            });
+
+          tasks.push(task);
+        })(entries[i]);
+      }
+
+      return Promise.all(tasks);
+    })
+    .catch(function (err) {
+      console.warn("MetService Atom feed load failed", err);
+    });
+}
+
+// Load MetService feed
+loadMetserviceWeatherAlerts(METSERVICE_ATOM_URL, layerMetServiceWarnings);
+
+
+   // 4. Civil Defence Alerts from Atom + CAP feed
+// Civil Defence Atom feed that embeds CAP alerts in <content>
+var CIVIL_DEFENCE_ATOM_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent("https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/alerts/CivilDefenceTest.xml");
+
+// Optional helper if you want to reuse elsewhere
+function nl2br(text) {
+  return text ? text.replace(/\n/g, "<br>") : "";
+}
+
+function loadCivilDefenceAtomCap(url, targetLayer) {
+  fetch(url)
+    .then(function (res) { return res.text(); })
+    .then(function (xmlText) {
+      var parser = new DOMParser();
+      var atom = parser.parseFromString(xmlText, "application/xml");
+
+      var entries = atom.getElementsByTagName("entry");
+      for (var i = 0; i < entries.length; i++) {
+        var entry = entries[i];
+
+        var titleEl = entry.getElementsByTagName("title")[0];
+        var summaryEl = entry.getElementsByTagName("summary")[0];
+        var linkEl = entry.getElementsByTagName("link")[0];
+        var contentEl = entry.getElementsByTagName("content")[0];
+
+        var title = titleEl ? titleEl.textContent : "Civil Defence Alert";
+        var summaryText = summaryEl ? summaryEl.textContent : "";
+        var linkHref = "";
+        if (linkEl) {
+          linkHref = linkEl.getAttribute("href") || linkEl.textContent;
+        }
+
+        var polygonsAdded = 0;
+
+        if (contentEl) {
+          // This is the CAP XML as text
+          var capText = contentEl.textContent;
+          if (capText) {
+            var capDoc = parser.parseFromString(capText, "application/xml");
+
+            var infoEl = capDoc.getElementsByTagName("info")[0];
+            if (infoEl) {
+              var headlineEl = infoEl.getElementsByTagName("headline")[0];
+              var descriptionEl = infoEl.getElementsByTagName("description")[0];
+              var areaEl = infoEl.getElementsByTagName("area")[0];
+
+              var areaDescEl = areaEl ? areaEl.getElementsByTagName("areaDesc")[0] : null;
+              var polyEls = areaEl ? areaEl.getElementsByTagName("polygon") : [];
+
+              var headline = headlineEl ? headlineEl.textContent : title;
+              var description = descriptionEl ? descriptionEl.textContent : summaryText;
+              var areaDesc = areaDescEl ? areaDescEl.textContent : "";
+
+              for (var j = 0; j < polyEls.length; j++) {
+                var coordsStr = polyEls[j].textContent.trim();
+                if (!coordsStr) {
+                  continue;
+                }
+
+                var pointPairs = coordsStr.split(/\s+/);
+                var latlngs = [];
+
+                pointPairs.forEach(function (pair) {
+                  var parts = pair.split(",");
+                  if (parts.length !== 2) {
+                    return;
+                  }
+                  var lat = parseFloat(parts[0]);
+                  var lng = parseFloat(parts[1]);
+                  if (isNaN(lat) || isNaN(lng)) {
+                    return;
+                  }
+                  latlngs.push([lat, lng]);
+                });
+
+                if (!latlngs.length) {
+                  continue;
+                }
+
+                var polygon = L.polygon(latlngs, {
+                  color: "#ff9800",
+                  weight: 2,
+                  fillOpacity: 0.15
+                });
+
+                var popupHtml =
+                  "<strong>" + headline + "</strong><br>" +
+                  "<em>Civil Defence Mobile Alert</em><br><br>" +
+                  (areaDesc ? "<strong>Areas:</strong> " + areaDesc + "<br><br>" : "") +
+                  (description ? nl2br(description) + "<br><br>" : "") +
+                  (!description && summaryText ? nl2br(summaryText) + "<br><br>" : "") +
+                  (linkHref ? '<a href="' + linkHref + '" target="_blank" rel="noopener">View full alert</a>' : "");
+
+                polygon.bindPopup(popupHtml);
+                polygon.addTo(targetLayer);
+                polygonsAdded++;
+              }
+            }
+          }
+        }
+
+        // Fallback marker if no polygons found
+        if (!polygonsAdded) {
+          var marker = L.marker(map.getCenter(), {
+            icon: makeIcon("#ff9800")
+          }).bindPopup(
+            "<strong>" + title + "</strong><br><br>" +
+            (summaryText ? nl2br(summaryText) + "<br><br>" : "") +
+            (linkHref ? '<a href="' + linkHref + '" target="_blank" rel="noopener">View full alert</a>' : "")
+          );
+          targetLayer.addLayer(marker);
+        }
+      }
+    })
+    .catch(function (err) {
+      console.warn("Civil Defence Atom load failed", err);
+    });
+}
+
+// Load Civil Defence feed
+loadCivilDefenceAtomCap(CIVIL_DEFENCE_ATOM_URL, layerCivilDefenceAlerts);
+
+// 5. Top Energy Power Outages - KMZ polygons + regions + outages
+
+var TOP_ENERGY_OUTAGES_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent("https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Testing/TopEnergy/outages%20(1028211125).json");
+var TOP_ENERGY_REGIONS_URL =
+  "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Testing/TopEnergy/regions%20(1028211125).json";
+
+var TOP_ENERGY_KMZ_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent("https://github.com/almokinsgov/NZSHAPE/raw/refs/heads/main/Testing/TopEnergy/polygonsActiveAll%20(103421112025).kmz");
+
+// Config to control which outage types are shown as pins
+// Set a type to false to hide that type
+var POWER_OUTAGE_TYPES_VISIBLE = {
+  unplanned: true,
+  plannedActive: true,
+  planned: true
+};
+
+// 5.1 Load KMZ polygons as non interactive background
+function addTopEnergyPolygons(kmzUrl, targetLayer) {
+  if (typeof JSZip === "undefined") {
+    console.warn("JSZip is required to parse KMZ polygons");
+    return;
+  }
+
+  fetch(kmzUrl)
+    .then(function (res) { return res.arrayBuffer(); })
+    .then(function (arrayBuffer) {
+      return JSZip.loadAsync(arrayBuffer);
+    })
+    .then(function (zip) {
+      var kmlFile = zip.file("doc.kml");
+      if (!kmlFile) {
+        var candidates = zip.file(/\.kml$/i);
+        if (candidates && candidates.length) {
+          kmlFile = candidates[0];
+        }
+      }
+      if (!kmlFile) {
+        console.warn("No KML file found inside Top Energy KMZ");
+        return null;
+      }
+      return kmlFile.async("string");
+    })
+    .then(function (kmlText) {
+      if (!kmlText) {
+        return;
+      }
+      var parser = new DOMParser();
+      var kmlDoc = parser.parseFromString(kmlText, "application/xml");
+
+      var placemarks = kmlDoc.getElementsByTagName("Placemark");
+      for (var i = 0; i < placemarks.length; i++) {
+        var pm = placemarks[i];
+        var polygons = pm.getElementsByTagName("Polygon");
+        for (var j = 0; j < polygons.length; j++) {
+          var poly = polygons[j];
+          var coordsEls = poly.getElementsByTagName("coordinates");
+          if (!coordsEls.length) {
+            continue;
+          }
+          var coordsText = coordsEls[0].textContent;
+          if (!coordsText) {
+            continue;
+          }
+
+          // KML coordinates: lon,lat,alt lon,lat,alt ...
+          var pairs = coordsText.trim().split(/\s+/);
+          var latlngs = [];
+          for (var pIdx = 0; pIdx < pairs.length; pIdx++) {
+            var parts = pairs[pIdx].split(",");
+            if (parts.length < 2) {
+              continue;
+            }
+            var lon = parseFloat(parts[0]);
+            var lat = parseFloat(parts[1]);
+            if (isNaN(lat) || isNaN(lon)) {
+              continue;
+            }
+            latlngs.push([lat, lon]);
+          }
+
+          if (!latlngs.length) {
+            continue;
+          }
+
+          // Polygons are visual only not selectable
+          var polygon = L.polygon(latlngs, {
+            color: "#e91e63",
+            weight: 1,
+            fillOpacity: 0.05,
+            interactive: false
+          });
+
+          polygon.addTo(targetLayer);
+        }
+      }
+    })
+    .catch(function (err) {
+      console.warn("Top Energy KMZ polygons load failed", err);
+    });
+}
+
+// 5.2 Join outages to region details and create one pin per outage
+function buildTopEnergyOutageMarkers(regionsData, outagesData, targetLayer) {
+  // Build lookup of region details by id (regions.*[].name)
+  var regionDetailsById = {};
+
+  Object.keys(regionsData || {}).forEach(function (key) {
+    var value = regionsData[key];
+    if (!Array.isArray(value)) {
+      return;
+    }
+    value.forEach(function (r) {
+      if (!r || !r.name) {
+        return;
+      }
+      // name in regions matches id in outages
+      regionDetailsById[r.name] = r;
+    });
+  });
+
+  // Use marker config for colours
+  function colourForStatus(statusType) {
+    var cfg = MARKER_CONFIG.powerOutages || {};
+    if (statusType && cfg[statusType]) {
+      return cfg[statusType];
+    }
+    return cfg.defaultColor || "#9e9e9e";
+  }
+
+  function statusLabel(statusType) {
+    if (statusType === "unplanned") {
+      return "Unplanned outage";
+    }
+    if (statusType === "plannedActive") {
+      return "Planned outage (currently active)";
+    }
+    if (statusType === "planned") {
+      return "Planned outage";
+    }
+    return "Outage";
+  }
+
+  function renderDetail(detail) {
+    if (!detail) {
+      return "<br>No additional detail available for this outage.";
+    }
+
+    var html = "";
+    if (detail.circuitName) {
+      html += "Circuit: " + detail.circuitName + "<br>";
+    }
+    if (detail.customersCurrentlyOff != null && detail.customersCurrentlyOff !== "") {
+      html += "Customers affected: " + detail.customersCurrentlyOff + "<br>";
+    }
+    if (detail.startDateTime) {
+      html += "From: " + detail.startDateTime + "<br>";
+    }
+    if (detail.endDateTime) {
+      html += "Until: " + detail.endDateTime + "<br>";
+    }
+    if (detail.alternativeStartDateTime) {
+      html += "Alt from: " + detail.alternativeStartDateTime + "<br>";
+    }
+    if (detail.alternativeEndDateTime) {
+      html += "Alt until: " + detail.alternativeEndDateTime + "<br>";
+    }
+    if (detail.additionalInformation) {
+      html += detail.additionalInformation + "<br>";
+    }
+    return html || "<br>No additional detail available for this outage.";
+  }
+
+  function addOutageMarkers(list, statusType) {
+    if (!Array.isArray(list)) {
+      return;
+    }
+    list.forEach(function (outage) {
+      if (!outage || outage.lat == null || outage.lng == null || !outage.id) {
+        return;
+      }
+
+      // Look up detail by matching outage.id to region name
+      var detail = regionDetailsById[outage.id] || null;
+      var colour = colourForStatus(statusType);
+
+      var marker = L.circleMarker([outage.lat, outage.lng], {
+        radius: 7,
+        fillColor: colour,
+        color: "#ffffff",
+        weight: 1,
+        fillOpacity: 0.9
+      });
+
+      var popupHtml =
+        "<strong>Top Energy outage</strong><br>" +
+        "Outage ID: " + outage.id + "<br>" +
+        "Type: " + statusLabel(statusType) + "<br>" +
+        renderDetail(detail);
+
+      marker.bindPopup(popupHtml);
+      marker.addTo(targetLayer);
+    });
+  }
+
+  // Helper to check visibility config and add markers
+  function addIfVisible(list, statusType) {
+    if (!POWER_OUTAGE_TYPES_VISIBLE[statusType]) {
+      return;
+    }
+    addOutageMarkers(list, statusType);
+  }
+
+  // Outages JSON has unplanned, planned and plannedActive lists of points
+  // Config controls which types are shown
+  addIfVisible(outagesData.unplanned, "unplanned");
+  addIfVisible(outagesData.plannedActive, "plannedActive");
+  addIfVisible(outagesData.planned, "planned");
+}
+
+// 5.3 Orchestrate Top Energy layer load
+function loadTopEnergyOutages() {
+  // Polygons as background
+  addTopEnergyPolygons(TOP_ENERGY_KMZ_URL, layerPowerOutages);
+
+  // Regions (detail) and outages (points) in parallel
+  var regionsPromise = fetch(TOP_ENERGY_REGIONS_URL).then(function (res) { return res.json(); });
+  var outagesPromise = fetch(TOP_ENERGY_OUTAGES_URL).then(function (res) { return res.json(); });
+
+  Promise.all([regionsPromise, outagesPromise])
+    .then(function (results) {
+      var regionsData = results[0] || {};
+      var outagesData = results[1] || {};
+      buildTopEnergyOutageMarkers(regionsData, outagesData, layerPowerOutages);
+    })
+    .catch(function (err) {
+      console.warn("Top Energy regions or outages load failed", err);
+    });
+}
+
+// Kick off Top Energy load
+loadTopEnergyOutages();
+
+    <!-- 6. Water Outages from Asset Listing Code -->
+    <!-- FNDC water outages asset listing feed, proxied for CORS -->
+    var WATER_OUTAGES_URL =
+      "https://corsproxy.io/?" +
+      encodeURIComponent("https://www.fndc.govt.nz/services/water/Water-outage-updates/wateroutagesassetlistingfeed");
+
+    // Which statuses to show on the map.
+    // Adjust this list to include or exclude statuses such as "Restored"
+    var WATER_OUTAGE_STATUS_FILTER = ["New", "Reported", "Under repairs", "Planned", "Restored"];
+
+    function waterOutageStatusAllowed(status) {
+      if (!status) {
+        return false;
+      }
+      var trimmed = String(status).trim();
+      return WATER_OUTAGE_STATUS_FILTER.indexOf(trimmed) !== -1;
+    }
+	   function waterOutageMarkerColor(status) {
+      var cfg = MARKER_CONFIG.waterOutages || {};
+      var key = String(status || "").trim();
+      if (cfg.colorByStatus && cfg.colorByStatus[key]) {
+        return cfg.colorByStatus[key];
+      }
+      return cfg.defaultColor || "#2196f3";
+    }
+
+    function loadWaterOutages() {
+  fetch(WATER_OUTAGES_URL)
+    .then(function (res) {
+      // Asset listing feeds can sometimes be text rather than strict JSON
+      return res.text();
+    })
+    .then(function (text) {
+      var data;
+
+      // Try to parse as JSON directly first
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        // Fallback: some feeds are a bare list of objects without [ ]
+        // and may end with a trailing comma
+        var trimmed = text.trim();
+
+        // Remove a trailing comma at the very end, eg "...},"
+        trimmed = trimmed.replace(/,\s*$/, "");
+
+        if (trimmed.charAt(0) !== "[") {
+          trimmed = "[" + trimmed;
+        }
+        if (trimmed.charAt(trimmed.length - 1) !== "]") {
+          trimmed = trimmed + "]";
+        }
+
+        try {
+          data = JSON.parse(trimmed);
+        } catch (err2) {
+          console.warn("Could not parse water outages feed", err2);
+          return;
+        }
+      }
+
+      if (!Array.isArray(data)) {
+        console.warn("Water outages feed was not an array", data);
+        return;
+      }
+
+      data.forEach(function (item) {
+        if (!item) {
+          return;
+        }
+
+        // Latitude / longitude
+        var lat = parseFloat(item.latitude || item.lat);
+        var lng = parseFloat(item.longitude || item.lng);
+        if (!isFinite(lat) || !isFinite(lng)) {
+          return;
+        }
+
+        // Status filter
+        if (
+          WATER_OUTAGE_STATUS_FILTER.length &&
+          !waterOutageStatusAllowed(item.status)
+        ) {
+          return;
+        }
+
+        // Build popup HTML with all requested fields
+        var popupHtml =
+          "<strong>FNDC water outage</strong><br>" +
+          (item.name ? "Name: " + item.name + "<br>" : "") +
+          (item.status ? "Status: " + item.status + "<br>" : "") +
+          (item.address ? "Address: " + item.address + "<br>" : "") +
+          (item.datelodged ? "Date lodged: " + item.datelodged + "<br>" : "") +
+          (item.dateresolved
+            ? "Date resolved: " + item.dateresolved + "<br>"
+            : "");
+
+        if (item.details) {
+          // details already contains HTML <p> tags
+          popupHtml += "<br>" + item.details;
+        }
+
+        if (item.description) {
+          popupHtml += "<br><em>" + item.description + "</em>";
+        }
+
+        // Add as a pin / marker to the water outages layer
+          var marker = L.circleMarker([lat, lng], {
+          radius: 6,
+          fillColor: waterOutageMarkerColor(item.status),
+          color: "#ffffff",
+          weight: 1,
+          fillOpacity: 0.9
+        });
+
+        marker.bindPopup(popupHtml);
+        marker.addTo(layerWaterOutages);
+      });
+    })
+    .catch(function (err) {
+      console.warn("Water outages load failed", err);
+    });
+}
+
+
+    // Kick off water outages load
+    loadWaterOutages();
+
+
+    // 7. Road Warnings, Closures and Roadworks from NZTA delays.json
+// Live NZTA feed
+var ROAD_WARNINGS_URL = "https://corsproxy.io/?url=https://www.journeys.nzta.govt.nz/assets/map-data-cache/delays.json";
+
+// Optional: limit to Far North by simple bounding box
+// Adjust if you want a different cut
+function isInFarNorth(lat, lng) {
+  // Rough box for Far North District
+  // North of about -35.9 and west of about 174.4
+  return lat > -48.9 && lat < -33.2 && lng > 167.1 && lng < 179.5;
+}
+
+// Use marker config colours for NZTA features
+function nztaColorForFeature(feature) {
+  var p = feature && feature.properties ? feature.properties : {};
+  var cfg = MARKER_CONFIG.nzta.point;
+  var typeKey = (p.type || "").toLowerCase();
+  var color = cfg.defaultColor;
+
+  // First prefer the type group if present
+  if (typeKey && cfg[typeKey]) {
+    color = cfg[typeKey];
+  } else {
+    // Fallback to simple text checks on Impact
+    var impact = (p.Impact || "").toLowerCase();
+
+    if (impact.indexOf("closed") !== -1 || impact.indexOf("closure") !== -1) {
+      color = cfg.closures || color;
+    } else if (
+      impact.indexOf("warning") !== -1 ||
+      impact.indexOf("caution") !== -1
+    ) {
+      color = cfg.warnings || color;
+    } else if (impact.indexOf("work") !== -1) {
+      color = cfg.roadworks || color;
+    } else if (impact.indexOf("hazard") !== -1) {
+      color = cfg.hazards || color;
+    }
+  }
+
+  return color;
+}
+
+function nztaStyle(feature) {
+  var color = nztaColorForFeature(feature);
+  var p = feature && feature.properties ? feature.properties : {};
+  var impact = (p.Impact || "").toLowerCase();
+
+  var weight = 4;
+  var dashArray = null;
+
+  if (impact.indexOf("closed") !== -1 || impact.indexOf("closure") !== -1) {
+    weight = 6;
+  } else if (
+    impact.indexOf("warning") !== -1 ||
+    impact.indexOf("caution") !== -1
+  ) {
+    dashArray = "4 6";
+  } else if (impact.indexOf("hazard") !== -1) {
+    dashArray = "2 6";
+  }
+
+  return {
+    color: color,
+    weight: weight,
+    dashArray: dashArray,
+    opacity: 0.9
+  };
+}
+
+// Use the shared divIcon style instead of circleMarker
+function nztaPointToLayer(feature, latlng) {
+  var color = nztaColorForFeature(feature);
+  return L.marker(latlng, {
+    icon: makeIcon(color, { className: "nzta-road-event" })
+  });
+}
+
+function nztaOnEachFeature(feature, layer) {
+  var p = feature.properties || {};
+
+  var title =
+    p.Name ||
+    p.LocationArea ||
+    "Road Event";
+
+  var html = "<strong>" + title + "</strong><br>";
+
+  if (p.EventType) {
+    html += "Type: " + p.EventType + "<br>";
+  }
+  if (p.EventDescription) {
+    html += "Description: " + p.EventDescription + "<br>";
+  }
+  if (p.EventComments) {
+    html += p.EventComments + "<br><br>";
+  }
+  if (p.Impact) {
+    html += "Impact: " + p.Impact + "<br>";
+  }
+  if (p.StartDateNice) {
+    html += "From: " + p.StartDateNice + "<br>";
+  }
+  if (p.EndDateNice) {
+    html += "To: " + p.EndDateNice + "<br>";
+  }
+  if (p.ExpectedResolution) {
+    html += "Expected: " + p.ExpectedResolution + "<br>";
+  }
+  if (p.AlternativeRoute) {
+    html += "Detour: " + p.AlternativeRoute + "<br>";
+  }
+
+  layer.bindPopup(html);
+}
+
+// NZTA delays
+fetch(ROAD_WARNINGS_URL)
+  .then(function (res) { return res.json(); })
+  .then(function (geojson) {
+
+    // Keep only Far North features and apply the event type filter
+    var filtered = {
+      type: "FeatureCollection",
+      features: geojson.features.filter(function (f) {
+        if (!f.geometry) return false;
+
+        var g = f.geometry;
+
+        // Spatial clip to Far North
+        if (g.type === "Point") {
+          var lng = g.coordinates[0];
+          var lat = g.coordinates[1];
+          if (!isInFarNorth(lat, lng)) return false;
+        } else if (
+          g.type === "MultiLineString" &&
+          g.coordinates &&
+          g.coordinates.length &&
+          g.coordinates[0].length
+        ) {
+          var first = g.coordinates[0][0];
+          var lng2 = first[0];
+          var lat2 = first[1];
+          if (!isInFarNorth(lat2, lng2)) return false;
+        } else {
+          // Ignore other geometry types for now
+          return false;
+        }
+
+        // Apply NZTA event type visibility
+        return nztaEventIsVisible(f);
+      })
+    };
+
+    L.geoJSON(filtered, {
+      style: nztaStyle,
+      pointToLayer: nztaPointToLayer,
+      onEachFeature: nztaOnEachFeature
+    }).addTo(layerRoadWarnings);
+  })
+  .catch(function (err) {
+    console.warn("NZTA delays load failed", err);
+  });
+
+
+// 8. Marae data (NZ wide from Māori Maps export)
+var MARAE_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent("https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/alerts/Marae%20data%20-%20data2.json");
+
+    function loadMaraeLayer(url, targetLayer) {
+  fetch(url)
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (!Array.isArray(data)) {
+        console.warn("Marae data is not an array");
+        return;
+      }
+
+      data.forEach(function (marae) {
+        var lat = marae.latitude;
+        var lng = marae.longitude;
+
+        if (lat == null || lng == null) {
+          return;
+        }
+
+        // Optional filter to Far North only
+        // if (typeof isInFarNorth === "function" && !isInFarNorth(lat, lng)) {
+        //   return;
+        // }
+
+        var title = marae.title || "Marae";
+        var link = marae.Link || "";
+        var district = marae.District || "";
+        var imageUrl = marae["Image URL"] || "";
+
+        var marker = L.marker([lat, lng], {
+          icon: makeIcon(MARKER_CONFIG.marae.color)
+        });
+
+        var popupHtml =
+          "<strong>" + title + "</strong><br>" +
+          (district ? "<em>" + district + "</em><br><br>" : "<br>") +
+          (link ? '<a href="' + link + '" target="_blank" rel="noopener">View marae page</a><br><br>' : "");
+
+        if (imageUrl) {
+          popupHtml +=
+            '<a href="' + imageUrl + '" target="_blank" rel="noopener">' +
+              '<img src="' + imageUrl + '" alt="Image of ' + title + '" ' +
+              'style="max-width:180px;max-height:120px;display:block;margin-top:4px;border-radius:4px;object-fit:cover;" />' +
+            "</a>";
+        }
+
+        marker.bindPopup(popupHtml);
+        targetLayer.addLayer(marker);
+      });
+    })
+    .catch(function (err) {
+      console.warn("Marae data load failed", err);
+    });
+}
+
+// Load Marae layer
+loadMaraeLayer(MARAE_URL, layerMarae);
+
+
+        // 9. Community Halls from FNDC District Facilities (ArcGIS pgeojson)
+    var HALLS_GEOJSON_URL =
+      "https://corsproxy.io/?url=" +
+      encodeURIComponent(
+        "https://services5.arcgis.com/H4FlrMy6xTBd6Ywx/ArcGIS/rest/services/DistrictFacilities_FNDC_public/FeatureServer/0/query?where=1%3D1&objectIds=&geometry=&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&outDistance=&relationParam=&returnGeodetic=false&outFields=*&returnGeometry=true&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&defaultSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&collation=&orderByFields=&groupByFieldsForStatistics=&returnAggIds=false&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnTrueCurves=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=pgeojson&token="
+      );
+
+    fetch(HALLS_GEOJSON_URL)
+      .then(function (res) { return res.json(); })
+      .then(function (geojson) {
+        if (!geojson || !Array.isArray(geojson.features)) {
+          console.warn("Community halls geojson has no features");
+          return;
+        }
+
+        L.geoJSON(geojson, {
+          // Only keep features that are halls
+          filter: function (feature) {
+            var p = feature && feature.properties;
+            if (!p || p.asset_sub_type == null) {
+              return false;
+            }
+            return String(p.asset_sub_type).toLowerCase() === "hall";
+          },
+
+          // Use a location pin style icon
+          pointToLayer: function (feature, latlng) {
+            return L.marker(latlng, {
+              icon: makeIcon(MARKER_CONFIG.communityHalls.color)
+            });
+          },
+
+          // Build popup using asset name and basic details
+          onEachFeature: function (feature, layer) {
+            var p = feature.properties || {};
+            var name = p.system_name || "Community Hall";
+            var community = p.community || "";
+            var location = p.location || "";
+            var owner = p.asset_owner || "";
+            var status = p.status || "";
+
+            var popup =
+              "<strong>" + name + "</strong><br>" +
+              (community ? "<em>" + community + "</em><br>" : "") +
+              (location ? "Location: " + location + "<br>" : "") +
+              (owner ? "Owner: " + owner + "<br>" : "") +
+              (status ? "Status: " + status + "<br>" : "");
+
+            layer.bindPopup(popup);
+          }
+        }).addTo(layerCommunityHalls);
+      })
+      .catch(function (err) {
+        console.warn("Community halls geojson load failed", err);
+      });
+
+
+   // 10. NRC river data (live API)
+var NRC_RIVERS_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent("https://env.gurudigital.nz/WebApi/GetMapPoints/2?collectionId=19");
+// For local testing you can instead use:
+// var NRC_RIVERS_URL = "rivers.json";
+
+// Helper to pick a colour based on current river trend
+function riverColourForStatus(site) {
+  var name = site.Icon && site.Icon.Name ? site.Icon.Name.toLowerCase() : "";
+  var cfg = MARKER_CONFIG.rivers || {};
+
+  if (cfg.colorByTrend) {
+    if (name.indexOf("rising") !== -1 && cfg.colorByTrend.rising) {
+      return cfg.colorByTrend.rising;
+    }
+    if (name.indexOf("falling") !== -1 && cfg.colorByTrend.falling) {
+      return cfg.colorByTrend.falling;
+    }
+  }
+
+  return cfg.defaultColor || "#4caf50";
+}
+
+
+// Build popup HTML for an NRC river site
+function buildRiverPopup(site) {
+  var title = site.DisplayName || site.Name || "River site";
+
+  var html = "<strong>" + title + "</strong><br>";
+
+  // Short description and LAWA link (Summary is already HTML)
+  if (site.Summary) {
+    html += site.Summary + "<br>";
+  }
+
+  var primary = site.PrimaryMeasurement;
+  var secondary = site.SecondaryMeasurement;
+  var primaryValue = site.PrimaryValue;
+  var secondaryValue = site.SecondaryValue;
+
+  if (primary && primaryValue) {
+    html += "<br><strong>" +
+      (primary.DisplayName || primary.Name || "Level") +
+      ":</strong> " + primaryValue.Value +
+      (primary.Units ? " " + primary.Units : "") +
+      (primaryValue.FormattedTime && primaryValue.FormattedDate
+        ? " at " + primaryValue.FormattedTime + " " + primaryValue.FormattedDate
+        : "") +
+      "<br>";
+  }
+
+  if (secondary && secondaryValue) {
+    html += "<strong>" +
+      (secondary.DisplayName || secondary.Name || "Flow") +
+      ":</strong> " + secondaryValue.Value +
+      (secondary.Units ? " " + secondary.Units : "") +
+      (secondaryValue.FormattedTime && secondaryValue.FormattedDate
+        ? " at " + secondaryValue.FormattedTime + " " + secondaryValue.FormattedDate
+        : "") +
+      "<br>";
+  }
+
+  var drought = site.DroughtInfo;
+  if (drought) {
+    if (drought.MALFText) {
+      html += "<br><strong>MALF:</strong> " + drought.MALFText + "<br>";
+    }
+    if (drought.DMFText) {
+      html += "<strong>DMF:</strong> " + drought.DMFText + "<br>";
+    }
+    if (drought.PercentDiffDMF) {
+      html += "<strong>Relative to DMF:</strong> " + drought.PercentDiffDMF + "<br>";
+    }
+  }
+
+  if (site.WebCamUrl) {
+    html += '<br><a href="' + site.WebCamUrl +
+      '" target="_blank" rel="noopener">View webcam</a><br>';
+  }
+
+  if (site.Image && site.Image.URL) {
+    var imgUrl = "https://env.gurudigital.nz/" + site.Image.URL.replace(/^\/?/, "");
+    html +=
+      '<br><a href="' + imgUrl + '" target="_blank" rel="noopener">' +
+        '<img src="' + imgUrl + '" alt="Image for ' + title + '"' +
+        ' style="max-width:200px;max-height:130px;display:block;margin-top:4px;' +
+        ' border-radius:4px;object-fit:cover;" />' +
+      "</a>";
+  }
+
+  return html;
+}
+
+function loadNrcRivers(url, targetLayer) {
+  fetch(url)
+    .then(function (res) { return res.json(); })
+    .then(function (sites) {
+      if (!Array.isArray(sites)) {
+        console.warn("NRC river data is not an array");
+        return;
+      }
+
+      sites.forEach(function (site) {
+        if (!site.HasLocation || site.Latitude == null || site.Longitude == null) {
+          return;
+        }
+
+        // Optional Far North filter if you want to clip to district
+        // if (typeof isInFarNorth === "function" &&
+        //     !isInFarNorth(site.Latitude, site.Longitude)) {
+        //   return;
+        // }
+
+        var lat = site.Latitude;
+        var lng = site.Longitude;
+
+        var marker = L.marker([lat, lng], {
+          icon: makeIcon(riverColourForStatus(site))
+        });
+
+        marker.bindPopup(buildRiverPopup(site));
+        targetLayer.addLayer(marker);
+      });
+    })
+    .catch(function (err) {
+      console.warn("NRC river data load failed", err);
+    });
+}
+
+// Load NRC river layer
+loadNrcRivers(NRC_RIVERS_URL, layerRivers);
+  // 11. GeoNet earthquakes - shallow events near Far North
+
+  var GEONET_EARTHQUAKES_URL =
+    "https://corsproxy.io/?url=" +
+    encodeURIComponent(
+      "https://wfs.geonet.org.nz/geonet/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=geonet:quake_search_v1&outputFormat=json&cql_filter=depth%3C50+AND+origintime%3E=%272025-01-01%27+AND+DWITHIN(origin_geom,Point+(173.5+-35.2),140000,meters)"
+    );
+
+  function earthquakeColor(magnitude) {
+    var cfg = MARKER_CONFIG.earthquakes || {};
+    var mag = parseFloat(magnitude);
+
+    if (!isFinite(mag)) {
+      return cfg.defaultColor || "#795548";
+    }
+    if (mag >= 4) {
+      return cfg.moderate || cfg.defaultColor || "#f44336";
+    }
+    if (mag >= 2.5) {
+      return cfg.light || cfg.defaultColor || "#ff9800";
+    }
+    return cfg.minor || cfg.defaultColor || "#4caf50";
+  }
+
+  function formatEarthquakeTime(origintime) {
+    if (!origintime) {
+      return "";
+    }
+    var d = new Date(origintime);
+    if (isNaN(d.getTime())) {
+      return origintime;
+    }
+    // Local browser time, readable string
+    return d.toLocaleString();
+  }
+
+  function buildEarthquakePopup(props) {
+    var mag = props.magnitude;
+    var depth = props.depth;
+    var timeStr = formatEarthquakeTime(props.origintime);
+    var id = props.publicid;
+
+    var html = "<strong>GeoNet earthquake</strong><br>";
+
+    if (mag != null) {
+      html += "Magnitude: " + mag.toFixed ? mag.toFixed(1) : mag + "<br>";
+    }
+    if (depth != null) {
+      html += "Depth: " + depth + " km<br>";
+    }
+    if (timeStr) {
+      html += "Time: " + timeStr + "<br>";
+    }
+
+    if (id) {
+      // publicid is like "2025p660965"
+      var quakeUrl =
+        "https://www.geonet.org.nz/quake/" +
+        encodeURIComponent(String(id));
+      html +=
+        '<br><a href="' +
+        quakeUrl +
+        '" target="_blank" rel="noopener">View on GeoNet</a>';
+    }
+
+    return html;
+  }
+
+  function loadGeonetEarthquakes(url, targetLayer) {
+    fetch(url)
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (geojson) {
+        if (!geojson || !Array.isArray(geojson.features)) {
+          console.warn("GeoNet earthquakes data is not a FeatureCollection");
+          return;
+        }
+
+        geojson.features.forEach(function (feature) {
+          if (!feature || !feature.geometry || feature.geometry.type !== "Point") {
+            return;
+          }
+
+          var coords = feature.geometry.coordinates;
+          if (!Array.isArray(coords) || coords.length < 2) {
+            return;
+          }
+
+          var lng = coords[0];
+          var lat = coords[1];
+          if (!isFinite(lat) || !isFinite(lng)) {
+            return;
+          }
+
+          var props = feature.properties || {};
+          var mag = parseFloat(props.magnitude);
+          var color = earthquakeColor(mag);
+
+          var radius = 5;
+          if (isFinite(mag)) {
+            radius = 3 + mag * 1.5;
+            if (radius < 4) {
+              radius = 4;
+            }
+            if (radius > 12) {
+              radius = 12;
+            }
+          }
+
+          var marker = L.circleMarker([lat, lng], {
+            radius: radius,
+            fillColor: color,
+            color: "#ffffff",
+            weight: 1,
+            fillOpacity: 0.9
+          });
+
+          marker.bindPopup(buildEarthquakePopup(props));
+          targetLayer.addLayer(marker);
+        });
+      })
+      .catch(function (err) {
+        console.warn("GeoNet earthquakes load failed", err);
+      });
+  }
+
+  // Load GeoNet earthquakes layer
+  loadGeonetEarthquakes(GEONET_EARTHQUAKES_URL, layerEarthquakes);
+    // 9. GeoNet Quake Warnings (CAP feed)
+
+    // Sample GeoNet CAP feed (using your example file through the CORS proxy)
+    var GEONET_CAP_FEED_URL =
+      "https://corsproxy.io/?url=" +
+      encodeURIComponent(
+        "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Testing/GeoNet/quake-example.xml"
+      );
+
+    function loadGeoNetWarningCap(url) {
+      fetch(url)
+        .then(function (res) {
+          return res.text();
+        })
+        .then(function (xmlText) {
+          var parser = new DOMParser();
+          var capDoc = parser.parseFromString(xmlText, "application/xml");
+
+          var infoEl = capDoc.getElementsByTagName("info")[0];
+          if (!infoEl) {
+            console.warn("GeoNet CAP: no <info> element found");
+            return;
+          }
+
+          var eventEl = infoEl.getElementsByTagName("event")[0];
+          var headlineEl = infoEl.getElementsByTagName("headline")[0];
+          var descriptionEl = infoEl.getElementsByTagName("description")[0];
+          var onsetEl = infoEl.getElementsByTagName("onset")[0];
+          var expiresEl = infoEl.getElementsByTagName("expires")[0];
+
+          var eventName = eventEl ? eventEl.textContent : "Earthquake";
+          var headline = headlineEl ? headlineEl.textContent : eventName;
+          var description = descriptionEl ? descriptionEl.textContent : "";
+          var onset = onsetEl ? onsetEl.textContent : "";
+          var expires = expiresEl ? expiresEl.textContent : "";
+
+          // Build parameter map from <parameter><valueName>/<value>
+          var params = infoEl.getElementsByTagName("parameter");
+          var paramMap = {};
+          for (var i = 0; i < params.length; i++) {
+            var p = params[i];
+            var valueNameEl = p.getElementsByTagName("valueName")[0];
+            var valueEl = p.getElementsByTagName("value")[0];
+            if (!valueNameEl || !valueEl) {
+              continue;
+            }
+            paramMap[valueNameEl.textContent] = valueEl.textContent;
+          }
+
+          // Core coordinates from LatitudeLongitude parameter
+          var latLngStr = paramMap.LatitudeLongitude || paramMap["LatitudeLongitude"];
+          var lat = null;
+          var lng = null;
+          if (latLngStr) {
+            var llParts = latLngStr.split(",");
+            if (llParts.length === 2) {
+              lat = parseFloat(llParts[0]);
+              lng = parseFloat(llParts[1]);
+            }
+          }
+
+          // Optional area circle "lat,lon radiusKm"
+          var areaEl = infoEl.getElementsByTagName("area")[0];
+          var circleEl = areaEl ? areaEl.getElementsByTagName("circle")[0] : null;
+          var radiusKm = null;
+          if (circleEl) {
+            var circleText = circleEl.textContent.trim();
+            var circleParts = circleText.split(" ");
+            if (circleParts.length === 2) {
+              var centreParts = circleParts[0].split(",");
+              if ((!lat || !lng) && centreParts.length === 2) {
+                lat = parseFloat(centreParts[0]);
+                lng = parseFloat(centreParts[1]);
+              }
+              radiusKm = parseFloat(circleParts[1]);
+            }
+          }
+
+          if (lat == null || isNaN(lat) || lng == null || isNaN(lng)) {
+            console.warn("GeoNet CAP: no valid coordinates");
+            return;
+          }
+
+          var magnitude = paramMap.Magnitude || paramMap["Magnitude"];
+          var depth = paramMap.Depth || paramMap["Depth"];
+          var locality = paramMap.Locality || paramMap["Locality"];
+          var intensity = paramMap.Intensity || paramMap["Intensity"];
+          var mmi = paramMap.MMI || paramMap["MMI"];
+          var timeParam = paramMap.Time || paramMap["Time"];
+
+          var webEl = infoEl.getElementsByTagName("web")[0];
+          var webUrl = webEl ? webEl.textContent : "";
+
+          var popupHtml =
+            "<strong>" + headline + "</strong><br>" +
+            "<em>" + eventName + "</em><br>" +
+            (locality ? locality + "<br>" : "") +
+            (magnitude ? "Magnitude: " + magnitude + "<br>" : "") +
+            (depth ? "Depth: " + depth + " km<br>" : "") +
+            (intensity ? "Intensity: " + intensity + "<br>" : "") +
+            (mmi ? "MMI: " + mmi + "<br>" : "") +
+            (timeParam ? "Origin time: " + timeParam + "<br>" : "") +
+            (onset ? "Onset: " + onset + "<br>" : "") +
+            (expires ? "Expires: " + expires + "<br>" : "") +
+            (description ? "<br>" + description + "<br>" : "") +
+            (webUrl
+              ? '<br><a href="' + webUrl + '" target="_blank" rel="noopener">View details on GeoNet</a>'
+              : "");
+
+          var markerColor =
+            MARKER_CONFIG.geonetCap && MARKER_CONFIG.geonetCap.color
+              ? MARKER_CONFIG.geonetCap.color
+              : "#fbc02d";
+
+          // Centre marker for the quake warning
+          var marker = L.marker([lat, lng], {
+            icon: makeIcon(markerColor)
+          }).bindPopup(popupHtml);
+
+          layerGeoNetWarnings.addLayer(marker);
+
+          // Optional CAP area circle
+          if (radiusKm && isFinite(radiusKm)) {
+            var circle = L.circle([lat, lng], {
+              radius: radiusKm * 1000, // km to m
+              color: markerColor,
+              weight: 2,
+              fillOpacity: 0.1
+            });
+            layerGeoNetWarnings.addLayer(circle);
+          }
+        })
+        .catch(function (err) {
+          console.warn("GeoNet CAP warning load failed", err);
+        });
+    }
+
+    // Kick off GeoNet quake warning CAP load
+    loadGeoNetWarningCap(GEONET_CAP_FEED_URL);
+
+//  Service Centres (FNDC District Facilities)
+// Uses the same ArcGIS pgeojson feed as Community Halls
+
+// Reuse the same facilities URL you already use for community halls.
+// If you named it differently, keep that name here.
+var FACILITIES_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent(
+    "https://services5.arcgis.com/H4FlrMy6xTBd6Ywx/ArcGIS/rest/services/DistrictFacilities_FNDC_public/FeatureServer/0/query?where=1%3D1&objectIds=&geometry=&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&outDistance=&relationParam=&returnGeodetic=false&outFields=*&returnGeometry=true&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&defaultSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&collation=&orderByFields=&groupByFieldsForStatistics=&returnAggIds=false&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnTrueCurves=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=pgeojson&token="
+  );
+
+function buildServiceCentrePopup(props) {
+  var name =
+    props.asset_name ||
+    props.system_name ||
+    props.asset_id ||
+    "Service Centre";
+
+  var community = props.community || "";
+  var location = props.location || "";
+  var status = props.status || "";
+  var managedBy = props.managed_by || "";
+  var owner = props.asset_owner || "";
+
+  var html = "<strong>" + name + "</strong><br>";
+
+  if (community) {
+    html += "<em>" + community + "</em><br>";
+  }
+  if (location) {
+    html += "Location: " + location + "<br>";
+  }
+  if (status) {
+    html += "Status: " + status + "<br>";
+  }
+  if (managedBy) {
+    html += "Managed by: " + managedBy + "<br>";
+  }
+  if (owner) {
+    html += "Owner: " + owner + "<br>";
+  }
+
+  return html;
+}
+
+function loadServiceCentres(url, targetLayer) {
+  fetch(url)
+    .then(function (res) {
+      return res.json();
+    })
+    .then(function (geojson) {
+      if (!geojson || !Array.isArray(geojson.features)) {
+        console.warn("Facilities feed is not a FeatureCollection");
+        return;
+      }
+
+      geojson.features.forEach(function (feature) {
+        if (!feature.geometry || feature.geometry.type !== "Point") {
+          return;
+        }
+
+        var props = feature.properties || {};
+
+        // Only Service Centre category
+        if (props.category !== "Service Centre") {
+          return;
+        }
+
+        var coords = feature.geometry.coordinates;
+        if (!Array.isArray(coords) || coords.length < 2) {
+          return;
+        }
+
+        var lng = coords[0];
+        var lat = coords[1];
+
+        if (!isFinite(lat) || !isFinite(lng)) {
+          return;
+        }
+
+        var iconColor =
+          MARKER_CONFIG.serviceCentres &&
+          MARKER_CONFIG.serviceCentres.color
+            ? MARKER_CONFIG.serviceCentres.color
+            : "#ff9800";
+
+        var marker = L.marker([lat, lng], {
+          icon: makeIcon(iconColor)
+        });
+
+        marker.bindPopup(buildServiceCentrePopup(props));
+        targetLayer.addLayer(marker);
+      });
+    })
+    .catch(function (err) {
+      console.warn("Service Centres load failed", err);
+    });
+}
+
+// Load service centres
+loadServiceCentres(FACILITIES_URL, layerServiceCentres);
+
+// Swimsafe swimming locations
+// Live API
+var SWIMSAFE_URL = "https://corsproxy.io/?url=https://www.lawa.org.nz/umbraco/api/mapservice/swimsites";
+// For local testing with your saved file you can temporarily use:
+// var SWIMSAFE_URL = "swimsites.json";
+
+function swimsafeColorForSite(site) {
+  var cfg = MARKER_CONFIG.swimsafe || {};
+  var css = (site.CssClass || site.cssClass || "").toLowerCase();
+
+  if (cfg.colorByRiskClass) {
+    if (css && cfg.colorByRiskClass[css]) {
+      return cfg.colorByRiskClass[css];
+    }
+    // Optional alternative key if the API exposes something like site.RiskClass
+    if (!css && site.RiskClass && cfg.colorByRiskClass[site.RiskClass]) {
+      return cfg.colorByRiskClass[site.RiskClass];
+    }
+  }
+
+  return cfg.defaultColor || "#00bcd4";
+}
+
+function riskLabelFromCssClass(cssClass) {
+  if (!cssClass) return "";
+  var c = cssClass.toLowerCase();
+  if (c.indexOf("risk-vlow") === 0) return "Very low risk";
+  if (c.indexOf("risk-low") === 0) return "Low risk";
+  if (
+    c.indexOf("risk-med") === 0 ||
+    c.indexOf("risk-medium") === 0 ||
+    c.indexOf("risk-mod") === 0
+  ) {
+    return "Moderate risk";
+  }
+  if (c.indexOf("risk-high") === 0) return "High risk";
+  if (c.indexOf("nodata") === 0) return "No recent risk data";
+  return "";
+}
+
+
+function loadSwimsafeSites(url, targetLayer) {
+  fetch(url)
+    .then(function (res) { return res.json(); })
+    .then(function (sites) {
+      if (!Array.isArray(sites)) {
+        console.warn("Swimsafe sites data is not an array", sites);
+        return;
+      }
+
+      sites.forEach(function (site) {
+        var lat = site.Latitude != null ? site.Latitude : site.latitude;
+        var lng = site.Longitude != null ? site.Longitude : site.longitude;
+        if (typeof lat !== "number" || typeof lng !== "number") {
+          return;
+        }
+
+        // Limit to Far North district area
+        if (!isInFarNorth(lat, lng)) {
+          return;
+        }
+
+        var name = site.Name || site.name || "Swimming site";
+        var urlPath = site.Url || site.url || "";
+        var siteType = site.SiteType || site.siteType || "";
+        var cssClass = site.CssClass || site.cssClass || "";
+        var riskLabel = riskLabelFromCssClass(cssClass);
+
+        var popupHtml =
+          "<strong>" + name + "</strong><br>" +
+          (siteType ? siteType + "<br>" : "") +
+          (riskLabel ? "<strong>Risk:</strong> " + riskLabel + "<br>" : "");
+
+        if (urlPath) {
+          var fullUrl = urlPath.indexOf("http") === 0
+            ? urlPath
+            : "https://www.lawa.org.nz" + urlPath; // adjust if needed
+
+          popupHtml +=
+            '<br><a href="' + fullUrl +
+            '" target="_blank" rel="noopener">View swim site details</a>';
+        }
+
+        var marker = L.marker([lat, lng], {
+          icon: makeIcon(swimsafeColorForSite(site))
+        });
+
+        marker.bindPopup(popupHtml);
+        targetLayer.addLayer(marker);
+      });
+    })
+    .catch(function (err) {
+      console.warn("Swimsafe sites load failed", err);
+    });
+}
+
+// Load Swimsafe layer
+loadSwimsafeSites(SWIMSAFE_URL, layerSwimsafe);
+
+  </script>
+  
+  
+<script> // Region warning and alerts - created by Amorangi Mathews 
+ //version and current functionality 
+  //1.2.1.7 to 1.3.2.0 single html file to JS,CSS and HTML, hosted in Github served with a CDN  
+  const version = "1.3.2.0";
+  let lastUpdatedTime = new Date();
+  const functions = "Alert display, Container, Popup, onset window, non far north display, isstillactivecolour classes, simpilfy, cachefix, expiry tag, sorted, expiry hide, CD alerts added, sorting, badges, formatted alrert for cd, custom geo area with proxy and url support,  newgeojsonurl, temp urls for cd and met, area name extraction and apply to alert html,disable far north alerts, custom new geo json url. area definitions , html edit (msgType removed), multi area in alert html with and for multi location, custom sorted custom area,popup header and footer, restyled header and footer, restyle badges, hide cancelled cd alerts, changed icon to thunderstorm, auto change to warning econ when cd alert is present,button stlyling change, border to popup ";
+  //Planned 
+  const plannedadds = "cors config, js files and package for other systems, geonet cap feed adition, unplanned out power outages with custom alert and config, div mode, expired alert window with config, unplanned outages from top energy,road closures from nzta,button location,refresh button, duration in hours or days in alert html x hours from x to x";
+  //alerts config
+  const SHOW_EXPIRED_ALERTS = true; // Change to true to show expired alerts
+  const SHOW_NON_FAR_NORTH_ALERTS = false; //show all alerts in the feed
+  const REQUIRE_ONSET_WITHIN_WINDOW = true; //filter results based on how long to start time
+  const HOUR_WINDOW = 24; //Amount of hours between the alert start time and date and the current time and date
+  const proxy = "https://corsproxy.io/?"; //cors proxy url
+  //Met service feed url with proxy add in, this should be a github url, we dont want to overload metservices infrastructure in an emergency
+  const feedURL = proxy + encodeURIComponent("https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/alerts/archive/latest_2025-07-28T08-21-52-472Z.xml");
+  //Civil defence live feed tester and visialsier - https://codepen.io/Amorangi-Mathews/full/QwjGPyv
+  //Met service feed visualiser and tester https://codepen.io/Amorangi-Mathews/full/WbQGRvr
+// Civil defence alerts 
+  const ENABLE_CD_ALERTS = true; // Set to false to disable Civil Defence alerts
+const CD_ALERT_FEED_URL = "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/alerts/CivilDefenceTest.xml"; //civil defence alert feed (atom)
+  const SHOW_CANCELLED_CD_ALERTS = false; // Change to true to display CD alerts with msgType "Cancel"
+
+ //custom geojson area alerts 
+const SHOW_CUSTOM_GEOJSON_ALERTS = false; //Show alerts for custom areas that are defined
+const USE_PROXY_FOR_CUSTOM_GEOJSON = true;  //use proxy for custom grojson urls under the custom geo areas
+
+const DISABLE_FAR_NORTH_ALERTS = false;    //Hide Far north geo jason alerts 
+//const withinTime = true; legacy content, was the alternative to isitactivestill
+  let farNorthGeoJSON = null;
+//Far north geojson config
+  const GEOJSON_KEY = "farNorthGeoJSON";
+  const GEOJSON_TIMESTAMP_KEY = "farNorthGeoJSON_timestamp";
+  const GEOJSON_EXPIRY_HOURS = 24; //Time period for Far North geojson, script will check every this hours if the stored geojson is the same as the current one
+
+  //check to see if the stored Far North geojson is still ative, uses geo expiry hours
+  function isGeoJSONExpired() {
+    const saved = localStorage.getItem(GEOJSON_TIMESTAMP_KEY);
+    if (!saved) return true;
+    const age = (Date.now() - parseInt(saved)) / (1000 * 60 * 60);
+    return age > GEOJSON_EXPIRY_HOURS;
+  }
+//custom geo areas polygon creator https://codepen.io/Amorangi-Mathews/full/yyYgmLM 
+  const CustomGeoAreas = {/*
+  Area1: {
+    type: "FeatureCollection",
+    name: "Area 1",
+    features: [
+      {
+        type: "Feature",
+        properties: { Name: "Custom Area 1" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [173.295593, -35.250529],
+              [173.298374, -35.251049],
+              [173.299805, -35.248748],
+              [173.295593, -35.250529]
+            ]
+          ]
+        }
+      }
+    ]
+  },*/
+  /*  "Far North": "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Areas/farnorth.geojson", */
+    "Ōturū Marae": "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Areas/Marae/oturumarae.geojson",
+         "Whangārei District": "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Areas/whangarei.geojson",
+ /* "Gisborne": "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Areas/gisborne.geojson",
+   "Nelson": "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Areas/nelson.geojson", 
+     "Southland": "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Areas/cantosouth.geojson", */
+};
+  
+  // or: const newGeoJSON = { type: "FeatureCollection", features: [...] };
+const newGeoJSON = "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/Areas/farnorth.geojson";
+
+  //try and load far north geo json
+  async function loadFarNorthGeoJSON() {
+  if (!isGeoJSONExpired()) {
+    try {
+      const stored = JSON.parse(localStorage.getItem(GEOJSON_KEY));
+      if (stored && stored.type === "FeatureCollection") return stored;
+    } catch {
+      console.warn("Corrupted stored Far North GeoJSON, regenerating.");
+    }
+  }
+
+  let finalGeoJSON = null;
+//if there is a url load through a proxy if enabled
+  try {
+    if (typeof newGeoJSON === "string") {
+      const url = USE_PROXY_FOR_CUSTOM_GEOJSON ? proxy + encodeURIComponent(newGeoJSON) : newGeoJSON;
+      const res = await fetch(url);
+      finalGeoJSON = await res.json();
+    } else if (newGeoJSON?.type === "FeatureCollection") {
+      finalGeoJSON = newGeoJSON;
+    }
+  } catch (e) {
+    console.warn("Failed to load newGeoJSON:", e);
+  } 
+
+  if (finalGeoJSON) {
+    localStorage.setItem(GEOJSON_KEY, JSON.stringify(finalGeoJSON));
+    localStorage.setItem(GEOJSON_TIMESTAMP_KEY, Date.now().toString());
+  }
+
+  return finalGeoJSON;
+}
+
+//custom sorting for areas displayed in the alert html from the custom geo area
+
+const AREA_DISPLAY_ORDER = [
+"Far North District",
+"Far North",
+"Ōturū Marae",
+ "Whangārei District",
+"Gisborne",
+"Nelson",
+"Southland",
+];
+
+
+//Format the times
+
+  function formatReadableTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleString('en-NZ', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } 
+  //predifinitions and clering 
+  let customGeoAreas = [];
+let combinedAlertList = []; // Holds all alerts for sorting and display
+  
+  
+  //check metservice feed, create html, sort
+async function fetchAlerts() {
+  try {
+    const res = await fetch(feedURL);
+    const xmlText = await res.text();
+    const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+    const ns = "http://www.w3.org/2005/Atom";
+    const entries = [...xml.getElementsByTagNameNS(ns, "entry")];
+    const links = entries.map(e => e.querySelector("link[rel='related']")?.getAttribute("href")).filter(Boolean);
+
+    const alertList = [];
+
+    for (const url of links) {
+      const capRes = await fetch(proxy + encodeURIComponent(url));
+      const capText = await capRes.text();
+      const capXML = new DOMParser().parseFromString(capText, "application/xml");
+      const capNS = "urn:oasis:names:tc:emergency:cap:1.2";
+
+      const info = capXML.getElementsByTagNameNS(capNS, "info")[0];
+      if (!info) continue;
+
+      function getParameterValue(infoNode, paramName) {
+        const params = infoNode.getElementsByTagNameNS(capNS, "parameter");
+        for (const param of params) {
+          const name = param.getElementsByTagNameNS(capNS, "valueName")[0]?.textContent;
+          const value = param.getElementsByTagNameNS(capNS, "value")[0]?.textContent;
+          if (name && value && name === paramName) return value;
+        }
+        return "";
+      }
+
+      const get = tag => info.getElementsByTagNameNS(capNS, tag)[0]?.textContent || '';
+      const headline = get("headline");
+      const description = get("description");
+      const onset = get("onset");
+      const expires = get("expires");
+      const event = get("event");
+      const severity = get("severity");
+      const certainty = get("certainty");
+      const areaDesc = info.getElementsByTagNameNS(capNS, "areaDesc")[0]?.textContent || '';
+      const web = get("web");
+
+      const colourCode = getParameterValue(info, "ColourCode");
+      const colourClass = colourCode ? `alert-${colourCode.toLowerCase()}` : 'alert-default';
+
+      const polygons = [...info.getElementsByTagNameNS(capNS, "polygon")];
+      const geoCoords = [];
+
+      polygons.forEach(p => {
+        const coords = p.textContent.trim().split(" ").map(pair => {
+          const [lat, lon] = pair.split(",").map(Number);
+          return [lon, lat];
+        });
+        geoCoords.push(coords);
+      });
+
+let intersects = false;
+let matchedAreaNames = [];
+
+geoCoords.forEach(coords => {
+  const poly = turf.polygon([coords]);
+
+  // Far North
+  if (!DISABLE_FAR_NORTH_ALERTS && farNorthGeoJSON && turf.booleanIntersects(poly, farNorthGeoJSON)) {
+    intersects = true;
+    if (!matchedAreaNames.includes("Far North District")) {
+      matchedAreaNames.push("Far North District");
+    }
+  }
+
+  // Custom Areas
+  if (SHOW_CUSTOM_GEOJSON_ALERTS && customGeoAreas.length) {
+    const keys = Object.keys(CustomGeoAreas);
+    for (let i = 0; i < customGeoAreas.length; i++) {
+      const custom = customGeoAreas[i];
+      const name = keys[i] || "a custom area";
+      if (turf.booleanIntersects(poly, custom)) {
+        intersects = true;
+        if (!matchedAreaNames.includes(name)) {
+          matchedAreaNames.push(name);
+        }
+      }
+    }
+  }
+});
+
+
+
+
+      const now = new Date();
+      let alertStatus = "";
+      if (onset && expires) {
+        const onsetTime = new Date(onset);
+        const expiresTime = new Date(expires);
+        if (now >= onsetTime && now <= expiresTime) {
+          alertStatus = "active-now";
+        } else if (now < onsetTime) {
+          alertStatus = "upcoming";
+        } else {
+          alertStatus = "expired";
+        }
+      } else {
+        alertStatus = "active-now"; // fallback
+      }
+
+      const isAllowedStatus =
+        alertStatus === "active-now" ||
+        alertStatus === "upcoming" ||
+        (alertStatus === "expired" && SHOW_EXPIRED_ALERTS);
+
+      const qualifies = intersects && isAllowedStatus;
+
+      matchedAreaNames.sort((a, b) => {
+  const iA = AREA_DISPLAY_ORDER.indexOf(a);
+  const iB = AREA_DISPLAY_ORDER.indexOf(b);
+  return (iA === -1 ? 999 : iA) - (iB === -1 ? 999 : iB); // fallback to end if not found
+});
+
+//banner conect for the met service cap feed related alerts      
+      const alertHTML = `
+<div class="alert-card ${qualifies ? 'far-north' : ''} ${alertStatus} ${colourClass}">
+  <b>${headline} issued for ${areaDesc}</b><br>
+  MetService has issued a weather alert that includes parts of ${formatAreaList(matchedAreaNames)}
+  ${onset ? ` from ${formatReadableTime(onset)} ` : ''}
+  ${expires ? `to ${formatReadableTime(expires)}</i>.<br>` : ''}   
+  ${web ? `<a href="${web}" target="_blank">Visit MetService website for more information.</a><br>` : ''}
+  <span class="badge alert-met">MetService</span>
+  ${colourCode ? `<span class="badge ${colourClass}">${colourCode}</span>` : ''}
+  ${alertStatus === 'upcoming' ? `<span class="badge upcoming-badge">Upcoming</span> ` : ''} 
+  ${alertStatus === 'active-now' ? `<span class="badge active-badge">Active Now</span><br>` : ''}
+  ${alertStatus === 'expired' ? `<span class="badge expired-badge">Expired</span>` : ''}
+</div>`;
+
+     if (qualifies) {
+combinedAlertList.push({ html: alertHTML, status: alertStatus, source: 'met', areas: matchedAreaNames }); // in fetchAlerts 
+
+} else if (  
+  SHOW_NON_FAR_NORTH_ALERTS &&
+  (alertStatus === "active-now" || alertStatus === "upcoming" || (alertStatus === "expired" && SHOW_EXPIRED_ALERTS))
+) {
+combinedAlertList.push({ html: alertHTML, status: alertStatus, source: 'met', areas: matchedAreaNames }); // in fetchAlerts
+
+}
+    }
+
+    // STEP 2: Sort alerts: active-now > upcoming > expired
+    const statusOrder = { "active-now": 1, "upcoming": 2, "expired": 3 };
+    alertList.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+
+    const floatingEl = document.getElementById("floating-alerts-container");
+    const toggleBtn = document.getElementById("toggle-alerts-btn");
+
+    if (alertList.length) {
+      floatingEl.innerHTML = alertList.map(a => a.html).join("\n");
+      toggleBtn.style.display = "flex";
+    } else {
+      floatingEl.innerHTML = "";
+      toggleBtn.style.display = "none";
+    }
+    lastUpdatedTime = new Date().toISOString();
+renderCombinedAlerts();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+  
+  //check civil denfence atom cap feed, check areas, make alerts html, sort
+async function fetchCDAlerts() {
+  if (!ENABLE_CD_ALERTS) return;
+
+  try {
+    const res = await fetch(proxy + encodeURIComponent(CD_ALERT_FEED_URL));
+    const xmlText = await res.text();
+    const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+    const ns = "http://www.w3.org/2005/Atom";
+    const entries = [...xml.getElementsByTagNameNS(ns, "entry")];
+
+    const cdAlertList = [];
+
+    for (const entry of entries) {
+      const contentXML = entry.getElementsByTagNameNS(ns, "content")[0]?.textContent;
+      if (!contentXML) continue;
+
+      const capXML = new DOMParser().parseFromString(contentXML, "application/xml");
+      const capNS = "urn:oasis:names:tc:emergency:cap:1.2";
+
+      const getTag = (parent, tag) => parent.getElementsByTagNameNS(capNS, tag)[0]?.textContent || '';
+      const info = capXML.getElementsByTagNameNS(capNS, "info")[0];
+      if (!info) continue;
+
+      const areaNodes = [...info.getElementsByTagNameNS(capNS, "area")];
+
+      // Extract base CAP fields
+      const identifier = getTag(capXML, "identifier");
+      const sent = getTag(capXML, "sent");
+      const status = getTag(capXML, "status");
+      const msgType = getTag(capXML, "msgType");
+      const scope = getTag(capXML, "scope");
+      const senderName = getTag(info, "senderName");
+      const headline = getTag(info, "headline");
+      const effective = getTag(info, "effective");
+      const expires = getTag(info, "expires");
+      const urgency = getTag(info, "urgency");
+      const severity = getTag(info, "severity");
+      const certainty = getTag(info, "certainty");
+
+      // Check time windows
+      const now = new Date();
+      const onsetTime = new Date(effective);
+      const expiresTime = new Date(expires);
+      let alertStatus = "";
+
+      if (now >= onsetTime && now <= expiresTime) {
+        alertStatus = "active-now";
+      } else if (now < onsetTime) {
+        alertStatus = "upcoming";
+      } else {
+        alertStatus = "expired";
+      }
+
+      const isAllowedStatus =
+        alertStatus === "active-now" ||
+        alertStatus === "upcoming" ||
+        (alertStatus === "expired" && SHOW_EXPIRED_ALERTS);
+
+    let intersects = false;
+let areaDesc = "";
+let matchedAreaNames = [];
+const geoCoords = [];
+
+areaNodes.forEach(area => {
+  const desc = area.getElementsByTagNameNS(capNS, "areaDesc")[0]?.textContent || '';
+  const polyEls = [...area.getElementsByTagNameNS(capNS, "polygon")];
+
+  areaDesc += desc + "; ";
+
+  polyEls.forEach(p => {
+    const coords = p.textContent.trim().split(" ").map(pair => {
+      const [lat, lon] = pair.split(",").map(Number);
+      return [lon, lat];
+    });
+    geoCoords.push(coords);
+  });
+});
+
+geoCoords.forEach(coords => {
+  const poly = turf.polygon([coords]);
+
+  // Far North
+  if (!DISABLE_FAR_NORTH_ALERTS && farNorthGeoJSON && turf.booleanIntersects(poly, farNorthGeoJSON)) {
+    intersects = true;
+    if (!matchedAreaNames.includes("Far North District")) {
+      matchedAreaNames.push("Far North District");
+    }
+  }
+
+  // Custom Areas
+  if (SHOW_CUSTOM_GEOJSON_ALERTS && customGeoAreas.length) {
+    const keys = Object.keys(CustomGeoAreas);
+    for (let i = 0; i < customGeoAreas.length; i++) {
+      const custom = customGeoAreas[i];
+      const name = keys[i] || "a custom area";
+      if (turf.booleanIntersects(poly, custom)) {
+        intersects = true;
+        if (!matchedAreaNames.includes(name)) {
+          matchedAreaNames.push(name);
+        }
+      }
+    }
+  }
+});
+
+      const isCancelled = msgType.toLowerCase() === "cancel";
+const qualifies =
+  intersects &&
+  isAllowedStatus &&
+  (!isCancelled || (isCancelled && SHOW_CANCELLED_CD_ALERTS));
+
+
+      const formatNZTime = iso => {
+        if (!iso) return '';
+        const dt = new Date(iso);
+        return dt.toLocaleString("en-NZ", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Pacific/Auckland"
+        });
+      };
+      
+      matchedAreaNames.sort((a, b) => {
+  const iA = AREA_DISPLAY_ORDER.indexOf(a);
+  const iB = AREA_DISPLAY_ORDER.indexOf(b);
+  return (iA === -1 ? 999 : iA) - (iB === -1 ? 999 : iB); // fallback to end if not found
+});
+
+
+      const alertHTML = `
+<div class="alert-card far-north alert-red ${alertStatus}">
+  <b>${headline}</b><br>
+  ${senderName} has issued an alert that covers parts of   ${formatAreaList(matchedAreaNames)} from ${formatNZTime(effective)}
+  to ${formatNZTime(expires)}.<br>
+  <b>Urgency:</b> ${urgency} <b>Severity:</b> ${severity}<br>
+  <span class="badge alert-cd">Civil Defence</span>
+  ${alertStatus === 'upcoming' ? `<span class="badge upcoming-badge">Upcoming</span>` : ''}
+  ${alertStatus === 'active-now' ? `<span class="badge active-badge">Active Now</span>` : ''}
+  ${alertStatus === 'expired' ? `<span class="badge expired-badge">Expired</span>` : ''}
+${isCancelled ? `<span class="badge cancelled-badge">Cancelled</span><br>` : ''}
+  <br><a href="https://www.civildefence.govt.nz/" target="_blank">Visit civildefence.govt.nz for more information</a>
+</div>`;
+
+      if (qualifies) {
+combinedAlertList.push({ html: alertHTML, status: alertStatus, source: 'cd', areas: matchedAreaNames }); // in fetchCDAlerts
+
+      } else if (
+        SHOW_NON_FAR_NORTH_ALERTS &&
+        (alertStatus === "active-now" || alertStatus === "upcoming" || (alertStatus === "expired" && SHOW_EXPIRED_ALERTS))
+      ) {
+combinedAlertList.push({ html: alertHTML, status: alertStatus, source: 'cd', areas: matchedAreaNames }); // in fetchCDAlerts
+
+      }
+    }
+
+    // Sort and render CD alerts
+    const statusOrder = { "active-now": 1, "upcoming": 2, "expired": 3 };
+    cdAlertList.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+
+    const floatingEl = document.getElementById("floating-alerts-container");
+    const toggleBtn = document.getElementById("toggle-alerts-btn");
+
+    if (cdAlertList.length) {
+      floatingEl.innerHTML += cdAlertList.map(a => a.html).join("\n");
+      toggleBtn.style.display = "flex";
+    }
+    lastUpdatedTime = new Date().toISOString();
+renderCombinedAlerts();
+  } catch (err) {
+    console.error("CD Alert fetch failed", err);
+  }
+}
+
+Promise.all([loadFarNorthGeoJSON(), loadCustomGeoJSONAreas()])
+  .then(([farNorth, customAreas]) => {
+    farNorthGeoJSON = farNorth;
+    customGeoAreas = customAreas;
+    return Promise.all([fetchCDAlerts(), fetchAlerts()]);
+  })
+  .then(renderCombinedAlerts);
+
+ async function loadCustomGeoJSONAreas() {
+  const areas = [];
+
+  for (const key in CustomGeoAreas) {
+    const entry = CustomGeoAreas[key];
+
+    if (typeof entry === "string") {
+      try {
+        const url = USE_PROXY_FOR_CUSTOM_GEOJSON ? proxy + encodeURIComponent(entry) : entry;
+        const res = await fetch(url);
+        const geojson = await res.json();
+        if (geojson.type === "FeatureCollection") {
+          areas.push(geojson);
+        }
+      } catch (e) {
+        console.warn(`Failed to fetch custom GeoJSON for ${key}:`, e);
+      }
+    } else if (entry?.type === "FeatureCollection") {
+      areas.push(entry);
+    }
+  }
+
+  return areas;
+} 
+  // Order: CD alerts first, then MetService — within each group, sort by status   
+function renderCombinedAlerts() {
+  const statusOrder = { "active-now": 1, "upcoming": 2, "expired": 3 };
+
+  // Sort combined alerts so the most important show first
+  combinedAlertList.sort((a, b) => {
+    const aOrder = statusOrder[a.status] || 99;
+    const bOrder = statusOrder[b.status] || 99;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return (a.source || "").localeCompare(b.source || "");
+  });
+
+  const alertListEl = document.getElementById("alert-list");
+  if (!alertListEl) {
+    console.warn("Dashboard alert list element not found");
+    return;
+  }
+
+  if (combinedAlertList.length) {
+    // Build area label and meta text
+    const allAreaMentions = combinedAlertList.flatMap(a => a.areas || []);
+    const uniqueAreas = [...new Set(allAreaMentions.filter(Boolean))];
+    const areaLabel = formatAreaList(uniqueAreas);
+    const hasCDAlert = combinedAlertList.some(a => a.source === "cd");
+
+    // Wrap each RWAS alert card in a list item so it fits the dashboard styling
+    const cardsHTML = combinedAlertList
+      .map(a => `<li class="alert-item">${a.html}</li>`)
+      .join("\n");
+
+    const metaHTML = `
+      <li class="alert-list-meta">
+        <small>
+          Currently showing local warnings and alerts for ${areaLabel}.<br>
+          Last updated: ${formatReadableTime(lastUpdatedTime)}.<br>
+          Source: Region Warnings And Alert System v${version}${hasCDAlert ? " including Civil Defence alerts" : ""}.
+        </small>
+      </li>`;
+
+    alertListEl.innerHTML = cardsHTML + metaHTML;
+  } else {
+    alertListEl.innerHTML = `
+      <li class="alert-list-meta">
+        <small>No current region wide warnings detected. Check the map and tiles for any localised issues.</small>
+      </li>`;
+  }
+
+  // Make sure the old popup UI stays empty and hidden
+  const floatingEl = document.getElementById("floating-alerts-container");
+  const toggleBtn = document.getElementById("toggle-alerts-btn");
+  if (floatingEl) floatingEl.innerHTML = "";
+  if (toggleBtn) toggleBtn.style.display = "none";
+}
+
+
+
+  function isStillActive(onsetText, expiresText) {
+  const now = new Date();
+  const onset = onsetText ? new Date(onsetText) : null;
+  const expires = expiresText ? new Date(expiresText) : null;
+
+  if (expires && now > expires) return false;
+  if (onset && now < onset) return true;
+  if (onset && expires) return now >= onset && now <= expires;
+  if (expires) return now <= expires;
+
+  return true;
+}
+
+  
+ function isWithinHourWindow(onsetText, expiresText) {
+  const now = new Date();
+  const onset = onsetText ? new Date(onsetText) : null;
+  const expires = expiresText ? new Date(expiresText) : null;
+ 
+  if (onset && expires) {
+    const isActive = now >= onset && now <= expires;
+    const startsSoon = onset > now && (onset - now) / 1000 / 3600 <= HOUR_WINDOW;
+    return isActive || startsSoon;
+  }
+
+  if (onset) {
+    const diffHours = (onset - now) / 1000 / 3600;
+    const inWindow = diffHours >= 0 && diffHours <= HOUR_WINDOW;
+    return inWindow;
+  }
+
+  return false;
+}
+
+function formatAreaList(areaArray) {
+  if (!areaArray || areaArray.length === 0) return "the alert region";
+  if (areaArray.length === 1) return areaArray[0];
+  if (areaArray.length === 2) return `${areaArray[0]} and ${areaArray[1]}`;
+  return `${areaArray.slice(0, -1).join(", ")}, and ${areaArray[areaArray.length - 1]}`;
+}
+
+  document.getElementById("toggle-alerts-btn").addEventListener("click", () => {
+    const el = document.getElementById("floating-alerts-container");
+    el.style.display = (el.style.display === "none" || !el.style.display) ? "block" : "none";
+  });
+
+  </script>
+</body>
+</html>
