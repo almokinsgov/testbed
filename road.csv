@@ -1,1 +1,1 @@
-{"body":"@odata.etag,ItemInternalId,Id,Start time,Completion time,Email,Name,Road Name,Reason for Closure,Longitude,Latitude,Upload Photo of Closure (optional)\r\n,721aca9d-5d18-43a0-b91a-aed346a7df5a,2,45988.0328472222,45988.0331481481,Amorangi.Mathews@fndc.govt.nz,Amorangi Mathews,Clough Road,Tree down,-34,175,\r\n"}
+{"body":"Id,StartTime,CompletionTime,Email,Name,RoadName\r\ndynamic content Id,Start time,Completion time,Email,Name,Road Name\r\n"}
