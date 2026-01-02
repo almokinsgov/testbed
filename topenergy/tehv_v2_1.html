@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Top Energy Outage History Viewer</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.0/dist/togeojson.umd.js"></script>
+
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #111827;
+      --panel2: #0f172a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --danger: #f87171;
+      --warn: #fbbf24;
+      --ok: #34d399;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: linear-gradient(180deg, rgba(17,24,39,0.98), rgba(17,24,39,0.90));
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+    }
+
+    .topbar .row {
+      display: grid;
+      grid-template-columns: 1.2fr 2fr 1.2fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .title {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .title h1 {
+      font-size: 16px;
+      margin: 0;
+      letter-spacing: 0.2px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .field input, .field select, .field button {
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      outline: none;
+    }
+
+    .field button {
+      cursor: pointer;
+      background: rgba(96,165,250,0.14);
+      border-color: rgba(96,165,250,0.28);
+    }
+    .field button:hover { background: rgba(96,165,250,0.20); }
+
+    
+
+    .filterBox { display: flex; flex-direction: column; gap: 8px; }
+    .checkRow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .chk {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      user-select: none;
+      white-space: nowrap;
+    }
+    .chk input { margin: 0; }
+    .miniBtn {
+      width: auto !important;
+      padding: 8px 10px !important;
+      border-radius: 999px !important;
+    }
+.stats {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      min-width: 120px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+    }
+
+    .stat .k { font-size: 11px; color: var(--muted); }
+    .stat .v { font-size: 14px; font-weight: 600; margin-top: 4px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 12px;
+      padding: 12px;
+      height: calc(100vh - 86px);
+    }
+
+    .card {
+      background: rgba(17,24,39,0.72);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .cardheader {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,23,42,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .cardheader .left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
+    }
+
+    .pane {
+      padding: 10px 12px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .split {
+      display: grid;
+      grid-template-rows: 1.05fr 0.95fr;
+      gap: 12px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      text-align: left;
+      padding: 10px 10px;
+      background: rgba(15,23,42,0.85);
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    tbody td {
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      vertical-align: top;
+    }
+
+    tbody tr:hover {
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+    }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .muted { color: var(--muted); }
+    .good { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--danger); }
+
+    .infoGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .kv {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .kv .k { font-size: 11px; color: var(--muted); }
+    .kv .v { font-size: 13px; margin-top: 4px; font-weight: 600; }
+
+    details {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    details summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 12px;
+      user-select: none;
+    }
+
+    pre {
+      margin: 10px 0 0 0;
+      padding: 10px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 12px;
+      overflow: auto;
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .err {
+      padding: 10px 12px;
+      border: 1px solid rgba(248,113,113,0.35);
+      background: rgba(248,113,113,0.10);
+      color: #fecaca;
+      border-radius: 12px;
+      margin: 10px 12px;
+      display: none;
+      white-space: pre-wrap;
+    }
+
+    .footerNote {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1100px) {
+      .topbar .row { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      .stats { justify-content: flex-start; }
+      .layout { grid-template-columns: 1fr; height: auto; }
+      .split { height: auto; }
+      #map { min-height: 440px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="row">
+      <div class="title">
+        <h1>Top Energy Outage History Viewer</h1>
+        <span class="pill" id="pillMode">Mode: Current</span>
+        <span class="pill" id="pillSnapshot">Snapshot: current</span>
+      </div>
+
+      <div class="controls">
+        <div class="field">
+          <label>Mode</label>
+          <select id="modeSelect">
+            <option value="current" selected>Current</option>
+            <option value="archive">Archive</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Archive Date</label>
+          <select id="dateSelect" disabled>
+            <option value="">Select Date</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Archive Snapshot</label>
+          <select id="snapSelect" disabled>
+            <option value="">Select Snapshot</option>
+          </select>
+        </div>
+
+        <div class="field" style="grid-column: 1 / span 2;">
+          <label>Search</label>
+          <input id="searchInput" placeholder="Search by outage id, circuit, suburb, cause, street..." />
+        </div>
+
+        <div class="field">
+          <label>Quick Actions</label>
+          <button id="reloadBtn">Reload Snapshot</button>
+        </div>
+
+
+        <div class="field" style="grid-column: 1 / span 3;">
+          <label>Filters</label>
+          <div class="filterBox">
+            <div class="checkRow">
+              <label class="chk"><input type="checkbox" id="fltUnplanned" checked>Unplanned</label>
+              <label class="chk"><input type="checkbox" id="fltPlanned" checked>Planned</label>
+              <label class="chk"><input type="checkbox" id="fltPlannedActive" checked>Planned Active</label>
+            </div>
+
+            <div class="checkRow" id="compareRow" style="display:none;">
+              <label class="chk"><input type="checkbox" id="compareMode">Compare Snapshots Polygons On Map</label>
+              <button id="clearCompareBtn" type="button" class="miniBtn">Clear Compared Polygons</button>
+              <span class="muted" id="compareCount" style="font-size: 11px;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="k">Active Outages</div>
+          <div class="v" id="statActive">0</div>
+        </div>
+        <div class="stat">
+          <div class="k">Customers Off</div>
+          <div class="v" id="statOff">0</div>
+        </div>
+        <div class="stat">
+          <div class="k">Total In Snapshot</div>
+          <div class="v" id="statTotal">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="err" id="errBox"></div>
+
+  <div class="layout">
+    <div class="card">
+      <div class="cardheader">
+        <div class="left">
+          <span class="tag">Leaflet Map</span>
+          <span class="tag" id="mapLayerStatus">Polygons: Loading On Demand</span>
+        </div>
+        <div class="footerNote" id="repoLink"></div>
+      </div>
+      <div style="flex: 1; min-height: 0;">
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <div class="cardheader">
+          <div class="left">
+            <span class="tag">Outages Table</span>
+            <span class="tag" id="tableHint">Click a row to load outage info</span>
+          </div>
+          <div class="footerNote" id="loadedCounts"></div>
+        </div>
+        <div class="pane" style="padding: 0;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 120px;">Id</th>
+                <th style="width: 110px;">Category</th>
+                <th style="width: 90px;">Status</th>
+                <th style="width: 120px;">Customers</th>
+                <th>Circuit</th>
+                <th style="width: 190px;">Start</th>
+              </tr>
+            </thead>
+            <tbody id="outageBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardheader">
+          <div class="left">
+            <span class="tag">Outage Info</span>
+            <span class="tag" id="selectedTag">None Selected</span>
+          </div>
+          <div class="footerNote" id="infoSource"></div>
+        </div>
+        <div class="pane">
+          <div class="infoGrid" id="infoGrid"></div>
+          <details open>
+            <summary>Raw JSON</summary>
+            <pre class="mono" id="infoJson">{}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ============================
+   Configuration
+   ============================ */
+
+const APP = {
+  github: {
+    // Change these for your GitHub Pages deployment
+    owner: "almokinsgov",
+    repo: "NZSHAPE",
+    branch: "main"
+  },
+  paths: {
+    root: "topenergy",
+    currentDir: "topenergy/current",
+    archiveDir: "topenergy/archive"
+  },
+  // Center roughly over Northland. Adjust to taste.
+  map: { lat: -35.25, lng: 173.95, zoom: 9 }
+};
+
+// Derived URLs
+function rawBase() {
+  const { owner, repo, branch } = APP.github;
+  return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/`;
+}
+function apiBase() {
+  const { owner, repo } = APP.github;
+  return `https://api.github.com/repos/${owner}/${repo}/contents/`;
+}
+
+function currentBasePath() {
+  return APP.paths.currentDir;
+}
+function archiveDatePath(date) {
+  return `${APP.paths.archiveDir}/${date}`;
+}
+function archiveSnapPath(date, snap) {
+  return `${APP.paths.archiveDir}/${date}/${snap}`;
+}
+
+function rawUrl(path) {
+  return rawBase() + path;
+}
+
+/* ============================
+   State
+   ============================ */
+
+const state = {
+  mode: "current",
+  archiveDate: "",
+  archiveSnap: "",
+  snapshotPath: currentBasePath(),
+  outagesNorm: null,
+  regions: null,
+  outageRows: [],
+  regionsById: new Map(),
+  infoCache: new Map(),
+  markerById: new Map(),
+  layers: {
+    markers: null,
+    activeKmz: null,
+    plannedKmz: null,
+    allKmz: null
+  },
+  filters: { unplanned: true, planned: true, plannedActive: true },
+  compare: {
+    enabled: false,
+    overlays: new Map() // key -> { layer, label }
+  }
+};
+
+/* ============================
+   UI Elements
+   ============================ */
+
+const el = {
+  modeSelect: document.getElementById("modeSelect"),
+  dateSelect: document.getElementById("dateSelect"),
+  snapSelect: document.getElementById("snapSelect"),
+  searchInput: document.getElementById("searchInput"),
+  reloadBtn: document.getElementById("reloadBtn"),
+  errBox: document.getElementById("errBox"),
+  outageBody: document.getElementById("outageBody"),
+  selectedTag: document.getElementById("selectedTag"),
+  infoGrid: document.getElementById("infoGrid"),
+  infoJson: document.getElementById("infoJson"),
+  infoSource: document.getElementById("infoSource"),
+  statActive: document.getElementById("statActive"),
+  statOff: document.getElementById("statOff"),
+  statTotal: document.getElementById("statTotal"),
+  pillMode: document.getElementById("pillMode"),
+  pillSnapshot: document.getElementById("pillSnapshot"),
+  loadedCounts: document.getElementById("loadedCounts"),
+  repoLink: document.getElementById("repoLink"),
+  mapLayerStatus: document.getElementById("mapLayerStatus")
+  ,
+  fltUnplanned: document.getElementById("fltUnplanned"),
+  fltPlanned: document.getElementById("fltPlanned"),
+  fltPlannedActive: document.getElementById("fltPlannedActive"),
+  compareRow: document.getElementById("compareRow"),
+  compareMode: document.getElementById("compareMode"),
+  clearCompareBtn: document.getElementById("clearCompareBtn"),
+  compareCount: document.getElementById("compareCount")
+
+};
+
+/* ============================
+   Map Setup
+   ============================ */
+
+const map = L.map("map", { zoomControl: true }).setView([APP.map.lat, APP.map.lng], APP.map.zoom);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+  attribution: "&copy; OpenStreetMap contributors"
+}).addTo(map);
+
+state.layers.markers = L.layerGroup().addTo(map);
+
+const layerControl = L.control.layers({}, {}, { collapsed: false }).addTo(map);
+
+
+/* ============================
+   Layer Control Helpers
+   ============================ */
+
+function removeFromLayerControl_(layer) {
+  try {
+    if (layerControl && typeof layerControl.removeLayer === "function") {
+      removeFromLayerControl_(layer);
+      return;
+    }
+  } catch {}
+
+  // Fallback for Leaflet builds without removeLayer on control
+  try {
+    if (!layerControl || !layerControl._layers) return;
+    layerControl._layers = layerControl._layers.filter(x => x.layer !== layer);
+    if (typeof layerControl._update === "function") layerControl._update();
+  } catch {}
+}
+
+/* ============================
+   Helpers
+   ============================ */
+
+function showError(msg) {
+  el.errBox.style.display = "block";
+  el.errBox.textContent = msg;
+}
+function clearError() {
+  el.errBox.style.display = "none";
+  el.errBox.textContent = "";
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Fetch failed ${res.status}: ${url}`);
+  return await res.json();
+}
+
+async function fetchArrayBuffer(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Fetch failed ${res.status}: ${url}`);
+  return await res.arrayBuffer();
+}
+
+function formatValue(v) {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  if (typeof v === "boolean") return v ? "true" : "false";
+  return JSON.stringify(v);
+}
+
+function normalizeOutageRows(outagesNorm) {
+  const rows = [];
+  if (!outagesNorm || typeof outagesNorm !== "object") return rows;
+
+  Object.keys(outagesNorm).forEach(cat => {
+    const arr = outagesNorm[cat];
+    if (!Array.isArray(arr)) return;
+    arr.forEach(o => {
+      if (!o || !o.id) return;
+      rows.push({
+        id: String(o.id),
+        category: cat,
+        lat: Number(o.lat),
+        lng: Number(o.lng)
+      });
+    });
+  });
+
+  return rows;
+}
+
+function buildRegionsById(regions) {
+  const map = new Map();
+  if (!regions || typeof regions !== "object") return map;
+  const add = (arr) => {
+    if (!Array.isArray(arr)) return;
+    arr.forEach(r => {
+      if (!r || !r.name) return;
+      map.set(String(r.name), r);
+    });
+  };
+  add(regions.active);
+  add(regions.planned);
+  return map;
+}
+
+function statusLabelFor(id, category, regionsById) {
+  const r = regionsById.get(id);
+  if (r && r.isActive) return { label: "Active", cls: "bad" };
+  if (category === "unplanned") return { label: "Unplanned", cls: "warn" };
+  if (category === "planned" || category === "plannedActive") return { label: "Planned", cls: "good" };
+  return { label: "Unknown", cls: "muted" };
+}
+
+function repoBrowseUrl(path) {
+  const { owner, repo, branch } = APP.github;
+  return `https://github.com/${owner}/${repo}/tree/${branch}/${path}`;
+}
+
+/* ============================
+   KMZ To Leaflet
+   ============================ */
+
+async function kmzToGeoJsonLayer(kmzUrl, options = {}) {
+  const buf = await fetchArrayBuffer(kmzUrl);
+  const zip = await JSZip.loadAsync(buf);
+  const kmlName = Object.keys(zip.files).find(n => n.toLowerCase().endsWith(".kml"));
+  if (!kmlName) throw new Error("KMZ did not contain a .kml file");
+  const kmlText = await zip.files[kmlName].async("string");
+
+  const dom = new DOMParser().parseFromString(kmlText, "text/xml");
+  const geojson = toGeoJSON.kml(dom);
+
+  const layer = L.geoJSON(geojson, options);
+  return layer;
+}
+
+async function ensurePolygonLayer(kind) {
+  // kind: activeKmz | plannedKmz | allKmz
+  const labelMap = {
+    activeKmz: "Active Polygons",
+    plannedKmz: "Planned Polygons",
+    allKmz: "All Polygons"
+  };
+
+  if (state.layers[kind]) return;
+
+  const kmzFile = (kind === "activeKmz") ? "polygonsActiveAll.kmz"
+                : (kind === "plannedKmz") ? "polygonsPlannedAll.kmz"
+                : "polygonsAll.kmz";
+
+  const url = rawUrl(`${state.snapshotPath}/${kmzFile}`);
+
+  el.mapLayerStatus.textContent = `Polygons: Loading ${labelMap[kind]}...`;
+
+  const layer = await kmzToGeoJsonLayer(url, {
+    style: () => ({
+      weight: 2,
+      opacity: 0.9,
+      fillOpacity: 0.08
+    })
+  });
+
+  state.layers[kind] = layer;
+  layerControl.addOverlay(layer, labelMap[kind]);
+
+  // Auto add Active polygons on first load
+  if (kind === "activeKmz") layer.addTo(map);
+
+  el.mapLayerStatus.textContent = "Polygons: Ready";
+}
+
+/* ============================
+   Compare Polygons (Archive)
+   ============================ */
+
+function snapshotLabel_() {
+  if (state.mode === "archive") return `${state.archiveDate}/${state.archiveSnap}`;
+  return "current";
+}
+
+function compareOverlayKey_(kind, snapshotPath) {
+  return `${kind}|${snapshotPath}`;
+}
+
+function updateCompareCount_() {
+  if (!el.compareCount) return;
+  const n = state.compare.overlays.size;
+  el.compareCount.textContent = n ? `${n} compared overlay${n === 1 ? "" : "s"}` : "";
+}
+
+function clearComparePolygons_() {
+  for (const { layer } of state.compare.overlays.values()) {
+    try { map.removeLayer(layer); } catch {}
+    removeFromLayerControl_(layer);
+  }
+  state.compare.overlays.clear();
+  updateCompareCount_();
+}
+
+async function addComparePolygonsForSnapshot_(kind, snapshotPath, labelSuffix) {
+  const labelMap = {
+    activeKmz: "Active Polygons",
+    plannedKmz: "Planned Polygons",
+    allKmz: "All Polygons"
+  };
+
+  const key = compareOverlayKey_(kind, snapshotPath);
+  if (state.compare.overlays.has(key)) return;
+
+  const kmzFile = (kind === "activeKmz") ? "polygonsActiveAll.kmz"
+                : (kind === "plannedKmz") ? "polygonsPlannedAll.kmz"
+                : "polygonsAll.kmz";
+
+  const url = rawUrl(`${snapshotPath}/${kmzFile}`);
+
+  el.mapLayerStatus.textContent = `Polygons: Loading ${labelMap[kind]} (${labelSuffix})...`;
+
+  const layer = await kmzToGeoJsonLayer(url, {
+    style: () => ({
+      weight: 2,
+      opacity: 0.9,
+      fillOpacity: 0.08
+    })
+  });
+
+  const label = `${labelMap[kind]} (${labelSuffix})`;
+
+  state.compare.overlays.set(key, { layer, label });
+  layerControl.addOverlay(layer, label);
+  layer.addTo(map);
+
+  el.mapLayerStatus.textContent = "Polygons: Ready";
+  updateCompareCount_();
+}
+
+
+/* ============================
+   Snapshot Loading
+   ============================ */
+
+async function loadSnapshot() {
+  clearError();
+
+  // Determine snapshot path
+  if (state.mode === "current") {
+    state.snapshotPath = currentBasePath();
+    el.pillMode.textContent = "Mode: Current";
+    el.pillSnapshot.textContent = "Snapshot: current";
+  } else {
+    state.snapshotPath = archiveSnapPath(state.archiveDate, state.archiveSnap);
+    el.pillMode.textContent = "Mode: Archive";
+    el.pillSnapshot.textContent = `Snapshot: ${state.archiveDate}/${state.archiveSnap}`;
+  }
+
+  el.repoLink.innerHTML = `<a href="${repoBrowseUrl(state.snapshotPath)}" target="_blank" rel="noreferrer">Open Snapshot In GitHub</a>`;
+
+  // Reset cached layers and markers
+  state.infoCache.clear();
+  state.markerById.clear();
+  state.layers.markers.clearLayers();
+
+  // Remove polygon layers if they were added previously (from map and layer control)
+  ["activeKmz", "plannedKmz", "allKmz"].forEach(k => {
+    const lyr = state.layers[k];
+    if (!lyr) return;
+    try { map.removeLayer(lyr); } catch {}
+    try { removeFromLayerControl_(lyr); } catch {}
+    state.layers[k] = null;
+  });
+  el.mapLayerStatus.textContent = "Polygons: Loading On Demand";
+
+  // Load base files
+  const outagesUrl = rawUrl(`${state.snapshotPath}/outages.json`);
+  const regionsUrl = rawUrl(`${state.snapshotPath}/regions.json`);
+
+  const [outagesNorm, regions] = await Promise.all([
+    fetchJson(outagesUrl),
+    fetchJson(regionsUrl)
+  ]);
+
+  state.outagesNorm = outagesNorm;
+  state.regions = regions;
+
+  state.outageRows = normalizeOutageRows(outagesNorm);
+  state.regionsById = buildRegionsById(regions);
+
+  el.statTotal.textContent = String(state.outageRows.length);
+  el.statActive.textContent = String(regions.activeOutageCount ?? regions.active?.length ?? 0);
+  el.statOff.textContent = String(regions.customersCurrentlyOff ?? 0);
+  el.loadedCounts.textContent = `${state.outageRows.length} outages`;
+
+  // Render table and markers (filters + search apply to both)
+  renderViews_({ fitToBounds: true });
+
+  // Polygons
+  try {
+    const compareEnabled = (state.mode === "archive") && el.compareMode && el.compareMode.checked;
+    state.compare.enabled = !!compareEnabled;
+
+    if (!compareEnabled) clearComparePolygons_();
+
+    if (compareEnabled) {
+      // In compare mode, each selected archive snapshot can remain visible as its own overlay
+      await addComparePolygonsForSnapshot_("activeKmz", state.snapshotPath, snapshotLabel_());
+    } else {
+      // Normal mode: single snapshot polygons
+      await ensurePolygonLayer("activeKmz");
+    }
+  } catch (e) {
+    el.mapLayerStatus.textContent = "Polygons: Failed To Load";
+    console.warn(e);
+  }
+}
+
+/* ============================
+   Archive Browsing (GitHub API)
+   ============================ */
+
+async function listGitHubDir(path) {
+  const url = `${apiBase()}${path}?ref=${encodeURIComponent(APP.github.branch)}`;
+  const res = await fetch(url, { headers: { "Accept": "application/vnd.github+json" } });
+  if (!res.ok) throw new Error(`GitHub list failed ${res.status} for ${path}`);
+  const json = await res.json();
+  return Array.isArray(json) ? json : [];
+}
+
+async function loadArchiveDates() {
+  el.dateSelect.innerHTML = `<option value="">Select Date</option>`;
+  el.snapSelect.innerHTML = `<option value="">Select Snapshot</option>`;
+
+  const items = await listGitHubDir(APP.paths.archiveDir);
+  const dates = items
+    .filter(x => x.type === "dir" && /^\d{4}-\d{2}-\d{2}$/.test(x.name))
+    .map(x => x.name)
+    .sort()
+    .reverse();
+
+  for (const d of dates) {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    el.dateSelect.appendChild(opt);
+  }
+}
+
+async function loadArchiveSnapshots(date) {
+  el.snapSelect.innerHTML = `<option value="">Select Snapshot</option>`;
+  if (!date) return;
+
+  const items = await listGitHubDir(archiveDatePath(date));
+  const snaps = items
+    .filter(x => x.type === "dir" && /^\d{8}_\d{6}$/.test(x.name))
+    .map(x => x.name)
+    .sort()
+    .reverse();
+
+  for (const s of snaps) {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    el.snapSelect.appendChild(opt);
+  }
+}
+
+/* ============================
+   Table And Selection
+   ============================ */
+
+
+function selectedCategories_() {
+  const cats = new Set();
+  if (el.fltUnplanned && el.fltUnplanned.checked) cats.add("unplanned");
+  if (el.fltPlanned && el.fltPlanned.checked) cats.add("planned");
+  if (el.fltPlannedActive && el.fltPlannedActive.checked) cats.add("plannedActive");
+  return cats;
+}
+
+function applyFilters_(rows, query) {
+  const q = (query || "").trim().toLowerCase();
+  const cats = selectedCategories_();
+  const knownCats = new Set(["unplanned", "planned", "plannedActive"]);
+
+  return rows.filter(r => {
+    // Category filter
+    if (knownCats.has(r.category) && cats.size && !cats.has(r.category)) return false;
+
+    if (!q) return true;
+
+    const reg = state.regionsById.get(r.id) || {};
+    const hay = [
+      r.id,
+      r.category,
+      reg.circuitName,
+      reg.customersCurrentlyOff,
+      reg.startDateTime,
+      reg.endDateTime,
+      reg.additionalInformation
+    ].map(x => (x === undefined || x === null) ? "" : String(x).toLowerCase()).join(" | ");
+
+    // Also search any cached info fields
+    const info = state.infoCache.get(r.id);
+    const infoHay = info ? JSON.stringify(info).toLowerCase() : "";
+
+    return (hay.includes(q) || infoHay.includes(q));
+  });
+}
+
+function getFilteredRows_() {
+  return applyFilters_(state.outageRows, el.searchInput.value);
+}
+
+function renderMarkers_(rows, opts = {}) {
+  const fitToBounds = !!opts.fitToBounds;
+
+  state.markerById.clear();
+  state.layers.markers.clearLayers();
+
+  const bounds = [];
+  for (const row of rows) {
+    if (!isFinite(row.lat) || !isFinite(row.lng)) continue;
+
+    const reg = state.regionsById.get(row.id) || {};
+    const customers = reg.customersCurrentlyOff ?? "";
+    const circuit = reg.circuitName ?? "";
+
+    const s = statusLabelFor(row.id, row.category, state.regionsById);
+    const marker = L.circleMarker([row.lat, row.lng], {
+      radius: 7,
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.55
+    });
+
+    // Color by category and status
+    const color = (s.label === "Active") ? "#f87171"
+                : (row.category === "unplanned") ? "#fbbf24"
+                : (row.category === "planned" || row.category === "plannedActive") ? "#60a5fa"
+                : "#9ca3af";
+
+    marker.setStyle({ color, fillColor: color });
+
+    marker.bindPopup(`
+      <div style="min-width: 220px;">
+        <div style="font-weight: 700; margin-bottom: 4px;">${row.id}</div>
+        <div style="color: #9ca3af; font-size: 12px;">
+          Category: ${row.category}<br/>
+          Status: ${s.label}<br/>
+          Customers: ${customers}<br/>
+          Circuit: ${circuit}
+        </div>
+        <div style="margin-top: 8px;">
+          <button data-id="${row.id}" style="padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background: rgba(96,165,250,0.16); color: #e5e7eb; cursor:pointer;">
+            Load Outage Info
+          </button>
+        </div>
+      </div>
+    `);
+
+    marker.on("popupopen", (e) => {
+      const node = e.popup.getElement();
+      const btn = node && node.querySelector("button[data-id]");
+      if (btn) {
+        btn.addEventListener("click", () => selectOutage(row.id), { once: true });
+      }
+    });
+
+    marker.addTo(state.layers.markers);
+    state.markerById.set(row.id, marker);
+    bounds.push([row.lat, row.lng]);
+  }
+
+  if (fitToBounds && bounds.length) map.fitBounds(bounds, { padding: [30, 30] });
+}
+
+function renderTable_(rows) {
+  el.outageBody.innerHTML = "";
+  for (const r of rows) {
+    const reg = state.regionsById.get(r.id) || {};
+    const s = statusLabelFor(r.id, r.category, state.regionsById);
+
+    const tr = document.createElement("tr");
+    tr.dataset.id = r.id;
+    tr.innerHTML = `
+      <td class="mono">${r.id}</td>
+      <td>${r.category}</td>
+      <td class="${s.cls}">${s.label}</td>
+      <td>${formatValue(reg.customersCurrentlyOff ?? "")}</td>
+      <td>${formatValue(reg.circuitName ?? "")}</td>
+      <td class="muted">${formatValue(reg.startDateTime ?? "")}</td>
+    `;
+    tr.addEventListener("click", () => selectOutage(r.id));
+    el.outageBody.appendChild(tr);
+  }
+
+  el.loadedCounts.textContent = `${rows.length} shown of ${state.outageRows.length}`;
+}
+
+function renderViews_(opts = {}) {
+  const rows = getFilteredRows_();
+  renderMarkers_(rows, opts);
+  renderTable_(rows);
+}
+
+
+async function selectOutage(id) {
+  clearError();
+  el.selectedTag.textContent = id;
+
+  const marker = state.markerById.get(id);
+  if (marker) {
+    map.setView(marker.getLatLng(), Math.max(map.getZoom(), 12));
+    marker.openPopup();
+  }
+
+  // Fetch outage info JSON (from current or archive)
+  if (state.infoCache.has(id)) {
+    renderInfo(id, state.infoCache.get(id));
+    return;
+  }
+
+  const infoUrl = rawUrl(`${state.snapshotPath}/outages/${encodeURIComponent(id)}.json`);
+  el.infoSource.innerHTML = `<a href="${infoUrl}" target="_blank" rel="noreferrer">Open Info JSON</a>`;
+
+  try {
+    const info = await fetchJson(infoUrl);
+    state.infoCache.set(id, info);
+    renderInfo(id, info);
+  } catch (e) {
+    renderInfo(id, { error: true, message: String(e) });
+    showError(`Outage info missing or failed to load for ${id}\n${e}`);
+  }
+}
+
+function renderInfo(id, info) {
+  const reg = state.regionsById.get(id) || {};
+  const kvs = [
+    ["Id", id],
+    ["Category", (state.outageRows.find(x => x.id === id) || {}).category || ""],
+    ["Status", reg.isActive ? "Active" : (reg.type || "")],
+    ["Customers Off", reg.customersCurrentlyOff ?? ""],
+    ["Circuit", reg.circuitName ?? ""],
+    ["Start", reg.startDateTime ?? ""],
+    ["End", reg.endDateTime ?? ""],
+
+    // Common fields from outage info payload
+    ["Notice Type", info.noticeType ?? ""],
+    ["Cause", info.cause ?? ""],
+    ["Suburbs", info.suburbs ?? ""],
+    ["Streets", (info.streets && (info.streets.showStreets || info.streets.hiddenStreets)) ? (info.streets.showStreets || info.streets.hiddenStreets) : ""],
+    ["Last Update", info.lastUpdateTime ?? ""]
+  ];
+
+  el.infoGrid.innerHTML = "";
+  for (const [k, v] of kvs) {
+    if (String(v).trim() === "") continue;
+    const div = document.createElement("div");
+    div.className = "kv";
+    div.innerHTML = `<div class="k">${k}</div><div class="v">${escapeHtml(String(v))}</div>`;
+    el.infoGrid.appendChild(div);
+  }
+
+  el.infoJson.textContent = JSON.stringify(info, null, 2);
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+}
+
+/* ============================
+   Event Wiring
+   ============================ */
+
+el.searchInput.addEventListener("input", () => renderViews_());
+
+
+// Type filters apply to table and map
+[el.fltUnplanned, el.fltPlanned, el.fltPlannedActive].forEach(x => {
+  if (!x) return;
+  x.addEventListener("change", () => renderViews_());
+});
+
+// Compare mode only matters in Archive mode
+if (el.compareMode) {
+  el.compareMode.addEventListener("change", async () => {
+    // Toggling compare mode changes how polygons are loaded, so reload the snapshot
+    if (!el.compareMode.checked) clearComparePolygons_();
+    try {
+      await loadSnapshot();
+    } catch (e) {
+      showError(String(e));
+    }
+  });
+}
+if (el.clearCompareBtn) {
+  el.clearCompareBtn.addEventListener("click", () => clearComparePolygons_());
+}
+
+
+el.reloadBtn.addEventListener("click", async () => {
+  try {
+    await loadSnapshot();
+  } catch (e) {
+    showError(String(e));
+  }
+});
+
+el.modeSelect.addEventListener("change", async () => {
+  state.mode = el.modeSelect.value;
+
+  if (state.mode === "archive") {
+    el.dateSelect.disabled = false;
+    el.snapSelect.disabled = false;
+    if (el.compareRow) el.compareRow.style.display = "flex";
+    try {
+      await loadArchiveDates();
+    } catch (e) {
+      showError(String(e));
+    }
+  } else {
+    el.dateSelect.disabled = true;
+    el.snapSelect.disabled = true;
+    el.dateSelect.value = "";
+    el.snapSelect.value = "";
+    state.archiveDate = "";
+    state.archiveSnap = "";
+
+    if (el.compareMode) el.compareMode.checked = false;
+    if (el.compareRow) el.compareRow.style.display = "none";
+    clearComparePolygons_();
+
+    try {
+      await loadSnapshot();
+    } catch (e) {
+      showError(String(e));
+    }
+  }
+});
+
+el.dateSelect.addEventListener("change", async () => {
+  state.archiveDate = el.dateSelect.value;
+  state.archiveSnap = "";
+  el.snapSelect.value = "";
+  try {
+    await loadArchiveSnapshots(state.archiveDate);
+  } catch (e) {
+    showError(String(e));
+  }
+});
+
+el.snapSelect.addEventListener("change", async () => {
+  state.archiveSnap = el.snapSelect.value;
+  if (!state.archiveDate || !state.archiveSnap) return;
+  try {
+    await loadSnapshot();
+  } catch (e) {
+    showError(String(e));
+  }
+});
+
+// Load default snapshot on first load
+(async () => {
+  try {
+    await loadSnapshot();
+  } catch (e) {
+    showError(String(e));
+  }
+})();
+</script>
+</body>
+</html>
