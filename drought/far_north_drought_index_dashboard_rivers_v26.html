@@ -1503,7 +1503,7 @@ function hilltopProxyWrap(rawUrl){
       typeof window.NRC_HILLTOP_PROXY_PREFIX === "string" &&
       window.NRC_HILLTOP_PROXY_PREFIX.trim())
       ? window.NRC_HILLTOP_PROXY_PREFIX.trim()
-      : "https://corsproxy.io/?url=";
+      : "";
 
   if (!prefix) return rawUrl;
 
