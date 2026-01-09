@@ -1,0 +1,5099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Far North Drought Index Dashboard</title>
+
+  <!-- Leaflet (map) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <style>
+    :root{
+      --bg: #0b0f14;
+      --panel: #101826;
+      --panel2: #0f1722;
+      --text: #e8eef7;
+      --muted: #9fb0c6;
+      --border: rgba(255,255,255,0.10);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --radius: 14px;
+      --radius2: 10px;
+      --gap: 14px;
+      --ok: #38bdf8;
+      --watch: #a3e635;
+      --warn: #fbbf24;
+      --severe: #fb7185;
+      --extreme: #f97316;
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{ height: 100%; }
+    body{
+      margin: 0;
+      background: radial-gradient(1100px 700px at 20% -10%, rgba(56,189,248,0.12), transparent 60%),
+                  radial-gradient(900px 650px at 90% 0%, rgba(251,191,36,0.10), transparent 55%),
+                  linear-gradient(180deg, var(--bg), #070a0f 65%);
+      color: var(--text);
+      font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    header{
+      padding: 18px 18px 10px 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    h1{
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .sub{
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .controls{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn{
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.24);
+      user-select: none;
+    }
+    .btn:hover{ filter: brightness(1.05); }
+
+    .pill{
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .pill strong{ color: var(--text); font-weight: 600; }
+
+    .field{
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+    }
+    .field input{
+      width: 76px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .field select{
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 8px;
+  outline: none;
+}
+.field input[type="datetime-local"]{
+  width: 200px;
+}
+.field input:disabled, .field select:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+main{
+      padding: 0 18px 18px 18px;
+      display: grid;
+      gap: var(--gap);
+      grid-template-columns: 1.1fr 1.5fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    @media (max-width: 1050px){
+      main{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel .hd{
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.15);
+    }
+
+    .panel .hd h2{
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.2px;
+      color: var(--text);
+    }
+
+    .kpiGrid{
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 12px;
+    }
+    @media (max-width: 1050px){
+      .kpiGrid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    .kpi{
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+    }
+    .kpi .label{ color: var(--muted); font-size: 12px; }
+    .kpi .value{ font-size: 20px; font-weight: 700; margin-top: 4px; }
+    .kpi .tiny{ color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    #map{
+      height: 520px;
+      width: 100%;
+      background: #0a0e14;
+    }
+    @media (max-width: 1050px){
+      #map{ height: 430px; }
+    }
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      vertical-align: middle;
+    }
+    th{
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+      background: rgba(0,0,0,0.12);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    tbody tr{
+      cursor: pointer;
+      background: rgba(0,0,0,0.06);
+    }
+    tbody tr:hover{ background: rgba(255,255,255,0.04); }
+
+    .tag{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.20);
+      color: var(--text);
+      font-weight: 600;
+      letter-spacing: 0.15px;
+      white-space: nowrap;
+    }
+    .dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(56,189,248,0.15);
+    }
+
+    .mono{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+    .muted{ color: var(--muted); }
+
+    .split{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      height: 100%;
+    }
+    .scroll{
+      overflow: auto;
+      max-height: 520px;
+    }
+    @media (max-width: 1050px){
+      .scroll{ max-height: 420px; }
+    }
+
+    .detail{
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .detail h3{
+      margin: 0;
+      font-size: 14px;
+    }
+    .grid2{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 1050px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
+    .miniCard{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.20);
+    }
+    .miniCard .k{ color: var(--muted); font-size: 12px; }
+    .miniCard .v{ font-size: 16px; font-weight: 700; margin-top: 3px; }
+    .miniCard .s{ color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+    .spark{
+      width: 100%;
+      height: 62px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+    }
+
+    .spark.recentCanvas{
+      height: 92px;
+    }
+
+
+    .note{
+      color: var(--muted);
+      font-size: 12px;
+      padding: 12px 14px 14px 14px;
+    }
+
+    /* Modal */
+    .modalBack{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+    .modal{
+      width: min(900px, 100%);
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.60);
+      overflow: hidden;
+    }
+    .modal .top{
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .modal .top h3{
+      margin: 0;
+      font-size: 14px;
+    }
+    .modal .body{
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+    }
+    textarea{
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      background: rgba(0,0,0,0.25);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      outline: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .toast{
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      background: rgba(0,0,0,0.75);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      max-width: 440px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.50);
+      display: none;
+      z-index: 1100;
+    }
+  
+/* Playback panel */
+.playback-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:flex-end;
+}
+.playback-slider{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  margin-top:10px;
+}
+.playback-slider input[type="range"]{ flex:1; }
+.check{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background: rgba(255,255,255,0.03);
+  color: var(--muted);
+  user-select:none;
+}
+.check input{ accent-color: var(--accent); }
+
+
+    .trendCanvas{ height: 120px; }
+
+    .trendWrap{ position: relative; }
+    .chartTooltip{
+      position:absolute;
+      left: 10px;
+      top: 10px;
+      background: rgba(0,0,0,0.82);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 8px 10px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+      font-size: 12px;
+      line-height: 1.25;
+      color: var(--text);
+      pointer-events:none;
+      z-index: 5;
+      max-width: 280px;
+    }
+    .chartTooltip .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .trendLegend{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin: 8px 0 10px 0;
+    }
+    .legendItem{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding: 4px 8px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.03);
+    }
+    .legendDot{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display:inline-block;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.06);
+    }
+    .legendMean{ background: var(--ok); box-shadow: 0 0 0 4px rgba(56,189,248,0.15); }
+    .legendMedian{ background: var(--warn); box-shadow: 0 0 0 4px rgba(251,191,36,0.14); }
+    .legendWorst{ background: var(--extreme); box-shadow: 0 0 0 4px rgba(249,115,22,0.16); }
+
+</style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Far North Drought Index Dashboard</h1>
+      <div class="sub">Modelled drought signal from Open-Meteo forecast soil moisture, rainfall, evap demand, humidity and optional Open-Meteo flood discharge</div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="btnRefresh">Refresh Data</button>
+      <button class="btn" id="btnEditLocations">Edit Locations</button>
+
+      <span class="field">
+        Past Days
+        <input type="number" id="pastDays" min="7" max="92" step="1" value="30" />
+      </span>
+
+      <span class="field">
+        Forecast Days
+        <input type="number" id="forecastDays" min="3" max="16" step="1" value="7" />
+      </span>
+
+<span class="field">
+  Time Mode
+  <select id="timeMode">
+    <option value="live">Live</option>
+    <option value="historic">Historic</option>
+  </select>
+</span>
+
+<span class="field">
+  Historic Date Time
+  <input type="datetime-local" id="asOfInput" />
+</span>
+
+
+      <span class="pill" id="statusPill">
+        <strong>Status</strong>
+        <span class="muted" id="statusText">Idle</span>
+      </span>
+
+      <span class="pill" title="Drought index scale">
+        <span class="dot" style="background: var(--ok)"></span><span class="muted">0-48 Normal</span>
+      </span>
+      <span class="pill"><span class="dot" style="background: var(--watch)"></span><span class="muted">49-63 Watch</span></span>
+      <span class="pill"><span class="dot" style="background: var(--warn)"></span><span class="muted">64-78 Warning</span></span>
+      <span class="pill"><span class="dot" style="background: var(--severe)"></span><span class="muted">79-93 Severe</span></span>
+      <span class="pill"><span class="dot" style="background: var(--extreme)"></span><span class="muted">94-100 Extreme</span></span>
+    </div>
+  </header>
+
+
+  <section id="playbackPanel" class="panel playback" style="grid-column: 1 / -1; display:none;">
+    <div class="hd">
+      <h2>Playback</h2>
+      <div class="muted" id="playbackStatus">Set a play range then load and play</div>
+    </div>
+
+    <div class="playback-grid">
+      <span class="field">
+        Range Start
+        <input type="datetime-local" id="rangeStartInput" />
+      </span>
+
+      <span class="field">
+        Range End
+        <input type="datetime-local" id="rangeEndInput" />
+      </span>
+
+      <button class="btn" id="btnLoadRange" title="Fetch data for the selected range">Load Range</button>
+
+      <button class="btn" id="btnStepBack" title="Step back">◀</button>
+      <button class="btn" id="btnPlay" title="Play">Play</button>
+      <button class="btn" id="btnPause" title="Pause" style="display:none;">Pause</button>
+      <button class="btn" id="btnStepFwd" title="Step forward">▶</button>
+
+      <span class="field">
+        Step
+        <select id="playStep">
+          <option value="60">1h</option>
+          <option value="360">6h</option>
+          <option value="720">12h</option>
+          <option value="1440" selected>1d</option>
+        </select>
+      </span>
+
+      <span class="field">
+        Speed
+        <select id="playSpeed">
+          <option value="1500">Slow</option>
+          <option value="900" selected>Normal</option>
+          <option value="450">Fast</option>
+          <option value="200">Max</option>
+        </select>
+      </span>
+
+      <label class="check">
+        <input type="checkbox" id="playLoop" checked />
+        Loop
+      </label>
+
+      <label class="check" title="Updates river and groundwater during playback (slower)">
+        <input type="checkbox" id="playHydro" />
+        Update River/GW
+      </label>
+    </div>
+
+    <div class="playback-slider">
+      <input type="range" id="playSlider" min="0" max="0" value="0" step="1" />
+      <div class="muted" id="playTimeLabel"></div>
+    </div>
+  </section>
+
+  <main>
+    <section class="panel" style="grid-column: 1 / -1;">
+      <div class="hd">
+        <h2>District Summary</h2>
+        <span class="muted mono" id="lastUpdated">Not Updated</span>
+      </div>
+      <div class="kpiGrid">
+        <div class="kpi">
+          <div class="label">District Index (Mean)</div>
+          <div class="value mono" id="kpiMean">-</div>
+          <div class="tiny muted" id="kpiMeanCat"></div>
+        </div>
+        <div class="kpi">
+          <div class="label">District Index (Median)</div>
+          <div class="value mono" id="kpiMedian">-</div>
+          <div class="tiny muted" id="kpiMedianCat"></div>
+        </div>
+        <div class="kpi">
+          <div class="label">Worst Location</div>
+          <div class="value mono" id="kpiWorst">-</div>
+          <div class="tiny muted" id="kpiWorstName"></div>
+        </div>
+        <div class="kpi">
+          <div class="label">Rain 14 Day Mean</div>
+          <div class="value mono" id="kpiRain14">-</div>
+          <div class="tiny muted">Across locations</div>
+        </div>
+      </div>
+
+      <div style="padding: 0 12px 12px 12px;">
+        <div class="miniCard">
+          <div class="k">District Trend</div>
+          <div class="s muted">Mean, Median and Worst location index over time</div>
+          <div class="trendLegend">
+            <span class="legendItem"><span class="legendDot legendMean"></span><span class="muted">Mean</span></span>
+            <span class="legendItem"><span class="legendDot legendMedian"></span><span class="muted">Median</span></span>
+            <span class="legendItem"><span class="legendDot legendWorst"></span><span class="muted">Worst</span></span>
+          </div>
+          <div class="trendWrap">
+            <canvas id="districtTrendChart" class="spark trendCanvas"></canvas>
+            <div id="districtTrendTooltip" class="chartTooltip" style="display:none;"></div>
+          </div>
+          <div class="tiny muted" id="districtTrendMeta">-</div>
+          <div class="tiny muted" id="districtTrendIndicatorHelp" style="margin-top:6px;">Indicators: [Drought Watch] Mean 80+ (5d), [Drought Warning] Mean 80+ (7d), [Drought Danger] Mean 84+ (5d), [Location Danger] 94+ (3d), District wide stress when Worst-Mean ≤2 for 3d</div>
+        </div>
+
+
+
+
+<div class="miniCard">
+  <div class="k">District Weather and Environment Trend</div>
+  <div class="s muted">District-wide daily mean for a selected metric</div>
+  <div class="row gap" style="align-items:center; flex-wrap:wrap; margin-top:6px;">
+    <label class="tiny muted" for="districtEnvMetric">Metric</label>
+    <select id="districtEnvMetric">
+      <option value="rain_mm">Rain (Daily, mm)</option>
+      <option value="rain14_mm">Rain (14 Day Mean, mm/day)</option>
+      <option value="et0_mm">ET0 (Daily, mm)</option>
+      <option value="et07_mm">ET0 (7 Day Mean, mm/day)</option>
+      <option value="temp_c">Air Temperature (Daily Mean, °C)</option>
+      <option value="rh_pct">Relative Humidity (Daily Mean, %)</option>
+      <option value="vpd_kpa">VPD (Daily Mean, kPa)</option>
+      <option value="soil_9_27">Soil Moisture 9-27 cm (Daily Mean, m³/m³)</option>
+      <option value="soil_27_81">Soil Moisture 27-81 cm (Daily Mean, m³/m³)</option>
+    </select>
+  </div>
+  <div class="trendWrap">
+    <canvas id="districtEnvChart" class="spark trendCanvas"></canvas>
+    <div id="districtEnvTooltip" class="chartTooltip" style="display:none;"></div>
+  </div>
+  <div class="tiny muted" id="districtEnvMeta">-</div>
+</div>
+
+<div class="miniCard">
+  <div class="k">District River and Groundwater Stress Trend</div>
+  <div class="s muted">District-wide daily mean water stress from nearest river gauges and bores (10 km limit). 0 = high water for that gauge, 100 = low</div>
+
+  <div class="grid2" style="margin-top:8px;">
+    <div>
+      <div class="tiny muted" style="margin-bottom:4px;">River Stress</div>
+      <div class="trendWrap">
+        <canvas id="districtRiverChart" class="spark trendCanvas"></canvas>
+        <div id="districtRiverTooltip" class="chartTooltip" style="display:none;"></div>
+      </div>
+    </div>
+    <div>
+      <div class="tiny muted" style="margin-bottom:4px;">Groundwater Stress</div>
+      <div class="trendWrap">
+        <canvas id="districtGWChart" class="spark trendCanvas"></canvas>
+        <div id="districtGWTooltip" class="chartTooltip" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tiny muted" id="districtHydroMeta">-</div>
+</div>
+
+
+      </div>
+
+<div class="note">
+        Notes: This is a heuristic index designed for quick operational awareness. It uses modelled soil moisture and weather variables and can be tuned to match your district signals and thresholds.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="hd">
+        <h2>Map</h2>
+        <span class="muted">Click a marker or row for details</span>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <section class="panel">
+      <div class="hd">
+        <h2>Locations</h2>
+        <span class="muted" id="tableHint">Loading is idle</span>
+      </div>
+
+      <div class="split">
+        <div class="scroll" id="tableWrap">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th>Location</th>
+                <th>Index</th>
+                <th>Category</th>
+                <th class="mono">Rain 14d</th>
+                <th class="mono">Soil 9-27</th>
+                <th class="mono">Soil 27-81</th>
+                <th class="mono">ET0 7d</th>
+                <th class="mono">RH 7d</th>
+                <th class="mono">Groundwater</th>
+                <th class="mono">River Gauge</th
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <!-- rows inserted -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="detail" id="detailPanel">
+          <h3>Details</h3>
+          <div class="muted">Select a location to view the components and recent trends.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Locations Modal -->
+  <div class="modalBack" id="modalBack">
+    <div class="modal">
+      <div class="top">
+        <h3>Edit Locations</h3>
+        <button class="btn" id="btnCloseModal">Close</button>
+      </div>
+      <div class="body">
+        <div class="muted">
+          Use JSON array with: id, name, lat, lon. Saved locally in your browser (localStorage).
+        </div>
+        <textarea id="locationsJson"></textarea>
+        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+          <button class="btn" id="btnResetLocations">Reset To Defaults</button>
+          <button class="btn" id="btnSaveLocations">Save Locations</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /***********************
+     * Configuration
+     ***********************/
+    const STORAGE_KEY_LOCATIONS = "fn_drought_locations_v1";
+    const STORAGE_KEY_LASTSEL = "fn_drought_last_selected_v1";
+
+    const DEFAULT_LOCATIONS = [
+      { id: "kaitaia", name: "Kaitaia", lat: -35.1119, lon: 173.2631 },
+      { id: "kerikeri", name: "Kerikeri", lat: -35.2271, lon: 173.9470 },
+      { id: "kaikohe", name: "Kaikohe", lat: -35.4053, lon: 173.8008 },
+      { id: "kawakawa", name: "Kawakawa", lat: -35.3818, lon: 174.0670 },
+      { id: "opua", name: "Opua", lat: -35.3118, lon: 174.1200 },
+      { id: "rawene", name: "Rawene", lat: -35.4791, lon: 173.5450 },
+      { id: "houhora", name: "Houhora", lat: -34.7850, lon: 173.1310 },
+      { id: "herekino", name: "Herekino", lat: -35.2018, lon: 173.1570 },
+      { id: "kaeo", name: "Kaeo", lat: -35.1020, lon: 173.7860 },
+      { id: "tehapua", name: "Te Hapua", lat: -34.9945, lon: 173.0156 }
+    ];
+
+    // Thresholds and weights are designed to be sensible defaults.
+    // You should tune them to align with local impacts and signals.
+    const droughtConfig = {
+      windows: {
+        rainPastDays: 14,
+        rhPastDays: 7,
+        et0ForecastDays: 7,
+        vpdForecastDays: 7,
+        soilBaselineDays: 30
+      },
+
+      thresholds: {
+        rain14: { wet: 80, dry: 10 },       // mm in 14 days
+        rain7Forecast: { wet: 50, dry: 5 }, // mm in 7 days
+        rh7: { wet: 80, dry: 40 },          // %
+        et07: { low: 10, high: 30 },        // mm over next 7 days
+        vpd: { low: 0.5, high: 2.0 },       // kPa (typical)
+      },
+
+      // Soil layers included, and their weights (sum should be 1).
+      soilLayers: [
+        { key: "soil_moisture_0_1cm", label: "0-1 cm", w: 0.10 },
+        { key: "soil_moisture_1_3cm", label: "1-3 cm", w: 0.15 },
+        { key: "soil_moisture_3_9cm", label: "3-9 cm", w: 0.20 },
+        { key: "soil_moisture_9_27cm", label: "9-27 cm", w: 0.25 },
+        { key: "soil_moisture_27_81cm", label: "27-81 cm", w: 0.30 },
+      ],
+
+      // Overall weights for the combined index.
+      // If river data fails, weights are automatically renormalised.
+      weights: {
+        soil: 0.42,
+        rain: 0.30,
+        evap: 0.20,
+        river: 0.06,
+        humidity: 0.02
+      }
+    };
+
+    /***********************
+     * Helpers
+     ***********************/
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(text){
+      $("statusText").textContent = text;
+    }
+
+    function showToast(msg){
+      const t = $("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => t.style.display = "none", 5500);
+    }
+
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    // Maps a value to dryness [0..1], where low rain -> high dryness
+    function normalizeInverse(val, wet, dry){
+      if (val == null || isNaN(val)) return null;
+      if (wet === dry) return 0.5;
+      const t = (val - dry) / (wet - dry);
+      return clamp(1 - t, 0, 1);
+    }
+
+    // Maps a value to dryness [0..1], where high val -> high dryness
+    function normalize(val, low, high){
+      if (val == null || isNaN(val)) return null;
+      if (high === low) return 0.5;
+      const t = (val - low) / (high - low);
+      return clamp(t, 0, 1);
+    }
+
+    function median(arr){
+      const a = arr.slice().sort((x,y) => x-y);
+      const mid = Math.floor(a.length/2);
+      return a.length % 2 ? a[mid] : (a[mid-1] + a[mid]) / 2;
+    }
+
+    function fmt(n, digits=0){
+      if (n == null || isNaN(n)) return "-";
+      return Number(n).toFixed(digits);
+    }
+
+    function categoryForIndex(idx){
+      if (idx == null || isNaN(idx)) return { name: "No Data", color: "rgba(255,255,255,0.35)" };
+      if (idx >= 94) return { name: "Extreme", color: "var(--extreme)" };
+      if (idx >= 79) return { name: "Severe", color: "var(--severe)" };
+      if (idx >= 64) return { name: "Warning", color: "var(--warn)" };
+      if (idx >= 49) return { name: "Watch", color: "var(--watch)" };
+      return { name: "Normal", color: "var(--ok)" };
+    }
+
+    function parseLocalDateTime(isoLike){
+      // Open-Meteo uses local timestamps when timezone=... is set.
+      // Many values look like "2026-01-04T00:00" without offset, which JS treats as local time.
+      return new Date(isoLike);
+    }
+
+    function dayKeyFromIso(isoDateTime){
+      // Works for both "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM"
+      return isoDateTime.slice(0, 10);
+    }
+
+    function nowLocal(){
+      return new Date();
+    }
+
+    
+
+const STORAGE_KEY_TIMEMODE = "fndi_timeMode";
+const STORAGE_KEY_ASOF = "fndi_asOf";
+
+const STORAGE_KEY_RANGE_START = "fndi_rangeStart";
+const STORAGE_KEY_RANGE_END = "fndi_rangeEnd";
+const STORAGE_KEY_PLAY_STEP = "fndi_playStepMin";
+const STORAGE_KEY_PLAY_SPEED = "fndi_playSpeedMs";
+const STORAGE_KEY_PLAY_LOOP = "fndi_playLoop";
+const STORAGE_KEY_PLAY_HYDRO = "fndi_playHydro";
+
+let historicRangeStart = null; // Date
+let historicRangeEnd = null;   // Date
+
+const playbackState = {
+  isPlaying: false,
+  timer: null,
+  stepMinutes: 1440,
+  speedMs: 900,
+  loop: true,
+  hydro: false,
+  lastHydroAt: null
+};
+
+
+let timeMode = "live"; // "live" | "historic"
+let asOfSnapshot = null;
+
+// Raw dataset cache, used for snapshot recompute without refetching
+const dataCache = {
+  wxList: null,
+  floodList: null,
+  riverSites: null,
+  gwSites: null,
+  riverForLoc: null,
+  gwForLoc: null,
+  loadedAt: null,
+  rangeMin: null,
+  rangeMax: null,
+  pastDays: null,
+  forecastDays: null
+};
+
+function pad2(n){ return String(n).padStart(2, "0"); }
+
+
+function ymdLocal(d){
+  if (!(d instanceof Date) || isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+
+function formatWhenNZ(dateLike){
+  const d = dateLike instanceof Date ? dateLike : new Date(String(dateLike).replace(" ", "T"));
+  if (!(d instanceof Date) || isNaN(d.getTime())) return "";
+  const hh = pad2(d.getHours());
+  const mm = pad2(d.getMinutes());
+  const dd = pad2(d.getDate());
+  const mon = d.toLocaleString("en-NZ", {month: "short"});
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${hh}:${mm} ${dd} ${mon} ${yy}`;
+}
+
+function formatDateTimeLocal(date){
+  const d = date instanceof Date ? date : new Date(date);
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function parseDateTimeLocal(value){
+  if (!value || typeof value !== "string") return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function getAsOfDate(){
+  if (timeMode === "historic" && asOfSnapshot instanceof Date && !isNaN(asOfSnapshot.getTime())){
+    return asOfSnapshot;
+  }
+  return nowLocal();
+}
+function updateTimeControls(){
+  const sel = document.getElementById("timeMode");
+  const inp = document.getElementById("asOfInput");
+  if (!sel || !inp) return;
+
+  sel.value = timeMode;
+  if (timeMode === "historic"){
+    inp.disabled = false;
+    inp.value = formatDateTimeLocal(getAsOfDate());
+  } else {
+    inp.disabled = true;
+  }
+
+  showPlaybackPanel(timeMode === "historic");
+  if (timeMode === "historic"){
+    syncPlaybackInputs();
+    updatePlaybackSlider();
+  }
+}
+function updateTimeInputMinMax(){
+  const inp = document.getElementById("asOfInput");
+  if (!inp) return;
+  // Historic mode should allow any date and time, so do not constrain min or max.
+  inp.min = "";
+  inp.max = "";
+}
+function clampAsOfToRange(){
+  if (timeMode !== "historic") return;
+  if (!(asOfSnapshot instanceof Date) || isNaN(asOfSnapshot.getTime())) return;
+
+  const now = nowLocal();
+  if (asOfSnapshot > now) asOfSnapshot = new Date(now.getTime());
+
+  localStorage.setItem(STORAGE_KEY_ASOF, asOfSnapshot.toISOString());
+  updateTimeControls();
+}
+function deriveWxRange(wx){
+  const t = wx?.hourly?.time;
+  if (Array.isArray(t) && t.length){
+    const min = parseLocalDateTime(t[0]);
+    const max = parseLocalDateTime(t[t.length - 1]);
+    if (!isNaN(min.getTime()) && !isNaN(max.getTime())){
+      return { min, max };
+    }
+  }
+  const d = wx?.daily?.time;
+  if (Array.isArray(d) && d.length){
+    const min = parseLocalDateTime(d[0] + "T00:00");
+    const max = parseLocalDateTime(d[d.length - 1] + "T23:00");
+    if (!isNaN(min.getTime()) && !isNaN(max.getTime())){
+      return { min, max };
+    }
+  }
+  return { min: null, max: null };
+}
+
+function sliceDailyToWindow(dates, values, endDate, daysBack){
+  if (!Array.isArray(dates) || !Array.isArray(values) || !dates.length) return [];
+  const endKey = endDate.toISOString().slice(0,10);
+  let endIdx = -1;
+  for (let i=0;i<dates.length;i++){
+    if (dates[i] <= endKey) endIdx = i;
+  }
+  if (endIdx < 0) return [];
+  const startIdx = Math.max(0, endIdx - (daysBack - 1));
+  return values.slice(startIdx, endIdx + 1);
+}
+
+function sliceDailyToWindowSeries(dates, values, endDate, daysBack){
+  if (!Array.isArray(dates) || !Array.isArray(values) || !dates.length) return { dates: [], values: [] };
+  const endKey = endDate.toISOString().slice(0,10);
+  let endIdx = -1;
+  for (let i=0;i<dates.length;i++){
+    if (dates[i] <= endKey) endIdx = i;
+  }
+  if (endIdx < 0) return { dates: [], values: [] };
+  const startIdx = Math.max(0, endIdx - (daysBack - 1));
+  return { dates: dates.slice(startIdx, endIdx + 1), values: values.slice(startIdx, endIdx + 1) };
+}
+
+
+function recomputeFromCache(){
+  if (!Array.isArray(locations) || !locations.length) return;
+  if (!dataCache.wxList || !dataCache.wxList.length) return;
+
+  const asOf = getAsOfDate();
+
+  if (dataCache.rangeMin && asOf < dataCache.rangeMin){
+    showToast("Snapshot is before the loaded data range. Increase Past Days then refresh.");
+    return;
+  }
+  if (dataCache.rangeMax && asOf > dataCache.rangeMax){
+    showToast("Snapshot is after the loaded data range. Increase Forecast Days then refresh.");
+    return;
+  }
+
+  computed = locations.map((loc, i) => {
+    const wx = dataCache.wxList[i];
+    const flood = dataCache.floodList ? dataCache.floodList[i] : null;
+    const riverGauge = dataCache.riverForLoc ? dataCache.riverForLoc[i] : null;
+    const gwGauge = dataCache.gwForLoc ? dataCache.gwForLoc[i] : null;
+
+    const index = computeLocationIndex(wx, flood, asOf);
+
+    const soil9 = wx?.hourly?.soil_moisture_9_27cm
+      ? lastHourlyAtOrBeforeNow(wx.hourly.time, wx.hourly.soil_moisture_9_27cm, asOf)
+      : null;
+    const soil27 = wx?.hourly?.soil_moisture_27_81cm
+      ? lastHourlyAtOrBeforeNow(wx.hourly.time, wx.hourly.soil_moisture_27_81cm, asOf)
+      : null;
+
+    const dailySeries = computeDailySeries(wx);
+
+    return { loc, index, riverGauge, gwGauge, soil9_27: soil9, soil27_81: soil27, dailySeries };
+  });
+
+  computed.sort((a,b) => (b.index.score ?? -1) - (a.index.score ?? -1));
+
+  renderDistrictKPIs();
+  renderTable();
+  renderMarkers();
+
+  const loaded = dataCache.loadedAt instanceof Date ? dataCache.loadedAt : new Date();
+  if (timeMode === "historic"){
+    document.getElementById("lastUpdated").textContent =
+      "As of " + asOf.toLocaleString("en-NZ", { hour12: false }) +
+      " (Data loaded " + loaded.toLocaleString("en-NZ", { hour12: false }) + ")";
+  } else {
+    document.getElementById("lastUpdated").textContent =
+      "Updated " + loaded.toLocaleString("en-NZ", { hour12: false });
+  }
+
+  document.getElementById("tableHint").textContent = "Click a row for details";
+
+  const remembered = localStorage.getItem(STORAGE_KEY_LASTSEL);
+  const preferred = selectedId && computed.some(r => r.loc.id === selectedId) ? selectedId :
+    (remembered && computed.some(r => r.loc.id === remembered) ? remembered : (computed[0]?.loc.id ?? null));
+  if (preferred) selectLocation(preferred, false);
+
+  scheduleDistrictTrendBuild();
+}
+function sumDailyWindow(dailyTime, dailyVals, endDate, daysBack){
+      if (!dailyTime || !dailyVals) return null;
+      const endKey = endDate.toISOString().slice(0,10);
+
+      let endIdx = -1;
+      for (let i=0;i<dailyTime.length;i++){
+        const k = dailyTime[i];
+        if (k <= endKey) endIdx = i;
+      }
+      if (endIdx < 0) return null;
+
+      const startIdx = Math.max(0, endIdx - (daysBack - 1));
+      let sum = 0;
+      for (let i=startIdx;i<=endIdx;i++){
+        const v = dailyVals[i];
+        if (v != null && !isNaN(v)) sum += v;
+      }
+      return sum;
+    }
+
+    function sumDailyFuture(dailyTime, dailyVals, startDate, daysForward){
+      if (!dailyTime || !dailyVals) return null;
+      const startKey = startDate.toISOString().slice(0,10);
+      let startIdx = -1;
+
+      for (let i=0;i<dailyTime.length;i++){
+        if (dailyTime[i] > startKey){
+          startIdx = i;
+          break;
+        }
+      }
+      if (startIdx < 0) return null;
+
+      const endIdx = Math.min(dailyTime.length - 1, startIdx + (daysForward - 1));
+      let sum = 0;
+      for (let i=startIdx;i<=endIdx;i++){
+        const v = dailyVals[i];
+        if (v != null && !isNaN(v)) sum += v;
+      }
+      return sum;
+    }
+
+    function meanHourlyWindow(hourlyTime, hourlyVals, endDate, daysBack){
+      if (!hourlyTime || !hourlyVals) return null;
+      const endMs = endDate.getTime();
+      const startMs = endMs - daysBack * 24 * 3600 * 1000;
+
+      let sum = 0;
+      let n = 0;
+      for (let i=0;i<hourlyTime.length;i++){
+        const t = parseLocalDateTime(hourlyTime[i]).getTime();
+        if (t >= startMs && t <= endMs){
+          const v = hourlyVals[i];
+          if (v != null && !isNaN(v)){
+            sum += v;
+            n++;
+          }
+        }
+      }
+      return n ? sum / n : null;
+    }
+
+    function meanHourlyFuture(hourlyTime, hourlyVals, startDate, daysForward, filterFn=null){
+      if (!hourlyTime || !hourlyVals) return null;
+      const startMs = startDate.getTime();
+      const endMs = startMs + daysForward * 24 * 3600 * 1000;
+
+      let sum = 0;
+      let n = 0;
+      for (let i=0;i<hourlyTime.length;i++){
+        const dt = parseLocalDateTime(hourlyTime[i]);
+        const t = dt.getTime();
+        if (t > startMs && t <= endMs){
+          if (filterFn && !filterFn(dt)) continue;
+          const v = hourlyVals[i];
+          if (v != null && !isNaN(v)){
+            sum += v;
+            n++;
+          }
+        }
+      }
+      return n ? sum / n : null;
+    }
+
+    function lastHourlyAtOrBeforeNow(hourlyTime, hourlyVals, nowDate){
+      if (!hourlyTime || !hourlyVals) return null;
+      const nowMs = nowDate.getTime();
+      let last = null;
+      for (let i=0;i<hourlyTime.length;i++){
+        const t = parseLocalDateTime(hourlyTime[i]).getTime();
+        if (t <= nowMs){
+          const v = hourlyVals[i];
+          if (v != null && !isNaN(v)) last = v;
+        }
+      }
+      return last;
+    }
+
+    function minMaxHourlyWindow(hourlyTime, hourlyVals, endDate, daysBack){
+      if (!hourlyTime || !hourlyVals) return { min: null, max: null };
+      const endMs = endDate.getTime();
+      const startMs = endMs - daysBack * 24 * 3600 * 1000;
+
+      let min = Infinity;
+      let max = -Infinity;
+      let found = false;
+
+      for (let i=0;i<hourlyTime.length;i++){
+        const t = parseLocalDateTime(hourlyTime[i]).getTime();
+        if (t >= startMs && t <= endMs){
+          const v = hourlyVals[i];
+          if (v != null && !isNaN(v)){
+            found = true;
+            min = Math.min(min, v);
+            max = Math.max(max, v);
+          }
+        }
+      }
+      return found ? { min, max } : { min: null, max: null };
+    }
+
+    function safeJsonParse(text){
+      try { return JSON.parse(text); } catch { return null; }
+    }
+
+    async function fetchJson(url, timeoutMs=20000){
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/***********************
+ * NRC River Data
+ ***********************/
+// NRC river map points feed (your emergency map uses the same pattern).
+// If you already have a proxy, set window.NRC_RIVERS_URL before this script runs.
+const DEFAULT_NRC_RIVERS_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent("https://env.gurudigital.nz/WebApi/GetMapPoints/2?collectionId=19");
+
+const NRC_RIVERS_URL =
+  (typeof window !== "undefined" &&
+    typeof window.NRC_RIVERS_URL === "string" &&
+    window.NRC_RIVERS_URL.trim())
+    ? window.NRC_RIVERS_URL.trim()
+    : DEFAULT_NRC_RIVERS_URL;
+
+const NRC_RIVER_MAX_DISTANCE_KM =
+  (typeof window !== "undefined" &&
+    window.NRC_RIVER_MAX_DISTANCE_KM != null &&
+    isFinite(Number(window.NRC_RIVER_MAX_DISTANCE_KM)))
+    ? Number(window.NRC_RIVER_MAX_DISTANCE_KM)
+    : 10;
+
+
+/***********************
+ * NRC Groundwater Data
+ ***********************/
+// NRC continuous groundwater map points feed (collectionId=30).
+// You can override by setting window.NRC_GW_URL before this script runs.
+const DEFAULT_NRC_GW_URL =
+  "https://corsproxy.io/?url=" +
+  encodeURIComponent("https://env.gurudigital.nz/WebApi/GetMapPoints/2?collectionId=30");
+
+const NRC_GW_URL =
+  (typeof window !== "undefined" &&
+    typeof window.NRC_GW_URL === "string" &&
+    window.NRC_GW_URL.trim())
+    ? window.NRC_GW_URL.trim()
+    : DEFAULT_NRC_GW_URL;
+
+const NRC_GW_MAX_DISTANCE_KM =
+  (typeof window !== "undefined" &&
+    window.NRC_GW_MAX_DISTANCE_KM != null &&
+    isFinite(Number(window.NRC_GW_MAX_DISTANCE_KM)))
+    ? Number(window.NRC_GW_MAX_DISTANCE_KM)
+    : 10;
+
+function normaliseNrcGroundwaterSite(site){
+  if (!site) return null;
+
+  const title = site.DisplayName || site.Name || "Groundwater site";
+  const primary = site.PrimaryMeasurement || null;
+  const primaryValue = site.PrimaryValue || null;
+
+  const level = primaryValue && primaryValue.Value != null ? Number(primaryValue.Value) : null;
+  const levelUnits = primary && primary.Units ? String(primary.Units) : "";
+  const levelMeasName = primary ? (primary.Name || primary.Measurement || primary.MeasurementName || primary.Label || primary.Code || null) : null;
+
+  const levelWhen =
+    primaryValue && (primaryValue.FormattedTime || primaryValue.FormattedDate)
+      ? `${primaryValue.FormattedTime || ""} ${primaryValue.FormattedDate || ""}`.trim()
+      : "";
+
+  const hilltopBase =
+    (site.DataServerUrl && site.DataEndPointName)
+      ? `${site.DataServerUrl}/${site.DataEndPointName}?Service=Hilltop&Request=GetData`
+      : NRC_HILLTOP_BASE;
+
+  return {
+    id: site.Id != null ? String(site.Id) : "",
+    name: site.Name || title,
+    title,
+    lat: site.Latitude,
+    lon: site.Longitude,
+    level,
+    levelUnits,
+    levelMeasName,
+    levelWhen,
+    measurementId: primary && primary.Id != null ? String(primary.Id) : "",
+    hilltopBase
+  };
+}
+
+function pickNearestGroundwaterSite(loc, sites){
+  if (!Array.isArray(sites) || !sites.length) return null;
+
+  let best = null;
+  let bestD = Infinity;
+
+  for (const s of sites){
+    if (!s || !s.HasLocation || s.Latitude == null || s.Longitude == null) continue;
+    const d = haversineKm(loc.lat, loc.lon, Number(s.Latitude), Number(s.Longitude));
+    if (d < bestD){
+      bestD = d;
+      best = s;
+    }
+  }
+
+  if (!best || !isFinite(bestD)) return null;
+  if (bestD > NRC_GW_MAX_DISTANCE_KM) return null;
+  return { site: normaliseNrcGroundwaterSite(best), distanceKm: bestD };
+}
+
+function formatGroundwaterShort(gw){
+  if (!gw || !gw.site) return "-";
+  const s = gw.site;
+  if (s.level != null && isFinite(s.level)){
+    return `${fmt(s.level, 3)} ${s.levelUnits || ""}`.trim();
+  }
+  return "-";
+}
+
+function buildGroundwaterGaugeHtml(gw){
+  if (!gw || !gw.site){
+    return `Groundwater Level: <strong class="mono">-</strong><br/>`;
+  }
+
+  const s = gw.site;
+  const title = escapeHtml(s.title || "Groundwater site");
+  const dist = isFinite(gw.distanceKm) ? `${fmt(gw.distanceKm, 1)} km` : "";
+  const distPart = dist ? `, ${dist}` : "";
+
+  let html = `Groundwater Level: <strong class="mono">${escapeHtml(formatGroundwaterShort(gw))}</strong> <span class="muted">(${title}${distPart})</span><br/>`;
+
+  if (s.levelWhen){
+    html += `<span class="tiny muted">Reading Time: ${escapeHtml(s.levelWhen)}</span><br/>`;
+  }
+
+  return html;
+}
+
+
+function haversineKm(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function parsePercent(value){
+  if (value == null) return null;
+  const m = String(value).match(/-?\d+(?:\.\d+)?/);
+  return m ? Number(m[0]) : null;
+}
+
+function normaliseNrcRiverSite(site){
+  if (!site) return null;
+
+  const title = site.DisplayName || site.Name || "River site";
+  const primary = site.PrimaryMeasurement || null;
+  const secondary = site.SecondaryMeasurement || null;
+  const primaryValue = site.PrimaryValue || null;
+  const secondaryValue = site.SecondaryValue || null;
+
+  const level = primaryValue && primaryValue.Value != null ? Number(primaryValue.Value) : null;
+  const levelUnits = primary && primary.Units ? String(primary.Units) : "";
+  const levelMeasName = primary ? (primary.Name || primary.Measurement || primary.MeasurementName || primary.Label || primary.Code || null) : null;
+  const levelWhen =
+    primaryValue && (primaryValue.FormattedTime || primaryValue.FormattedDate)
+      ? `${primaryValue.FormattedTime || ""} ${primaryValue.FormattedDate || ""}`.trim()
+      : "";
+
+  const flow = secondaryValue && secondaryValue.Value != null ? Number(secondaryValue.Value) : null;
+  const flowUnits = secondary && secondary.Units ? String(secondary.Units) : "";
+  const flowMeasName = secondary ? (secondary.Name || secondary.Measurement || secondary.MeasurementName || secondary.Label || secondary.Code || null) : null;
+  const flowWhen =
+    secondaryValue && (secondaryValue.FormattedTime || secondaryValue.FormattedDate)
+      ? `${secondaryValue.FormattedTime || ""} ${secondaryValue.FormattedDate || ""}`.trim()
+      : "";
+
+  const droughtInfo = site.DroughtInfo || null;
+  const percentDiffDMF = droughtInfo ? parsePercent(droughtInfo.PercentDiffDMF) : null;
+
+  const trend = site.Icon && site.Icon.Name ? String(site.Icon.Name) : "";
+  const summaryHtml = site.Summary || "";
+
+  return {
+    title,
+    level,
+    levelUnits,
+    levelMeasName,
+    levelWhen,
+    flow,
+    flowUnits,
+    flowMeasName,
+    flowWhen,
+    percentDiffDMF,
+    malfText: droughtInfo && droughtInfo.MALFText ? String(droughtInfo.MALFText) : "",
+    dmfText: droughtInfo && droughtInfo.DMFText ? String(droughtInfo.DMFText) : "",
+    trend,
+    summaryHtml,
+    lat: site.Latitude,
+    lon: site.Longitude
+  };
+}
+
+// Picks the nearest NRC river site to a drought location.
+// Returns { site: { ...normalised }, distanceKm } or null.
+function pickNearestRiverSite(loc, sites){
+  if (!Array.isArray(sites) || !sites.length) return null;
+
+  let best = null;
+  let bestD = Infinity;
+
+  for (const s of sites){
+    if (!s || !s.HasLocation || s.Latitude == null || s.Longitude == null) continue;
+    const d = haversineKm(loc.lat, loc.lon, Number(s.Latitude), Number(s.Longitude));
+    if (d < bestD){
+      bestD = d;
+      best = s;
+    }
+  }
+
+  if (!best || !isFinite(bestD)) return null;
+  if (bestD > NRC_RIVER_MAX_DISTANCE_KM) return null;
+  return { site: normaliseNrcRiverSite(best), distanceKm: bestD };
+}
+
+function formatRiverShort(river){
+  if (!river || !river.site) return "-";
+  const s = river.site;
+
+  if (s.flow != null && isFinite(s.flow)){
+    return `${fmt(s.flow, 2)} ${s.flowUnits || ""}`.trim();
+  }
+  if (s.level != null && isFinite(s.level)){
+    return `${fmt(s.level, 2)} ${s.levelUnits || ""}`.trim();
+  }
+  return "-";
+}
+
+function buildRiverGaugeHtml(river){
+  if (!river || !river.site){
+    return `River Gauge: <strong class="mono">-</strong><br/>`;
+  }
+
+  const s = river.site;
+  const title = escapeHtml(s.title || "River site");
+  const dist = isFinite(river.distanceKm) ? `${fmt(river.distanceKm, 1)} km` : "";
+  const distPart = dist ? `, ${dist}` : "";
+
+  let html = `River Gauge: <strong class="mono">${escapeHtml(formatRiverShort(river))}</strong> <span class="muted">(${title}${distPart})</span><br/>`;
+
+  if (s.flowWhen){
+    html += `<span class="tiny muted">Flow Time: ${escapeHtml(s.flowWhen)}</span><br/>`;
+  } else if (s.levelWhen){
+    html += `<span class="tiny muted">Level Time: ${escapeHtml(s.levelWhen)}</span><br/>`;
+  }
+
+  if (s.percentDiffDMF != null && isFinite(s.percentDiffDMF)){
+    const sign = s.percentDiffDMF > 0 ? "+" : "";
+    html += `<span class="tiny muted">Relative to DMF: ${sign}${fmt(s.percentDiffDMF, 0)}%</span><br/>`;
+  }
+
+  return html;
+}
+
+
+
+
+/***********************
+ * NRC Hilltop River History
+ ***********************/
+// Hilltop GetData endpoint. History is pulled per location for the nearest river gauge.
+// Override proxy by setting window.NRC_HILLTOP_PROXY_PREFIX before this script runs.
+// Examples:
+// window.NRC_HILLTOP_PROXY_PREFIX = "https://corsproxy.io/?url=";
+// window.NRC_HILLTOP_PROXY_PREFIX = "https://api.allorigins.win/raw?url=";
+// window.NRC_HILLTOP_PROXY_PREFIX = "https://your-proxy.example/fetch?url={url}";
+const NRC_HILLTOP_BASE = "https://hilltop.nrc.govt.nz/data.hts?Service=Hilltop&Request=GetData";
+
+function hilltopProxyWrap(rawUrl){
+  const prefix =
+    (typeof window !== "undefined" &&
+      typeof window.NRC_HILLTOP_PROXY_PREFIX === "string" &&
+      window.NRC_HILLTOP_PROXY_PREFIX.trim())
+      ? window.NRC_HILLTOP_PROXY_PREFIX.trim()
+      : "https://corsproxy.io/?url=";
+
+  if (!prefix) return rawUrl;
+
+  const enc = encodeURIComponent(rawUrl);
+  if (prefix.includes("{url}")) return prefix.replace("{url}", enc);
+  return prefix + enc;
+}
+
+// Format "YYYY-MM-DD HH:mm" in Pacific/Auckland, which matches the Apps Script monitor pattern.
+function formatAuckland(dt){
+  const parts = new Intl.DateTimeFormat("en-NZ", {
+    timeZone: "Pacific/Auckland",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(dt);
+
+  const map = {};
+  for (const p of parts) map[p.type] = p.value;
+  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}`;
+}
+
+function findHilltopDataArray(obj){
+  if (!obj) return null;
+
+  if (Array.isArray(obj)){
+    if (obj.length && typeof obj[0] === "object" && obj[0] && ("t" in obj[0] || "T" in obj[0]) && ("v" in obj[0] || "V" in obj[0])) return obj;
+    for (const it of obj){
+      const found = findHilltopDataArray(it);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  if (typeof obj !== "object") return null;
+
+  if (Array.isArray(obj.Data) && obj.Data.length) return obj.Data;
+
+  for (const k of Object.keys(obj)){
+    const found = findHilltopDataArray(obj[k]);
+    if (found) return found;
+  }
+  return null;
+}
+
+function parseHilltopSeries(json){
+  const arr = findHilltopDataArray(json) || [];
+  const times = [];
+  const values = [];
+  for (const p of arr){
+    if (!p || typeof p !== "object") continue;
+    const t = p.t ?? p.T ?? p.time ?? p.Time ?? null;
+    const v = p.v ?? p.V ?? p.value ?? p.Value ?? null;
+    const num = v == null ? null : Number(v);
+    if (!isFinite(num) || !t) continue;
+    times.push(String(t));
+    values.push(num);
+  }
+  // Ensure ascending time order if the feed is reversed
+  if (times.length >= 2 && times[0] > times[times.length - 1]){
+    times.reverse();
+    values.reverse();
+  }
+  return { times, values };
+}
+
+const riverHistoryCache = new Map();
+const gwHistoryCache = new Map();
+
+function pickRiverHistoryMeasurement(site){
+  if (!site) return { name: "Stage", label: "River Level", units: "" };
+
+  // Prefer flow if available (drought relevance), otherwise stage/level.
+  if (site.flow != null && isFinite(site.flow)){
+    return {
+      name: site.flowMeasName || "Flow",
+      label: "River Flow",
+      units: site.flowUnits || ""
+    };
+  }
+
+  return {
+    name: site.levelMeasName || "Stage",
+    label: "River Level",
+    units: site.levelUnits || ""
+  };
+}
+
+function pickGroundwaterHistoryMeasurement(site){
+  if (!site) return { name: "Groundwater", label: "Groundwater Level", units: "" };
+  return {
+    name: site.levelMeasName || "Groundwater Continuous MSL",
+    label: "Groundwater Level",
+    units: site.levelUnits || ""
+  };
+}
+
+
+async function fetchRiverHistory(siteName, measurementName, daysBack=7, toDate=null){
+  const now = (toDate instanceof Date && !isNaN(toDate.getTime())) ? toDate : new Date();
+  const from = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+
+  const fromStr = formatAuckland(from);
+  const toStr = formatAuckland(now);
+
+  const raw =
+    `${NRC_HILLTOP_BASE}` +
+    `&Site=${encodeURIComponent(siteName)}` +
+    `&Measurement=${encodeURIComponent(measurementName)}` +
+    `&From=${encodeURIComponent(fromStr)}` +
+    `&To=${encodeURIComponent(toStr)}` +
+    `&Format=JSON`;
+
+  const url = hilltopProxyWrap(raw);
+
+  try{
+    const json = await fetchJson(url, 25000);
+    return parseHilltopSeries(json);
+  } catch (e){
+    // Simple fallback: try common names if the site uses different measurement labels.
+    const fallbacks = measurementName === "Stage" ? ["Stage", "Flow"] : ["Stage", "Flow", measurementName];
+    for (const meas of fallbacks){
+      try{
+        const raw2 =
+          `${NRC_HILLTOP_BASE}` +
+          `&Site=${encodeURIComponent(siteName)}` +
+          `&Measurement=${encodeURIComponent(meas)}` +
+          `&From=${encodeURIComponent(fromStr)}` +
+          `&To=${encodeURIComponent(toStr)}` +
+          `&Format=JSON`;
+        const json2 = await fetchJson(hilltopProxyWrap(raw2), 25000);
+        const series = parseHilltopSeries(json2);
+        if (series.values.length) return series;
+      } catch {}
+    }
+    throw e;
+  }
+}
+
+
+async function hydrateNrcGaugesAtAsOf(riverForLoc, gwForLoc, asOf){
+  if (!(asOf instanceof Date) || isNaN(asOf.getTime())) return;
+
+  const tasks = [];
+
+  // Rivers: update flow/level value and timestamp to the last sample at or before the snapshot
+  (riverForLoc || []).forEach((riverGauge) => {
+    if (!riverGauge || !riverGauge.site) return;
+    const site = riverGauge.site;
+    const meas = pickRiverHistoryMeasurement(site);
+    if (!meas || !meas.name) return;
+
+    tasks.push((async () => {
+      const series = await fetchRiverHistory(site.name || site.title, meas.name, 7, asOf);
+      if (!series || !Array.isArray(series.values) || !series.values.length) return;
+
+      const lastVal = series.values[series.values.length - 1];
+      const lastTime = series.times[series.times.length - 1];
+
+      // If the chosen measurement is stage, store it in level, otherwise store in flow
+      const measNameLower = String(series.measurementName || meas.name).toLowerCase();
+      const isStage = measNameLower.includes("stage") || measNameLower.includes("level");
+
+      if (isStage){
+        site.level = lastVal;
+        site.levelWhen = formatWhenNZ(lastTime);
+        if (!site.levelUnits) site.levelUnits = series.unit || site.levelUnits || "";
+      } else {
+        site.flow = lastVal;
+        site.flowWhen = formatWhenNZ(lastTime);
+        if (!site.flowUnit) site.flowUnit = series.unit || site.flowUnit || "";
+      }
+    })());
+  });
+
+  // Groundwater: update level value and timestamp to the last sample at or before the snapshot
+  (gwForLoc || []).forEach((gwGauge) => {
+    if (!gwGauge || !gwGauge.site) return;
+    const site = gwGauge.site;
+    const meas = pickGroundwaterHistoryMeasurement(site);
+    if (!meas || !meas.name) return;
+
+    tasks.push((async () => {
+      const series = await fetchRiverHistory(site.name || site.title, meas.name, 14, asOf);
+      if (!series || !Array.isArray(series.values) || !series.values.length) return;
+
+      const lastVal = series.values[series.values.length - 1];
+      const lastTime = series.times[series.times.length - 1];
+
+      site.level = lastVal;
+      site.levelWhen = formatWhenNZ(lastTime);
+      if (!site.levelUnits) site.levelUnits = series.unit || site.levelUnits || "";
+    })());
+  });
+
+  await Promise.allSettled(tasks);
+}
+
+
+
+
+function riverDeltaText(values, units){
+  if (!values || values.length < 2) return "";
+  const first = values[0];
+  const last = values[values.length - 1];
+  if (!isFinite(first) || !isFinite(last)) return "";
+  const delta = last - first;
+  const sign = delta > 0 ? "+" : "";
+  const pct = first !== 0 ? (delta / first) * 100 : null;
+  const pctPart = pct == null || !isFinite(pct) ? "" : ` (${sign}${fmt(pct, 1)}%)`;
+  const unitPart = units ? ` ${units}` : "";
+  return `${sign}${fmt(delta, 2)}${unitPart}${pctPart}`;
+}
+
+async function updateRiverSpark(row){
+  const c = document.getElementById("sparkRiver");
+  const meta = document.getElementById("sparkRiverMeta");
+  if (!c) return;
+
+  // v5 bugfix: details panel stores the nearest gauge under row.riverGauge (not row.river).
+  const river = row && row.riverGauge ? row.riverGauge : null;
+
+  // Clear canvas if no river site
+  if (!river || !river.site){
+    const ctx = c.getContext("2d");
+    const w = c.width = c.clientWidth * devicePixelRatio;
+    const h = c.height = c.clientHeight * devicePixelRatio;
+    ctx.clearRect(0,0,w,h);
+    if (meta) meta.textContent = "No river site found near this location";
+    setMiniTrendSeries("sparkRiver", "sparkRiverTooltip", [], [], { label: "River" });
+    return;
+  }
+
+  const s = river.site;
+  const meas = pickRiverHistoryMeasurement(s);
+  const siteName = s.title || s.name || s.siteName || "";
+  const asOf = getAsOfDate();
+  const endStamp = formatDateTimeLocal(asOf);
+  const cacheKey = `${siteName}||${meas.name}||${endStamp}||7`;
+if (meta) meta.textContent = `Loading ${meas.label.toLowerCase()} history...`;
+
+  let series = riverHistoryCache.get(cacheKey);
+  if (!series){
+    try{
+      series = await fetchRiverHistory(siteName, meas.name, 7, asOf);
+      riverHistoryCache.set(cacheKey, series);
+    } catch (e){
+      if (meta) meta.textContent = `River history unavailable (Hilltop request failed)`;
+      setMiniTrendSeries("sparkRiver", "sparkRiverTooltip", [], [], { label: meas.label });
+      return;
+    }
+  }
+
+  if (!series || !series.values || series.values.length < 2){
+    if (meta) meta.textContent = `No recent data returned for ${meas.label.toLowerCase()}`;
+    setMiniTrendSeries("sparkRiver", "sparkRiverTooltip", [], [], { label: meas.label });
+    return;
+  }
+
+  setMiniTrendSeries(
+    "sparkRiver",
+    "sparkRiverTooltip",
+    series.times,
+    series.values,
+    {
+      label: meas.label,
+      valFmt: (v) => {
+        if (!isFinite(v)) return "-";
+        // Auto unit for discharge: show L/s when < 1 m3/s
+        if (meas.units && String(meas.units).toLowerCase().includes("m3") && Math.abs(v) < 1) {
+          return fmt(v * 1000, 2);
+        }
+        return fmt(v, 3);
+      },
+      yFmt: (v) => {
+        if (!isFinite(v)) return "-";
+        if (meas.units && String(meas.units).toLowerCase().includes("m3") && Math.abs(v) < 1) {
+          return fmt(v * 1000, 0);
+        }
+        return fmt(v, 2);
+      },
+      unit: (meas.units && String(meas.units).toLowerCase().includes("m3")) ? (Math.abs(series.values[series.values.length-1]) < 1 ? "L/s" : "m³/s") : (meas.units || "")
+    }
+  );
+
+    const lastVal = series.values[series.values.length - 1];
+  const isDischarge = meas.units && String(meas.units).toLowerCase().includes("m3");
+  const displayUnit = isDischarge ? (Math.abs(lastVal) < 1 ? "L/s" : "m³/s") : (meas.units || "");
+  const displayVal = isDischarge && Math.abs(lastVal) < 1 ? (lastVal * 1000) : lastVal;
+
+const delta = riverDeltaText(series.values, meas.units);
+  const dist = isFinite(river.distanceKm) ? `${fmt(river.distanceKm, 1)} km` : "";
+  const distPart = dist ? `, ${dist}` : "";
+  if (meta) meta.textContent = `${meas.label}: ${fmt(displayVal, 2)}${displayUnit ? " " + displayUnit : ""} (7 days, Δ ${delta}) • ${siteName}${distPart}`;
+}
+
+
+async function updateGroundwaterSpark(row){
+  const c = document.getElementById("sparkGW");
+  const meta = document.getElementById("sparkGWMeta");
+  if (!c) return;
+
+  const gw = row && row.gwGauge ? row.gwGauge : null;
+
+  if (!gw || !gw.site){
+    const ctx = c.getContext("2d");
+    const w = c.width = c.clientWidth * devicePixelRatio;
+    const h = c.height = c.clientHeight * devicePixelRatio;
+    ctx.clearRect(0,0,w,h);
+    if (meta) meta.textContent = "No groundwater site found near this location";
+    setMiniTrendSeries("sparkGW", "sparkGWTooltip", [], [], { label: "Groundwater Level" });
+    return;
+  }
+
+  const s = gw.site;
+  const meas = pickGroundwaterHistoryMeasurement(s);
+  const siteName = s.name || s.title || "";
+  const asOf = getAsOfDate();
+  const endStamp = formatDateTimeLocal(asOf);
+  const cacheKey = `${siteName}||${meas.name}||${endStamp}||7`;
+const distPart = isFinite(gw.distanceKm) ? ` (${fmt(gw.distanceKm, 1)} km)` : "";
+
+  if (meta) meta.textContent = `Loading ${meas.label.toLowerCase()} history...`;
+
+  let series = gwHistoryCache.get(cacheKey);
+  if (!series){
+    try{
+      // Reuse Hilltop fetch logic (same as rivers), defaulting to the NRC_HILLTOP_BASE endpoint.
+      series = await fetchRiverHistory(siteName, meas.name, 7, asOf);
+      gwHistoryCache.set(cacheKey, series);
+    } catch (e){
+      const ctx = c.getContext("2d");
+      const w = c.width = c.clientWidth * devicePixelRatio;
+      const h = c.height = c.clientHeight * devicePixelRatio;
+      ctx.clearRect(0,0,w,h);
+      if (meta) meta.textContent = `Groundwater history unavailable (Hilltop request failed) • ${siteName}${distPart}`;
+      return;
+    }
+  }
+
+  setMiniTrendSeries(
+    "sparkGW",
+    "sparkGWTooltip",
+    series.times,
+    series.values,
+    { label: "Groundwater Level", unit: "m", valFmt: (v) => fmt(v, 3), yFmt: (v) => fmt(v, 2) }
+  );
+
+  const delta = riverDeltaText(series.values, meas.units || "");
+  if (meta) meta.textContent = `${meas.label}${meas.units ? " " + meas.units : ""} (7 days, Δ ${delta}) • ${siteName}${distPart}`;
+}
+
+
+    /******************************************
+     * Open-Meteo Requests
+     ***********************/
+    
+function getRequiredLookbackDays(){
+  // Ensure we have enough history for rain window, RH window, soil baseline, and trend charts
+  const w = droughtConfig?.windows || {};
+  const lookback = Math.max(
+    Number(w.rainPastDays)||14,
+    Number(w.rhPastDays)||7,
+    Number(w.soilBaselineDays)||30,
+    7
+  );
+  return lookback + 2;
+}
+
+function getRequiredLookaheadDays(forecastDays){
+  const w = droughtConfig?.windows || {};
+  const lookahead = Math.max(
+    Number(forecastDays)||7,
+    Number(w.et0ForecastDays)||7,
+    Number(w.vpdForecastDays)||7
+  );
+  return lookahead + 2;
+}
+
+// Returns {start: Date, end: Date, asOf: Date} for historic fetch windows.
+function computeHistoricFetchWindow(pastDays, forecastDays){
+  const now = nowLocal();
+  const preDays = Math.max(Number(pastDays)||30, getRequiredLookbackDays());
+  const postDays = Math.max(Number(forecastDays)||7, getRequiredLookaheadDays(forecastDays));
+
+  // If a playback range is set, fetch for the whole range (plus buffers).
+  if (historicRangeStart instanceof Date && !isNaN(historicRangeStart.getTime()) &&
+      historicRangeEnd instanceof Date && !isNaN(historicRangeEnd.getTime())){
+    let rs = new Date(historicRangeStart.getTime());
+    let re = new Date(historicRangeEnd.getTime());
+    if (rs > re){ const tmp = rs; rs = re; re = tmp; }
+    if (re > now) re = new Date(now.getTime());
+
+    const start = new Date(rs.getTime());
+    start.setDate(start.getDate() - preDays);
+
+    let end = new Date(re.getTime());
+    end.setDate(end.getDate() + postDays);
+    if (end > now) end = new Date(now.getTime());
+
+    // Use cursor as-of if available otherwise range start.
+    let asOf = (asOfSnapshot instanceof Date && !isNaN(asOfSnapshot.getTime())) ? new Date(asOfSnapshot.getTime()) : new Date(rs.getTime());
+    if (asOf < rs) asOf = new Date(rs.getTime());
+    if (asOf > re) asOf = new Date(re.getTime());
+    return { start, end, asOf, rangeStart: rs, rangeEnd: re };
+  }
+
+  // Single historic snapshot window (plus buffers).
+  let asOf = (asOfSnapshot instanceof Date && !isNaN(asOfSnapshot.getTime())) ? new Date(asOfSnapshot.getTime()) : new Date(now.getTime());
+  if (asOf > now) asOf = new Date(now.getTime());
+
+  const start = new Date(asOf.getTime());
+  start.setDate(start.getDate() - preDays);
+
+  let end = new Date(asOf.getTime());
+  end.setDate(end.getDate() + postDays);
+  if (end > now) end = new Date(now.getTime());
+
+  return { start, end, asOf, rangeStart: null, rangeEnd: null };
+}
+
+function cacheCoversAsOf(d){
+  if (!dataCache.rangeMin || !dataCache.rangeMax) return false;
+  const pastDays = clamp(Number($("pastDays").value) || 30, 7, 92);
+  const forecastDays = clamp(Number($("forecastDays").value) || 7, 3, 16);
+  const preDays = Math.max(pastDays, getRequiredLookbackDays());
+  const postDays = Math.max(forecastDays, getRequiredLookaheadDays(forecastDays));
+
+  const reqMin = new Date(d.getTime()); reqMin.setDate(reqMin.getDate() - preDays);
+  const reqMax = new Date(d.getTime()); reqMax.setDate(reqMax.getDate() + postDays);
+
+  return reqMin >= dataCache.rangeMin && reqMax <= dataCache.rangeMax;
+}
+
+function setPlaybackStatus(msg){
+  const el = document.getElementById("playbackStatus");
+  if (el) el.textContent = msg;
+}
+
+function showPlaybackPanel(show){
+  const p = document.getElementById("playbackPanel");
+  if (p) p.style.display = show ? "" : "none";
+}
+
+function syncPlaybackInputs(){
+  const rs = document.getElementById("rangeStartInput");
+  const re = document.getElementById("rangeEndInput");
+  const stepSel = document.getElementById("playStep");
+  const speedSel = document.getElementById("playSpeed");
+  const loopChk = document.getElementById("playLoop");
+  const hydroChk = document.getElementById("playHydro");
+
+  if (stepSel){
+    const saved = localStorage.getItem(STORAGE_KEY_PLAY_STEP);
+    if (saved) playbackState.stepMinutes = Number(saved) || playbackState.stepMinutes;
+    stepSel.value = String(playbackState.stepMinutes);
+  }
+  if (speedSel){
+    const saved = localStorage.getItem(STORAGE_KEY_PLAY_SPEED);
+    if (saved) playbackState.speedMs = Number(saved) || playbackState.speedMs;
+    speedSel.value = String(playbackState.speedMs);
+  }
+  if (loopChk){
+    const saved = localStorage.getItem(STORAGE_KEY_PLAY_LOOP);
+    if (saved != null) playbackState.loop = saved === "true";
+    loopChk.checked = playbackState.loop;
+  }
+  if (hydroChk){
+    const saved = localStorage.getItem(STORAGE_KEY_PLAY_HYDRO);
+    if (saved != null) playbackState.hydro = saved === "true";
+    hydroChk.checked = playbackState.hydro;
+  }
+
+  // Range defaults
+  if (rs && re){
+    const savedStart = localStorage.getItem(STORAGE_KEY_RANGE_START);
+    const savedEnd = localStorage.getItem(STORAGE_KEY_RANGE_END);
+    const dStart = savedStart ? new Date(savedStart) : null;
+    const dEnd = savedEnd ? new Date(savedEnd) : null;
+
+    if (dStart && !isNaN(dStart.getTime())) historicRangeStart = dStart;
+    if (dEnd && !isNaN(dEnd.getTime())) historicRangeEnd = dEnd;
+
+    // If no saved range, set a sensible default around the current as-of
+    const base = getAsOfDate();
+    if (!(historicRangeStart instanceof Date) || isNaN(historicRangeStart.getTime())){
+      const s = new Date(base.getTime()); s.setDate(s.getDate() - 14);
+      historicRangeStart = s;
+    }
+    if (!(historicRangeEnd instanceof Date) || isNaN(historicRangeEnd.getTime())){
+      historicRangeEnd = new Date(base.getTime());
+    }
+
+    rs.value = formatDateTimeLocal(historicRangeStart);
+    re.value = formatDateTimeLocal(historicRangeEnd);
+  }
+}
+
+function updatePlaybackSlider(){
+  const slider = document.getElementById("playSlider");
+  const label = document.getElementById("playTimeLabel");
+  if (!slider || !(historicRangeStart instanceof Date) || !(historicRangeEnd instanceof Date)) return;
+
+  let rs = new Date(historicRangeStart.getTime());
+  let re = new Date(historicRangeEnd.getTime());
+  if (rs > re){ const tmp = rs; rs = re; re = tmp; }
+
+  const stepMs = playbackState.stepMinutes * 60 * 1000;
+  const steps = Math.max(0, Math.floor((re.getTime() - rs.getTime()) / stepMs));
+  slider.min = "0";
+  slider.max = String(steps);
+  slider.step = "1";
+
+  // Set slider to match current as-of
+  const asOf = getAsOfDate();
+  const idx = Math.max(0, Math.min(steps, Math.round((asOf.getTime() - rs.getTime()) / stepMs)));
+  slider.value = String(idx);
+
+  if (label){
+    label.textContent = `Cursor: ${formatDateTimeLocal(asOf)} | Range: ${formatDateTimeLocal(rs)} to ${formatDateTimeLocal(re)} | Step: ${playbackState.stepMinutes} min`;
+  }
+}
+
+function getCursorFromSlider(){
+  const slider = document.getElementById("playSlider");
+  if (!slider || !(historicRangeStart instanceof Date) || !(historicRangeEnd instanceof Date)) return null;
+  const rs = new Date(historicRangeStart.getTime());
+  const stepMs = playbackState.stepMinutes * 60 * 1000;
+  const idx = Number(slider.value) || 0;
+  return new Date(rs.getTime() + idx * stepMs);
+}
+
+async function seekCursor(d, opts){
+  const options = opts || {};
+  if (!(d instanceof Date) || isNaN(d.getTime())) return;
+
+  asOfSnapshot = d;
+  localStorage.setItem(STORAGE_KEY_ASOF, asOfSnapshot.toISOString());
+
+  const inpAsOf = document.getElementById("asOfInput");
+  if (inpAsOf) inpAsOf.value = formatDateTimeLocal(asOfSnapshot);
+
+  updatePlaybackSlider();
+
+  if (timeMode !== "historic"){
+    recomputeFromCache();
+    return;
+  }
+
+  // If we already have enough cached data, recompute only.
+  if (dataCache.wxList && cacheCoversAsOf(asOfSnapshot)){
+    recomputeFromCache();
+    // Optional hydrology updates (slow)
+    if (playbackState.hydro){
+      const nowT = asOfSnapshot.getTime();
+      const last = playbackState.lastHydroAt ? playbackState.lastHydroAt.getTime() : 0;
+      const minInterval = Math.max(6*60*60*1000, playbackState.stepMinutes*60*1000);
+      if ((nowT - last) >= minInterval){
+        playbackState.lastHydroAt = new Date(asOfSnapshot.getTime());
+        try{
+          await hydrateNrcGaugesAtAsOf(dataCache.riverForLoc, dataCache.gwForLoc, asOfSnapshot);
+          recomputeFromCache();
+        } catch(e){
+          // ignore
+        }
+      }
+    }
+    return;
+  }
+
+  if (options.allowRefresh !== false){
+    await refresh();
+  } else {
+    showToast("This timestamp is outside the loaded range. Load Range or Refresh Data.");
+  }
+}
+
+function setPlayButtons(isPlaying){
+  const bPlay = document.getElementById("btnPlay");
+  const bPause = document.getElementById("btnPause");
+  if (bPlay) bPlay.style.display = isPlaying ? "none" : "";
+  if (bPause) bPause.style.display = isPlaying ? "" : "none";
+}
+
+function stopPlayback(){
+  playbackState.isPlaying = false;
+  if (playbackState.timer){
+    clearInterval(playbackState.timer);
+    playbackState.timer = null;
+  }
+  setPlayButtons(false);
+  setPlaybackStatus("Paused");
+}
+
+function startPlayback(){
+  if (playbackState.isPlaying) return;
+  playbackState.isPlaying = true;
+  setPlayButtons(true);
+  setPlaybackStatus("Playing...");
+
+  playbackState.timer = setInterval(async () => {
+    const slider = document.getElementById("playSlider");
+    if (!slider){ stopPlayback(); return; }
+
+    const max = Number(slider.max) || 0;
+    let v = Number(slider.value) || 0;
+    v += 1;
+    if (v > max){
+      if (playbackState.loop){
+        v = 0;
+      } else {
+        stopPlayback();
+        return;
+      }
+    }
+    slider.value = String(v);
+    const c = getCursorFromSlider();
+    if (c) await seekCursor(c, { allowRefresh: false });
+  }, playbackState.speedMs);
+}
+
+
+function buildForecastUrl(locs, pastDays, forecastDays){
+      const hourlyVars = [
+        "soil_moisture_0_1cm",
+        "soil_moisture_1_3cm",
+        "soil_moisture_3_9cm",
+        "soil_moisture_9_27cm",
+        "soil_moisture_27_81cm",
+        "relative_humidity_2m",
+        "vapour_pressure_deficit",
+        "temperature_2m"
+      ].join(",");
+
+      const dailyVars = [
+        "precipitation_sum",
+        "et0_fao_evapotranspiration"
+      ].join(",");
+
+      const params = new URLSearchParams({
+        hourly: hourlyVars,
+        daily: dailyVars,
+        timezone: "Pacific/Auckland"
+      });
+
+      const lats = locs.map(l => l.lat).join(",");
+      const lons = locs.map(l => l.lon).join(",");
+      params.set("latitude", lats);
+      params.set("longitude", lons);
+
+      // Historic mode: request an explicit window around the selected date/time or playback range.
+      if (timeMode === "historic"){
+        const win = computeHistoricFetchWindow(pastDays, forecastDays);
+        params.set("start_date", ymdLocal(win.start));
+        params.set("end_date", ymdLocal(win.end));
+        return "https://historical-forecast-api.open-meteo.com/v1/forecast?" + params.toString();
+      }
+
+      params.set("past_days", String(pastDays));
+      params.set("forecast_days", String(forecastDays));
+      return "https://api.open-meteo.com/v1/forecast?" + params.toString();
+    }
+
+    function buildFloodUrl(locs, pastDays, forecastDays){
+      const params = new URLSearchParams({
+        daily: "river_discharge",
+        timezone: "Pacific/Auckland"
+      });
+
+      const lats = locs.map(l => l.lat).join(",");
+      const lons = locs.map(l => l.lon).join(",");
+      params.set("latitude", lats);
+      params.set("longitude", lons);
+
+      if (timeMode === "historic"){
+        const win = computeHistoricFetchWindow(pastDays, forecastDays);
+        params.set("start_date", ymdLocal(win.start));
+        params.set("end_date", ymdLocal(win.end));
+        return "https://flood-api.open-meteo.com/v1/flood?" + params.toString();
+      }
+
+      params.set("past_days", String(pastDays));
+      params.set("forecast_days", String(forecastDays));
+      return "https://flood-api.open-meteo.com/v1/flood?" + params.toString();
+    }
+
+    /***********************
+     * Drought Computation
+     ***********************/
+    function computeLocationIndex(wx, flood, nowDate){
+      const daily = wx?.daily || {};
+      const hourly = wx?.hourly || {};
+
+      const pastRain14 = sumDailyWindow(daily.time, daily.precipitation_sum, nowDate, droughtConfig.windows.rainPastDays);
+      const forecastRain7 = sumDailyFuture(daily.time, daily.precipitation_sum, nowDate, 7);
+
+      const rainDry14 = normalizeInverse(pastRain14, droughtConfig.thresholds.rain14.wet, droughtConfig.thresholds.rain14.dry);
+      const rainDryFc = normalizeInverse(forecastRain7, droughtConfig.thresholds.rain7Forecast.wet, droughtConfig.thresholds.rain7Forecast.dry);
+      const rainComponent = (rainDry14 == null && rainDryFc == null) ? null :
+        (0.70 * (rainDry14 ?? 0.5) + 0.30 * (rainDryFc ?? 0.5));
+
+      // Soil moisture component (relative dryness vs recent baseline range)
+      let soilComponent = null;
+      let soilDetails = [];
+      let soilSum = 0;
+      let soilW = 0;
+
+      for (const layer of droughtConfig.soilLayers){
+        const arr = hourly[layer.key];
+        if (!arr) {
+          soilDetails.push({ key: layer.key, label: layer.label, current: null, dryness: null });
+          continue;
+        }
+
+        const current = lastHourlyAtOrBeforeNow(hourly.time, arr, nowDate);
+        const mm = minMaxHourlyWindow(hourly.time, arr, nowDate, droughtConfig.windows.soilBaselineDays);
+
+        let dryness = null;
+        if (current != null && mm.min != null && mm.max != null){
+          const denom = (mm.max - mm.min);
+          dryness = denom <= 1e-9 ? 0.5 : clamp(1 - ((current - mm.min) / denom), 0, 1);
+        }
+
+        soilDetails.push({ key: layer.key, label: layer.label, current, dryness, min: mm.min, max: mm.max });
+
+        if (dryness != null){
+          soilSum += dryness * layer.w;
+          soilW += layer.w;
+        }
+      }
+
+      if (soilW > 0) soilComponent = soilSum / soilW;
+
+      // Evap demand component
+      const et0_7 = sumDailyFuture(daily.time, daily.et0_fao_evapotranspiration, nowDate, droughtConfig.windows.et0ForecastDays);
+      const et0Dry = normalize(et0_7, droughtConfig.thresholds.et07.low, droughtConfig.thresholds.et07.high);
+
+      const vpdMean = meanHourlyFuture(hourly.time, hourly.vapour_pressure_deficit, nowDate, droughtConfig.windows.vpdForecastDays, (dt) => {
+        const h = dt.getHours();
+        return h >= 9 && h <= 18;
+      });
+      const vpdDry = normalize(vpdMean, droughtConfig.thresholds.vpd.low, droughtConfig.thresholds.vpd.high);
+
+      const evapComponent = (et0Dry == null && vpdDry == null) ? null : (0.60 * (et0Dry ?? 0.5) + 0.40 * (vpdDry ?? 0.5));
+
+      // Humidity component (low RH -> higher dryness)
+      const rhMean7 = meanHourlyWindow(hourly.time, hourly.relative_humidity_2m, nowDate, droughtConfig.windows.rhPastDays);
+      const rhDry = normalizeInverse(rhMean7, droughtConfig.thresholds.rh7.wet, droughtConfig.thresholds.rh7.dry);
+
+      // River discharge component (modelled, optional)
+      let riverComponent = null;
+      let riverNow = null;
+      if (flood?.daily?.river_discharge && flood?.daily?.time){
+        const rd = flood.daily.river_discharge;
+        const rt = flood.daily.time;
+        const todayKey = nowDate.toISOString().slice(0,10);
+
+        let idx = -1;
+        for (let i=0;i<rt.length;i++){
+          if (rt[i] <= todayKey) idx = i;
+        }
+        if (idx >= 0){
+          riverNow = rd[idx];
+
+          const start = Math.max(0, idx - 29);
+          let min = Infinity, max = -Infinity, found = false;
+          for (let i=start;i<=idx;i++){
+            const v = rd[i];
+            if (v != null && !isNaN(v)){
+              min = Math.min(min, v);
+              max = Math.max(max, v);
+              found = true;
+            }
+          }
+          if (found){
+            const denom = (max - min);
+            riverComponent = denom <= 1e-9 ? 0.5 : clamp(1 - ((riverNow - min) / denom), 0, 1);
+          }
+        }
+      }
+
+      const parts = [
+        { key: "soil", val: soilComponent, w: droughtConfig.weights.soil },
+        { key: "rain", val: rainComponent, w: droughtConfig.weights.rain },
+        { key: "evap", val: evapComponent, w: droughtConfig.weights.evap },
+        { key: "river", val: riverComponent, w: droughtConfig.weights.river },
+        { key: "humidity", val: rhDry, w: droughtConfig.weights.humidity }
+      ];
+
+      let wSum = 0;
+      let scoreSum = 0;
+      for (const p of parts){
+        if (p.val == null) continue;
+        wSum += p.w;
+        scoreSum += p.val * p.w;
+      }
+
+      const score = wSum > 0 ? clamp((scoreSum / wSum) * 100, 0, 100) : null;
+
+      return {
+        score,
+        parts: {
+          soil: soilComponent,
+          rain: rainComponent,
+          evap: evapComponent,
+          humidity: rhDry,
+          river: riverComponent
+        },
+        metrics: {
+          pastRain14,
+          forecastRain7,
+          et0_7,
+          vpdMean,
+          rhMean7,
+          riverNow
+        },
+        soilDetails
+      };
+    }
+
+    /***********************
+     * UI and Map
+     ***********************/
+    let map, markerLayer;
+    let locations = [];
+    let computed = [];
+    let selectedId = null;
+
+    function initMap(){
+      map = L.map("map", { zoomControl: true });
+      markerLayer = L.layerGroup().addTo(map);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      map.setView([-35.2, 173.6], 8);
+    }
+
+    function loadLocations(){
+      const raw = localStorage.getItem(STORAGE_KEY_LOCATIONS);
+      if (!raw) return DEFAULT_LOCATIONS.slice();
+      const parsed = safeJsonParse(raw);
+      if (!Array.isArray(parsed)) return DEFAULT_LOCATIONS.slice();
+      const cleaned = parsed
+        .filter(x => x && typeof x === "object")
+        .map(x => ({
+          id: String(x.id ?? "").trim() || ("loc_" + Math.random().toString(16).slice(2)),
+          name: String(x.name ?? "Unnamed").trim(),
+          lat: Number(x.lat),
+          lon: Number(x.lon)
+        }))
+        .filter(x => isFinite(x.lat) && isFinite(x.lon) && x.name);
+      return cleaned.length ? cleaned : DEFAULT_LOCATIONS.slice();
+    }
+
+    function saveLocations(list){
+      localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(list, null, 2));
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function renderMarkers(){
+      markerLayer.clearLayers();
+      const bounds = [];
+
+      for (const row of computed){
+        const cat = categoryForIndex(row.index.score);
+        const color = cat.color;
+
+        const marker = L.circleMarker([row.loc.lat, row.loc.lon], {
+          radius: 10,
+          color: "rgba(255,255,255,0.20)",
+          weight: 1,
+          fillColor: color,
+          fillOpacity: 0.85
+        });
+
+        marker.on("click", () => selectLocation(row.loc.id, true));
+
+        marker.bindPopup(`
+          <div style="font-family: system-ui; font-size: 13px;">
+            <div style="font-weight: 700; margin-bottom: 6px;">${escapeHtml(row.loc.name)}</div>
+            <div><strong>Index:</strong> ${fmt(row.index.score, 0)} <span style="opacity:0.8">(${cat.name})</span></div>
+            <div style="margin-top: 6px; opacity: 0.85;">
+              Rain 14d: ${fmt(row.index.metrics.pastRain14, 1)} mm<br/>
+              Soil 9-27: ${fmt(row.soil9_27, 3)}<br/>
+              Soil 27-81: ${fmt(row.soil27_81, 3)}<br/>
+              ET0 7d: ${fmt(row.index.metrics.et0_7, 1)} mm<br/>
+              Groundwater: ${row.gwGauge ? escapeHtml(formatGroundwaterShort(row.gwGauge)) : "-"}<br/>
+              River Gauge: ${row.riverGauge ? escapeHtml(formatRiverShort(row.riverGauge)) : "-"}
+            </div>
+          </div>
+        `);
+
+        marker.addTo(markerLayer);
+        bounds.push([row.loc.lat, row.loc.lon]);
+      }
+
+      if (bounds.length){
+        const b = L.latLngBounds(bounds);
+        map.fitBounds(b.pad(0.15));
+      }
+    }
+
+    function renderTable(){
+      const tbody = $("tbody");
+      tbody.innerHTML = "";
+
+      for (const row of computed){
+        const cat = categoryForIndex(row.index.score);
+        const tr = document.createElement("tr");
+        tr.dataset.id = row.loc.id;
+
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(row.loc.name)}</strong><div class="muted mono" style="font-size:12px;">${row.loc.lat.toFixed(4)}, ${row.loc.lon.toFixed(4)}</div></td>
+          <td class="mono"><strong>${fmt(row.index.score, 0)}</strong></td>
+          <td>
+            <span class="tag">
+              <span class="dot" style="background:${cat.color}; box-shadow: 0 0 0 4px rgba(255,255,255,0.06);"></span>
+              ${cat.name}
+            </span>
+          </td>
+          <td class="mono">${fmt(row.index.metrics.pastRain14, 1)} mm</td>
+          <td class="mono">${fmt(row.soil9_27, 3)}</td>
+          <td class="mono">${fmt(row.soil27_81, 3)}</td>
+          <td class="mono">${fmt(row.index.metrics.et0_7, 1)} mm</td>
+          <td class="mono">${fmt(row.index.metrics.rhMean7, 0)}%</td>
+          <td class="mono">${row.gwGauge ? escapeHtml(formatGroundwaterShort(row.gwGauge)) : "-"}</td>
+          <td class="mono">${row.riverGauge ? escapeHtml(formatRiverShort(row.riverGauge)) : "-"}</td>
+        `;
+
+        tr.addEventListener("click", () => selectLocation(row.loc.id, true));
+        tbody.appendChild(tr);
+      }
+    }
+
+    function renderDistrictKPIs(){
+      const scores = computed.map(r => r.index.score).filter(x => x != null && !isNaN(x));
+      if (!scores.length){
+        $("kpiMean").textContent = "-";
+        $("kpiMedian").textContent = "-";
+        $("kpiWorst").textContent = "-";
+        $("kpiWorstName").textContent = "";
+        $("kpiRain14").textContent = "-";
+        $("kpiMeanCat").textContent = "";
+        $("kpiMedianCat").textContent = "";
+        return;
+      }
+
+      const mean = scores.reduce((a,b)=>a+b,0) / scores.length;
+      const med = median(scores);
+      const worst = Math.max(...scores);
+      const worstRow = computed.find(r => r.index.score === worst);
+
+      $("kpiMean").textContent = fmt(mean, 0);
+      $("kpiMedian").textContent = fmt(med, 0);
+      $("kpiWorst").textContent = fmt(worst, 0);
+      $("kpiWorstName").textContent = worstRow ? worstRow.loc.name : "";
+
+      const meanCat = categoryForIndex(mean);
+      const medCat = categoryForIndex(med);
+      $("kpiMeanCat").textContent = meanCat.name;
+      $("kpiMedianCat").textContent = medCat.name;
+
+      const rain14Vals = computed.map(r => r.index.metrics.pastRain14).filter(x => x != null && !isNaN(x));
+      const rain14Mean = rain14Vals.length ? rain14Vals.reduce((a,b)=>a+b,0)/rain14Vals.length : null;
+      $("kpiRain14").textContent = rain14Mean == null ? "-" : (fmt(rain14Mean, 1) + " mm");
+    }
+
+    function drawSpark(canvas, values){
+      const c = canvas;
+      const ctx = c.getContext("2d");
+      const w = c.width = c.clientWidth * devicePixelRatio;
+      const h = c.height = c.clientHeight * devicePixelRatio;
+      ctx.clearRect(0,0,w,h);
+
+      if (!values || values.length < 2) return;
+
+      const finite = values.filter(v => v != null && isFinite(v));
+      if (finite.length < 2) return;
+
+      const min = Math.min(...finite);
+      const max = Math.max(...finite);
+      const span = (max - min) || 1;
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(56,189,248,0.95)";
+      ctx.beginPath();
+
+      const n = values.length;
+      let moved = false;
+      for (let i=0;i<n;i++){
+        const v = values[i];
+        if (v == null || !isFinite(v)) continue;
+        const x = (i / (n-1)) * (w - 10*devicePixelRatio) + 5*devicePixelRatio;
+        const y = h - ((v - min) / span) * (h - 10*devicePixelRatio) - 5*devicePixelRatio;
+        if (!moved){
+          ctx.moveTo(x,y);
+          moved = true;
+        } else {
+          ctx.lineTo(x,y);
+        }
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, h - 1);
+      ctx.lineTo(w, h - 1);
+      ctx.stroke();
+    }
+
+    
+    // District trend chart cache and renderer
+    const districtTrend = {
+      key: null,
+      start: null,
+      end: null,
+      times: [],
+      mean: [],
+      med: [],
+      worst: [],
+      worstSiteIdx: [],
+      minScore: [],
+      maxScore: [],
+      spread: [],
+      building: null,
+      indicatorsKey: null,
+      indicators: null,
+      defaultMeta: ""
+    };
+
+    function cssVar(name){
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || null;
+    }
+    function addLocalDays(d, n){
+      const x = new Date(d);
+      x.setDate(x.getDate() + n);
+      return x;
+    }
+    function localMidday(d){
+      const x = new Date(d);
+      x.setHours(12,0,0,0);
+      return x;
+    }
+    function startOfLocalDay(d){
+      const x = new Date(d);
+      x.setHours(0,0,0,0);
+      return x;
+    }
+
+    function getDistrictTrendWindow(){
+      const pastDays = clamp(Number($("pastDays").value) || 30, 7, 120);
+
+      if (timeMode === "historic"){
+        const rsVal = document.getElementById("rangeStartInput")?.value;
+        const reVal = document.getElementById("rangeEndInput")?.value;
+        if (rsVal && reVal){
+          let rs = new Date(rsVal);
+          let re = new Date(reVal);
+          if (isFinite(rs) && isFinite(re)){
+            if (rs > re){ const tmp = rs; rs = re; re = tmp; }
+            return { start: startOfLocalDay(rs), end: re };
+          }
+        }
+        const end = getAsOfDate();
+        return { start: addLocalDays(startOfLocalDay(end), -(pastDays-1)), end };
+      }
+
+      const end = getAsOfDate();
+      return { start: addLocalDays(startOfLocalDay(end), -(pastDays-1)), end };
+    }
+
+    function windowKey(win){
+      const a = win.start.toISOString().slice(0,16);
+      const b = win.end.toISOString().slice(0,16);
+      const loaded = dataCache?.loadedAt ? new Date(dataCache.loadedAt).toISOString().slice(0,19) : "none";
+      return `${timeMode}|${a}|${b}|daily|${loaded}|${locations.length}`;
+    }
+
+    function computeDistrictStatsAt(dateObj){
+      const scores = [];
+      let worst = -Infinity;
+      let worstSiteIdx = null;
+      let min = Infinity;
+
+      for (let i=0;i<locations.length;i++){
+        const wx = dataCache?.wxList ? dataCache.wxList[i] : null;
+        const flood = dataCache?.floodList ? dataCache.floodList[i] : null;
+        if (!wx) continue;
+
+        const r = computeLocationIndex(wx, flood, dateObj);
+        const s = r?.score;
+        if (s == null || !isFinite(s)) continue;
+
+        scores.push(s);
+        if (s > worst){ worst = s; worstSiteIdx = i; }
+        if (s < min){ min = s; }
+      }
+      if (!scores.length) return null;
+
+      const mean = scores.reduce((a,b)=>a+b,0)/scores.length;
+      const med = median(scores);
+      const max = worst;
+      const spread = (isFinite(mean) && isFinite(max)) ? (max - mean) : null;
+
+      return { mean, med, worst: max, worstSiteIdx, min, max, spread, n: scores.length };
+    }
+
+    async function ensureDistrictTrendComputed(force=false){
+      const canvas = document.getElementById("districtTrendChart");
+      const meta = document.getElementById("districtTrendMeta");
+      if (!canvas || !meta) return;
+
+      if (!dataCache?.wxList){ meta.textContent = "No data loaded"; return; }
+
+      const win = getDistrictTrendWindow();
+
+      // Clamp to loaded data range when available
+      const rangeMin = dataCache.rangeMin ? new Date(dataCache.rangeMin) : null;
+      const rangeMax = dataCache.rangeMax ? new Date(dataCache.rangeMax) : null;
+
+      let start = win.start;
+      let end = win.end;
+      if (rangeMin && start < rangeMin) start = rangeMin;
+      if (rangeMax && end > rangeMax) end = rangeMax;
+
+      const key = windowKey({start, end});
+      if (!force && districtTrend.key === key && districtTrend.times?.length > 1) return;
+
+      if (districtTrend.building) return districtTrend.building;
+
+      meta.textContent = "Building district trend from loaded data…";
+
+      const buildPromise = (async ()=>{
+        const times = [];
+        const meanArr = [];
+        const medArr = [];
+        const worstArr = [];
+        const worstSiteIdxArr = [];
+        const minArr = [];
+        const maxArr = [];
+        const spreadArr = [];
+
+        let d = localMidday(start);
+        const endDay = localMidday(end);
+
+        let safety = 0;
+        while (d <= endDay && safety < 400){
+          const stats = computeDistrictStatsAt(d);
+          times.push(new Date(d));
+          meanArr.push(stats ? stats.mean : null);
+          medArr.push(stats ? stats.med : null);
+          worstArr.push(stats ? stats.worst : null);
+          worstSiteIdxArr.push(stats ? stats.worstSiteIdx : null);
+          minArr.push(stats ? stats.min : null);
+          maxArr.push(stats ? stats.max : null);
+          spreadArr.push(stats ? stats.spread : null);
+
+          d = addLocalDays(d, 1);
+          safety++;
+          if (safety % 5 === 0) await new Promise(r=>setTimeout(r,0));
+        }
+
+        districtTrend.key = key;
+        districtTrend.start = start;
+        districtTrend.end = end;
+        districtTrend.times = times;
+        districtTrend.mean = meanArr;
+        districtTrend.med = medArr;
+        districtTrend.worst = worstArr;
+        districtTrend.worstSiteIdx = worstSiteIdxArr;
+        districtTrend.minScore = minArr;
+        districtTrend.maxScore = maxArr;
+        districtTrend.spread = spreadArr;
+        districtTrend.indicatorsKey = null;
+        districtTrend.indicators = null;
+
+        const latestMean = [...meanArr].reverse().find(v => v != null && isFinite(v));
+        const rangeTxt = `${formatWhenNZ(start)} to ${formatWhenNZ(end)} • ${times.length} days`;
+        meta.textContent = (latestMean != null) ? `${rangeTxt} • Latest mean ${latestMean.toFixed(0)}` : rangeTxt;
+
+        // Add a quick indicator summary for the most recent day (tunable in config)
+        const cfg = (typeof DISTRICT_TREND_INDICATORS !== "undefined") ? DISTRICT_TREND_INDICATORS : null;
+        if (cfg && meanArr.length){
+          const streakFromEnd = (arr, pred)=>{
+            let n = 0;
+            for (let i=arr.length-1;i>=0;i--){
+              const v = arr[i];
+              if (pred(v, i)) n++;
+              else break;
+            }
+            return n;
+          };
+
+          const bits = [];
+          const s80 = streakFromEnd(meanArr, v=>v!=null && isFinite(v) && v>=cfg.district.mean80_5.threshold);
+          const s84 = streakFromEnd(meanArr, v=>v!=null && isFinite(v) && v>=cfg.district.mean84_5.threshold);
+          const s94 = streakFromEnd(worstArr, v=>v!=null && isFinite(v) && v>=cfg.location.threshold);
+
+          if (s84 >= cfg.district.mean84_5.days) bits.push(`District drought stress ${s84}d`);
+          else if (s80 >= cfg.district.mean80_7.days) bits.push(`District drought warning ${s80}d`);
+          else if (s80 >= cfg.district.mean80_5.days) bits.push(`District warning ${s80}d`);
+
+          if (s94 >= cfg.location.acuteDays) bits.push(`Acute location stress ${s94}d`);
+          else {
+            const wLast = worstArr[worstArr.length - 1];
+            if (wLast != null && isFinite(wLast) && wLast >= cfg.location.threshold) bits.push("Location stress today");
+          }
+
+          if (bits.length){
+            meta.textContent += ` • ${bits.join(" • ")}`;
+          }
+        }
+
+        
+        districtTrend.defaultMeta = meta.textContent;
+renderDistrictTrendChart();
+      })().finally(()=>{ districtTrend.building = null; });
+
+      districtTrend.building = buildPromise;
+      return buildPromise;
+    }
+
+    // ---- District Trend Chart (Interactive Hover) ----
+    const districtTrendHover = { idx: null, x: 0, y: 0, active: false };
+
+    function trendLayout(w, h){
+      // Leave room for y-axis labels
+      const padL = 42, padR = 10, padT = 10, padB = 18;
+      const x0 = padL, x1 = w - padR;
+      const y0 = padT, y1 = h - padB;
+      const minY = 0, maxY = 100;
+
+      const n = districtTrend.times ? districtTrend.times.length : 0;
+      const xAt = (i)=> x0 + (x1 - x0) * (n <= 1 ? 0 : i / (n - 1));
+      const yAt = (v)=> y1 - ((clamp(v, minY, maxY) - minY) / (maxY - minY)) * (y1 - y0);
+
+      return { padL, padR, padT, padB, x0, x1, y0, y1, minY, maxY, n, xAt, yAt };
+    }
+
+    function drawSeries(ctx, layout, values, color, lineWidth=2){
+      const finite = (values || []).filter(v => v != null && isFinite(v));
+      if (finite.length < 2) return;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+
+      const n = values.length;
+      let started = false;
+
+      ctx.beginPath();
+      for (let i=0;i<n;i++){
+        const v = values[i];
+        if (v == null || !isFinite(v)){
+          started = false;
+          continue;
+        }
+        const x = layout.xAt(i);
+        const y = layout.yAt(v);
+        if (!started){
+          ctx.moveTo(x, y);
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    
+    // ---- District Trend Drought Indicators (Tunable Config) ----
+    // These are used by the district trend chart to add shaded spans, guide lines, and markers.
+    // Edit thresholds/days here to tune alerting behaviour.
+    const DISTRICT_TREND_INDICATORS = {
+      district: {
+        // 80+ for 5 days: early signal
+        mean80_5: { threshold: 80, days: 5, label: "[Drought Watch] Mean 80+ (5d)", colorVar: "--watch", alpha: 0.08 },
+
+        // 80+ for 7 days: district drought warning
+        mean80_7: { threshold: 80, days: 7, label: "[Drought Warning] Mean 80+ (7d)", colorVar: "--warn", alpha: 0.12 },
+
+        // 84+ for 5 days: district drought stress
+        mean84_5: { threshold: 84, days: 5, label: "[Drought Danger] Mean 84+ (5d)", colorVar: "--severe", alpha: 0.14 }
+      },
+
+      location: {
+        // 94+ at any location (worst series)
+        threshold: 94,
+        acuteDays: 3,
+        labelDay: "Location Stress 94+",
+        labelAcute: "[Location danger] (94+ for 3d)",
+        colorVar: "--extreme",
+        alpha: 0.12
+      },
+
+      // When locations are all close together, stress is more likely district-wide rather than patchy
+      spread: {
+        maxPoints: 2,
+        minMean: 80,
+        days: 3,
+        label: "District Wide Stress (Low Worst-Mean)",
+        colorVar: "--watch",
+        alpha: 0.08
+      },
+
+      // Horizontal guide lines in the chart
+      guides: [
+        { value: 80, label: "80", colorVar: "--warn", alpha: 0.55 },
+        { value: 84, label: "84", colorVar: "--severe", alpha: 0.55 },
+        { value: 94, label: "94", colorVar: "--extreme", alpha: 0.55 }
+      ]
+    };
+
+    function hexToRgba(hex, a){
+      if (!hex) return `rgba(255,255,255,${a})`;
+      const c = String(hex).trim();
+      if (c.startsWith("#")){
+        let h = c.slice(1);
+        if (h.length === 3) h = h.split("").map(ch=>ch+ch).join("");
+        if (h.length !== 6) return `rgba(255,255,255,${a})`;
+        const r = parseInt(h.slice(0,2),16);
+        const g = parseInt(h.slice(2,4),16);
+        const b = parseInt(h.slice(4,6),16);
+        return `rgba(${r},${g},${b},${a})`;
+      }
+      if (c.startsWith("rgb(")){
+        return c.replace("rgb(", "rgba(").replace(")", `,${a})`);
+      }
+      if (c.startsWith("rgba(")) return c;
+      return c;
+    }
+
+    function streakSpans(values, predicate, minLen){
+      const spans = [];
+      let s = null;
+
+      for (let i=0;i<values.length;i++){
+        const ok = Boolean(predicate(values[i], i));
+        if (ok){
+          if (s == null) s = i;
+        } else if (s != null){
+          const e = i - 1;
+          const len = e - s + 1;
+          if (len >= minLen) spans.push({ s, e, len });
+          s = null;
+        }
+      }
+
+      if (s != null){
+        const e = values.length - 1;
+        const len = e - s + 1;
+        if (len >= minLen) spans.push({ s, e, len });
+      }
+
+      return spans;
+    }
+
+    function computeDistrictTrendIndicators(){
+      const key = `${districtTrend.key || "none"}|${districtTrend.times?.length || 0}|indicators_v1`;
+      if (districtTrend.indicatorsKey === key && districtTrend.indicators) return districtTrend.indicators;
+
+      const mean = districtTrend.mean || [];
+      const worst = districtTrend.worst || [];
+      const spread = districtTrend.spread || [];
+
+      const cfg = DISTRICT_TREND_INDICATORS;
+
+      const spans = [];
+
+      // District mean spans
+      spans.push(
+        ...streakSpans(
+          mean,
+          v => v!=null && isFinite(v) && v>=cfg.district.mean80_5.threshold,
+          cfg.district.mean80_5.days
+        ).map(x=>({ ...x, type: "mean80_5", label: cfg.district.mean80_5.label, colorVar: cfg.district.mean80_5.colorVar, alpha: cfg.district.mean80_5.alpha }))
+      );
+
+      spans.push(
+        ...streakSpans(
+          mean,
+          v => v!=null && isFinite(v) && v>=cfg.district.mean80_7.threshold,
+          cfg.district.mean80_7.days
+        ).map(x=>({ ...x, type: "mean80_7", label: cfg.district.mean80_7.label, colorVar: cfg.district.mean80_7.colorVar, alpha: cfg.district.mean80_7.alpha }))
+      );
+
+      spans.push(
+        ...streakSpans(
+          mean,
+          v => v!=null && isFinite(v) && v>=cfg.district.mean84_5.threshold,
+          cfg.district.mean84_5.days
+        ).map(x=>({ ...x, type: "mean84_5", label: cfg.district.mean84_5.label, colorVar: cfg.district.mean84_5.colorVar, alpha: cfg.district.mean84_5.alpha }))
+      );
+
+      // Tight spread span: high mean and low spread over multiple days suggests district-wide stress
+      spans.push(
+        ...streakSpans(
+          mean,
+          (v,i)=>{
+            const sp = spread[i];
+            return v!=null && isFinite(v) && v>=cfg.spread.minMean && sp!=null && isFinite(sp) && sp<=cfg.spread.maxPoints;
+          },
+          cfg.spread.days
+        ).map(x=>({ ...x, type: "tight_spread", label: cfg.spread.label, colorVar: cfg.spread.colorVar, alpha: cfg.spread.alpha }))
+      );
+
+      // Acute location stress span: worst location 94+ for N days
+      spans.push(
+        ...streakSpans(
+          worst,
+          v => v!=null && isFinite(v) && v>=cfg.location.threshold,
+          cfg.location.acuteDays
+        ).map(x=>({ ...x, type: "acute_loc", label: cfg.location.labelAcute, colorVar: cfg.location.colorVar, alpha: cfg.location.alpha }))
+      );
+
+      // Single-day markers when the worst location is 94+
+      const markers = [];
+      for (let i=0;i<worst.length;i++){
+        const v = worst[i];
+        if (v!=null && isFinite(v) && v>=cfg.location.threshold){
+          markers.push({ idx: i, type: "loc94", label: cfg.location.labelDay });
+        }
+      }
+
+      const out = { spans, markers };
+      districtTrend.indicatorsKey = key;
+      districtTrend.indicators = out;
+      return out;
+    }
+
+    function spanLabelsForIdx(i, indicators){
+      const labels = [];
+      for (const sp of (indicators?.spans || [])){
+        if (i >= sp.s && i <= sp.e) labels.push(sp.label);
+      }
+      return labels;
+    }
+
+    function drawSpanFill(ctx, layout, span, color){
+      const x0 = layout.xAt(span.s);
+      const x1 = layout.xAt(span.e);
+      ctx.fillStyle = color;
+      ctx.fillRect(x0, layout.y0, (x1 - x0) + 1, (layout.y1 - layout.y0));
+    }
+
+    function drawThresholdLine(ctx, layout, v, label, color){
+      const y = layout.yAt(v);
+
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(layout.x0, y);
+      ctx.lineTo(layout.x1, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = color;
+      ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(label, layout.x0 + 4, y - 2);
+      ctx.restore();
+    }
+
+    function drawTopTriangle(ctx, x, y, size, color){
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - size, y + size);
+      ctx.lineTo(x + size, y + size);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+function ensureDistrictTrendHoverHooks(){
+      const canvas = document.getElementById("districtTrendChart");
+      if (!canvas || canvas._hoverHooked) return;
+      canvas._hoverHooked = true;
+
+      const tip = document.getElementById("districtTrendTooltip");
+
+      const onMove = (ev)=>{
+        if (!districtTrend.times || districtTrend.times.length < 2){
+          districtTrendHover.idx = null;
+          if (tip) tip.style.display = "none";
+          return;
+        }
+
+        const r = canvas.getBoundingClientRect();
+        const x = ev.clientX - r.left;
+        const y = ev.clientY - r.top;
+    const layout = trendLayout(r.width, r.height);
+
+        // Only show hover info inside the plot area
+        if (x < layout.x0 || x > layout.x1 || y < layout.y0 || y > layout.y1){
+          districtTrendHover.idx = null;
+          if (tip) tip.style.display = "none";
+          renderDistrictTrendChart();
+          return;
+        }
+
+        const t = (x - layout.x0) / (layout.x1 - layout.x0);
+        const idx = clamp(Math.round(t * (layout.n - 1)), 0, layout.n - 1);
+
+        districtTrendHover.idx = idx;
+        districtTrendHover.x = x;
+        districtTrendHover.y = y;
+        districtTrendHover.active = true;
+
+        renderDistrictTrendChart();
+      };
+
+      const onLeave = ()=>{
+        districtTrendHover.idx = null;
+        districtTrendHover.active = false;
+
+        const meta = document.getElementById("districtTrendMeta");
+        if (meta && districtTrend.defaultMeta) meta.textContent = districtTrend.defaultMeta;
+
+        if (tip) tip.style.display = "none";
+        renderDistrictTrendChart();
+      };
+
+      canvas.addEventListener("mousemove", onMove);
+      canvas.addEventListener("mouseleave", onLeave);
+
+      // Touch support (mobile/tablet)
+      canvas.addEventListener("touchstart", (e)=>{
+        if (e.touches && e.touches.length) onMove(e.touches[0]);
+      }, {passive:true});
+      canvas.addEventListener("touchmove", (e)=>{
+        if (e.touches && e.touches.length) onMove(e.touches[0]);
+      }, {passive:true});
+      canvas.addEventListener("touchend", onLeave);
+    }
+
+    function renderDistrictTrendChart(){
+      const canvas = document.getElementById("districtTrendChart");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ensureDistrictTrendHoverHooks();
+      const tip = document.getElementById("districtTrendTooltip");
+
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      const dpr = window.devicePixelRatio || 1;
+
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+
+      const layout = trendLayout(w, h);
+
+      // Gridlines (0..100)
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      for (let p=0; p<=5; p++){
+        const v = layout.minY + (layout.maxY - layout.minY) * (p / 5);
+        const y = layout.yAt(v);
+        ctx.beginPath();
+        ctx.moveTo(layout.x0, y);
+        ctx.lineTo(layout.x1, y);
+        ctx.stroke();
+      }
+
+      // Y-axis labels
+      ctx.fillStyle = "rgba(255,255,255,0.60)";
+      ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      for (let v=layout.minY; v<=layout.maxY; v+=20){
+        const y = layout.yAt(v);
+        ctx.beginPath();
+        ctx.moveTo(layout.x0 - 4, y);
+        ctx.lineTo(layout.x0, y);
+        ctx.stroke();
+        ctx.fillText(String(v), layout.x0 - 6, y);
+      }
+
+      // Left axis line
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(layout.x0, layout.y0);
+      ctx.lineTo(layout.x0, layout.y1);
+      ctx.stroke();
+
+      if (!districtTrend.times || districtTrend.times.length < 2){
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("District trend will appear once data is loaded", 10, 20);
+        if (tip) tip.style.display = "none";
+        return;
+      }
+
+
+      // Indicator overlays (background spans and guide lines)
+      const indicators = computeDistrictTrendIndicators();
+
+      if (indicators && indicators.spans && indicators.spans.length){
+        const order = { mean80_5: 1, tight_spread: 2, mean80_7: 3, mean84_5: 4, acute_loc: 5 };
+        const spansSorted = [...indicators.spans].sort((a,b)=> (order[a.type]||0) - (order[b.type]||0));
+
+        for (const sp of spansSorted){
+          const base = cssVar(sp.colorVar) || "#ffffff";
+          const fill = hexToRgba(base, sp.alpha);
+          drawSpanFill(ctx, layout, sp, fill);
+        }
+      }
+
+      if (DISTRICT_TREND_INDICATORS && DISTRICT_TREND_INDICATORS.guides){
+        for (const g of DISTRICT_TREND_INDICATORS.guides){
+          const base = cssVar(g.colorVar) || "#ffffff";
+          const col = hexToRgba(base, g.alpha);
+          drawThresholdLine(ctx, layout, g.value, g.label, col);
+        }
+      }
+
+      const cMean = cssVar("--ok") || "#38bdf8";
+      const cMed = cssVar("--warn") || "#fbbf24";
+      const cWorst = cssVar("--extreme") || "#f97316";
+
+      drawSeries(ctx, layout, districtTrend.worst, cWorst, 2);
+      drawSeries(ctx, layout, districtTrend.med, cMed, 2);
+      drawSeries(ctx, layout, districtTrend.mean, cMean, 2.5);
+      // Markers for worst-location 94+ days (triangles at top)
+      if (indicators && indicators.markers && indicators.markers.length){
+        const mkColor = cssVar(DISTRICT_TREND_INDICATORS.location.colorVar) || "#f97316";
+        const yTop = layout.y0 + 2;
+        for (const mk of indicators.markers){
+          const x = layout.xAt(mk.idx);
+          drawTopTriangle(ctx, x, yTop, 5, mkColor);
+        }
+      }
+
+      // Label acute spans
+      if (indicators && indicators.spans){
+        const acute = indicators.spans.filter(s=>s.type === "acute_loc");
+        if (acute.length){
+          const lblColor = cssVar(DISTRICT_TREND_INDICATORS.location.colorVar) || "#f97316";
+          ctx.fillStyle = hexToRgba(lblColor, 0.85);
+          ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "top";
+          for (const sp of acute){
+            const x = layout.xAt(sp.s) + 4;
+            ctx.fillText("Acute", x, layout.y0 + 12);
+          }
+        }
+      }
+
+
+      // Marker for current as-of day
+      const asOf = getAsOfDate();
+      const t0 = districtTrend.times[0]?.getTime();
+      const t1 = districtTrend.times[districtTrend.times.length - 1]?.getTime();
+      if (t0 && t1 && asOf){
+        const tt = asOf.getTime();
+        if (tt >= t0 && tt <= t1){
+          const dayIdx = Math.round((tt - t0) / (24*3600*1000));
+          const idx = clamp(dayIdx, 0, layout.n - 1);
+          const x = layout.xAt(idx);
+
+          ctx.strokeStyle = "rgba(255,255,255,0.35)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, layout.y0);
+          ctx.lineTo(x, layout.y1);
+          ctx.stroke();
+        }
+      }
+
+      // Hover overlay
+      const hoverIdx = (districtTrendHover && districtTrendHover.idx != null) ? districtTrendHover.idx : null;
+      if (hoverIdx != null && hoverIdx >= 0 && hoverIdx < layout.n){
+        const x = layout.xAt(hoverIdx);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.45)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, layout.y0);
+        ctx.lineTo(x, layout.y1);
+        ctx.stroke();
+
+        const drawDot = (v, color)=>{
+          if (v == null || !isFinite(v)) return null;
+          const y = layout.yAt(v);
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(0,0,0,0.35)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          return y;
+        };
+
+        const vMean = districtTrend.mean?.[hoverIdx];
+        const vMed = districtTrend.med?.[hoverIdx];
+        const vWorst = districtTrend.worst?.[hoverIdx];
+
+        const yMean = drawDot(vMean, cMean);
+        const yMed = drawDot(vMed, cMed);
+        const yWorst = drawDot(vWorst, cWorst);
+
+        const dt = districtTrend.times[hoverIdx];
+        const dtTxt = dt ? formatWhenNZ(dt) : `Day ${hoverIdx + 1}`;
+
+        const meanTxt = (vMean != null && isFinite(vMean)) ? vMean.toFixed(0) : "-";
+        const medTxt = (vMed != null && isFinite(vMed)) ? vMed.toFixed(0) : "-";
+        const worstTxt = (vWorst != null && isFinite(vWorst)) ? vWorst.toFixed(0) : "-";
+
+        const worstSiteIdx = districtTrend.worstSiteIdx ? districtTrend.worstSiteIdx[hoverIdx] : null;
+        const worstSiteName = (worstSiteIdx != null && locations[worstSiteIdx]) ? locations[worstSiteIdx].name : null;
+        const spreadVal = districtTrend.spread ? districtTrend.spread[hoverIdx] : null;
+        const spreadTxt = (spreadVal != null && isFinite(spreadVal)) ? spreadVal.toFixed(1) : "-";
+        const indLabels = spanLabelsForIdx(hoverIdx, indicators);
+        const indicatorTxt = indLabels.length ? indLabels.join(" | ") : "";
+        const worstSiteHtml = worstSiteName ? `<span><span style="opacity:0.75;">Worst Site</span> <span class="mono" style="font-weight:700;">${escapeHtml(worstSiteName)}</span></span>` : "";
+        const indicatorHtml = indicatorTxt ? `<span><span style="opacity:0.75;">Indicators</span> ${escapeHtml(indicatorTxt)}</span>` : "";
+
+        // Also update the text line under the chart while hovering
+        const meta = document.getElementById("districtTrendMeta");
+        if (meta){
+          meta.textContent = `${dtTxt} • Mean ${meanTxt} • Median ${medTxt} • Worst ${worstTxt}` + (spreadTxt !== "-" ? ` • Worst-Mean ${spreadTxt}` : "") + (worstSiteName ? ` • Worst Site ${worstSiteName}` : "") + (indicatorTxt ? ` • ${indicatorTxt}` : "");
+        }
+
+        if (tip){
+          tip.innerHTML = `
+            <div class="mono" style="font-weight:700; margin-bottom:4px;">${escapeHtml(dtTxt)}</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <span><span style="opacity:0.75;">Mean</span> <span class="mono" style="font-weight:700;">${meanTxt}</span></span>
+              <span><span style="opacity:0.75;">Median</span> <span class="mono" style="font-weight:700;">${medTxt}</span></span>
+              <span><span style="opacity:0.75;">Worst</span> <span class="mono" style="font-weight:700;">${worstTxt}</span></span>
+            </div>
+            <div style="margin-top:6px; display:flex; flex-direction:column; gap:2px;">
+              ${worstSiteHtml}
+              <span><span style="opacity:0.75;">Worst-Mean</span> <span class="mono" style="font-weight:700;">${spreadTxt}</span></span>
+              ${indicatorHtml}
+            </div>
+          `;
+          tip.style.display = "block";
+
+          // Position near the mean dot if possible, otherwise use the first available series
+          let yRef = yMean;
+          if (yRef == null) yRef = yMed;
+          if (yRef == null) yRef = yWorst;
+          if (yRef == null) yRef = (layout.y0 + layout.y1) / 2;
+
+          // Force layout so we can read size
+          const tipRect = tip.getBoundingClientRect();
+
+          let left = x + 12;
+          let top = yRef - tipRect.height / 2;
+
+          // Clamp inside the chart area
+          const maxLeft = w - tipRect.width - 6;
+          left = clamp(left, 6, maxLeft);
+
+          const maxTop = h - tipRect.height - 6;
+          top = clamp(top, 6, maxTop);
+
+          tip.style.left = `${left}px`;
+          tip.style.top = `${top}px`;
+        }
+      } else {
+        // Restore default meta if not hovering
+        const meta = document.getElementById("districtTrendMeta");
+        if (meta && districtTrend.defaultMeta) meta.textContent = districtTrend.defaultMeta;
+        if (tip) tip.style.display = "none";
+      }
+    }
+// ---- District Weather and Environment Trend (Interactive Hover) ----
+const STORAGE_KEY_ENV_METRIC = "fndi_district_env_metric_v1";
+
+const districtEnvTrend = {
+  key: null,
+  metric: "rain_mm",
+  start: null,
+  end: null,
+  times: [],
+  values: [],
+  building: null,
+  defaultMeta: ""
+};
+
+const districtEnvHover = { idx: null, x: 0, y: 0, active: false };
+
+const ENV_METRICS = {
+  rain_mm:   { label: "Rain (Daily)", unit: "mm",     digits: 1 },
+  rain14_mm: { label: "Rain (14 Day Mean)", unit: "mm/day", digits: 2 },
+  et0_mm:    { label: "ET0 (Daily)", unit: "mm",      digits: 1 },
+  et07_mm:   { label: "ET0 (7 Day Mean)", unit: "mm/day", digits: 2 },
+  temp_c:    { label: "Air Temperature (Daily Mean)", unit: "°C", digits: 1 },
+  rh_pct:    { label: "Relative Humidity (Daily Mean)", unit: "%", digits: 0 },
+  vpd_kpa:   { label: "VPD (Daily Mean)", unit: "kPa", digits: 2 },
+  soil_9_27: { label: "Soil Moisture 9-27 cm (Daily Mean)", unit: "m³/m³", digits: 3 },
+  soil_27_81:{ label: "Soil Moisture 27-81 cm (Daily Mean)", unit: "m³/m³", digits: 3 },
+};
+
+function getSelectedEnvMetric(){
+  const sel = document.getElementById("districtEnvMetric");
+  const saved = localStorage.getItem(STORAGE_KEY_ENV_METRIC);
+  const fallback = saved || "rain_mm";
+
+  if (sel){
+    if (saved && sel.value !== saved) sel.value = saved;
+    return sel.value || fallback;
+  }
+  return fallback;
+}
+
+// Interactive mini charts for Recent Trend (hover + y-axis)
+const miniTrendCharts = new Map();
+
+function niceTicks(min, max, ticks=4){
+  if (!isFinite(min) || !isFinite(max)) return [];
+  if (min === max){
+    const v = min;
+    return [v-1, v, v+1];
+  }
+  const span = max - min;
+  const raw = span / Math.max(1, ticks-1);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  let step = mag;
+  if (norm >= 5) step = 5*mag;
+  else if (norm >= 2) step = 2*mag;
+  else step = 1*mag;
+
+  const niceMin = Math.floor(min/step)*step;
+  const niceMax = Math.ceil(max/step)*step;
+  const out = [];
+  for (let v=niceMin; v<=niceMax+step*0.5; v+=step){
+    out.push(v);
+    if (out.length > 12) break;
+  }
+  return out;
+}
+
+function miniDefaultFmt(v){
+  if (!isFinite(v)) return "-";
+  const av = Math.abs(v);
+  if (av >= 100) return fmt(v, 0);
+  if (av >= 10) return fmt(v, 1);
+  if (av >= 1) return fmt(v, 2);
+  return fmt(v, 3);
+}
+
+function ensureMiniTrend(canvasId, tooltipId, opts={}){
+  const c = document.getElementById(canvasId);
+  const t = document.getElementById(tooltipId);
+  if (!c) return null;
+
+  let st = miniTrendCharts.get(canvasId);
+
+  // If the detail panel is re-rendered, the canvas nodes are replaced. We must rebind the cached chart state
+  // to the new DOM elements, otherwise we keep drawing into a detached canvas and the new one stays blank.
+  const canvasChanged = !!(st && st.canvas && st.canvas !== c);
+  const canvasDetached = !!(st && st.canvas && !st.canvas.isConnected);
+
+  if (!st){
+    st = {
+      canvas: c,
+      tooltip: t,
+      times: [],
+      values: [],
+      hover: {active:false, idx:null, x:0, y:0},
+      opts: opts || {}
+    };
+    miniTrendCharts.set(canvasId, st);
+  } else {
+    if (canvasChanged || canvasDetached){
+      // Disconnect any ResizeObserver bound to the old canvas
+      if (st._ro && typeof st._ro.disconnect === "function"){
+        try { st._ro.disconnect(); } catch (e){}
+      }
+      st._ro = null;
+
+      // Point state at the newly created canvas element
+      st.canvas = c;
+
+      // Reset hover state so we do not carry stale pixel coordinates
+      st.hover = {active:false, idx:null, x:0, y:0};
+    }
+
+    // Always refresh tooltip reference because the panel may recreate it too
+    st.tooltip = t;
+  }
+
+  // Merge options
+  st.opts = Object.assign({}, st.opts || {}, opts || {});
+
+  // Bind interactions once per canvas element
+  if (!c.__miniTrendBound){
+    c.__miniTrendBound = true;
+
+    c.addEventListener("mousemove", (ev) => {
+      const r = c.getBoundingClientRect();
+      st.hover.active = true;
+      st.hover.x = (ev.clientX - r.left);
+      st.hover.y = (ev.clientY - r.top);
+      renderMiniTrendChart(st);
+    });
+
+    c.addEventListener("mouseleave", () => {
+      st.hover.active = false;
+      st.hover.idx = null;
+      if (st.tooltip) st.tooltip.style.display = "none";
+      renderMiniTrendChart(st);
+    });
+  }
+
+  // Redraw on resize for the current canvas
+  if (typeof ResizeObserver !== "undefined"){
+    if (!st._ro){
+      const ro = new ResizeObserver(() => renderMiniTrendChart(st));
+      ro.observe(c);
+      st._ro = ro;
+    } else {
+      // In case the observer exists but the canvas was swapped, observe again
+      try { st._ro.observe(c); } catch (e){}
+    }
+  } else {
+    // Fallback: window resize (only bind once per chart state)
+    if (!st._winResizeBound){
+      st._winResizeBound = true;
+      window.addEventListener("resize", () => renderMiniTrendChart(st));
+    }
+  }
+
+  return st;
+}
+
+function setMiniTrendSeries(canvasId, tooltipId, times, values, opts={}){
+  const st = ensureMiniTrend(canvasId, tooltipId, opts);
+  if (!st) return;
+  st.times = Array.isArray(times) ? times.slice() : [];
+  st.values = Array.isArray(values) ? values.slice() : [];
+  // reset hover if out of range
+  if (!st.values.length) {
+    st.hover.active = false;
+    st.hover.idx = null;
+    if (st.tooltip) st.tooltip.style.display = "none";
+  } else if (st.hover.idx != null && st.hover.idx >= st.values.length){
+    st.hover.idx = null;
+  }
+  renderMiniTrendChart(st);
+}
+
+function renderMiniTrendChart(st){
+  if (!st || !st.canvas) return;
+  const c = st.canvas;
+  const ctx = c.getContext("2d");
+  const dpr = devicePixelRatio || 1;
+
+  // Use layout rect sizing (more reliable when canvases are inside grids or newly revealed panels)
+  const rect = c.getBoundingClientRect();
+  const cssW = Math.max(0, Math.floor((rect && rect.width) ? rect.width : (c.clientWidth || 0)));
+  const cssH = Math.max(0, Math.floor((rect && rect.height) ? rect.height : (c.clientHeight || 0)));
+
+  // If the canvas is not yet laid out (0x0), defer drawing until it is visible/measurable.
+  if (cssW < 10 || cssH < 10){
+    if (!st._deferDraw){
+      st._deferDraw = requestAnimationFrame(() => {
+        st._deferDraw = null;
+        renderMiniTrendChart(st);
+      });
+    }
+    return;
+  }
+
+  const w = c.width = Math.max(1, Math.floor(cssW * dpr));
+  const h = c.height = Math.max(1, Math.floor(cssH * dpr));
+  ctx.clearRect(0,0,w,h);
+
+  const times = st.times || [];
+  const values = st.values || [];
+  const finite = values.map(v => (v==null ? null : Number(v))).filter(v => v!=null && isFinite(v));
+  const hasData = finite.length >= 2;
+
+  const padL = Math.floor(38 * dpr);
+  const padR = Math.floor(10 * dpr);
+  const padT = Math.floor(10 * dpr);
+  const padB = Math.floor(18 * dpr);
+
+  const plotX = padL;
+  const plotY = padT;
+  const plotW = Math.max(1, w - padL - padR);
+  const plotH = Math.max(1, h - padT - padB);
+
+  // Background grid
+  ctx.save();
+  ctx.lineWidth = 1 * dpr;
+  ctx.strokeStyle = "rgba(255,255,255,0.06)";
+  for (let i=0;i<=3;i++){
+    const y = plotY + (plotH * i/3);
+    ctx.beginPath();
+    ctx.moveTo(plotX, y);
+    ctx.lineTo(plotX + plotW, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  if (!hasData){
+    // No data message
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.font = `${12*dpr}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("No data", plotX + plotW/2, plotY + plotH/2);
+    ctx.restore();
+    if (st.tooltip) st.tooltip.style.display = "none";
+    return;
+  }
+
+  const min = Math.min(...finite);
+  const max = Math.max(...finite);
+  const span = (max - min) || 1;
+
+  const ticks = niceTicks(min, max, 4);
+  const tmin = ticks.length ? ticks[0] : min;
+  const tmax = ticks.length ? ticks[ticks.length-1] : max;
+  const tspan = (tmax - tmin) || span;
+
+  function yOf(v){
+    const vv = (v - tmin) / tspan;
+    return plotY + (1 - vv) * plotH;
+  }
+  function xOf(i,n){
+    return plotX + (plotW * (n<=1 ? 0 : (i/(n-1))));
+  }
+
+  // y-axis labels
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  ctx.font = `${11*dpr}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  const yfmt = st.opts && typeof st.opts.yFmt === "function" ? st.opts.yFmt : miniDefaultFmt;
+  for (const tv of ticks){
+    const y = yOf(tv);
+    ctx.fillText(yfmt(tv), plotX - 6*dpr, y);
+  }
+  ctx.restore();
+
+  // line path
+  const n = values.length;
+  ctx.save();
+  ctx.lineWidth = 2 * dpr;
+  ctx.strokeStyle = (st.opts && st.opts.stroke) ? st.opts.stroke : "rgba(56,189,248,0.95)";
+  ctx.beginPath();
+  let moved=false;
+  for (let i=0;i<n;i++){
+    const v = values[i];
+    if (v==null || !isFinite(v)) continue;
+    const x = xOf(i,n);
+    const y = yOf(v);
+    if (!moved){ ctx.moveTo(x,y); moved=true; } else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // hover index
+  if (st.hover && st.hover.active){
+    const mx = (st.hover.x * dpr);
+    const rel = (mx - plotX) / plotW;
+    let idx = Math.round(rel * (n-1));
+    if (!isFinite(idx)) idx = null;
+    if (idx != null) idx = Math.max(0, Math.min(n-1, idx));
+    st.hover.idx = idx;
+
+    const hv = values[idx];
+    if (hv != null && isFinite(hv)){
+      const hx = xOf(idx,n);
+      const hy = yOf(hv);
+
+      // marker
+      ctx.save();
+      ctx.fillStyle = "rgba(56,189,248,1)";
+      ctx.beginPath();
+      ctx.arc(hx, hy, 3.5*dpr, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      // tooltip
+      if (st.tooltip){
+        const label = st.opts && st.opts.label ? st.opts.label : "";
+        const unit = st.opts && st.opts.unit ? st.opts.unit : "";
+        const valFmt = st.opts && typeof st.opts.valFmt === "function" ? st.opts.valFmt : miniDefaultFmt;
+        const timeLabel = times[idx] != null ? String(times[idx]) : `#${idx+1}`;
+
+        st.tooltip.innerHTML =
+          `<div style="font-weight:700; margin-bottom:2px;">${escapeHtml(label || "Value")}</div>` +
+          `<div><span class="muted">${escapeHtml(timeLabel)}</span></div>` +
+          `<div style="margin-top:3px;"><span class="mono" style="font-weight:700;">${escapeHtml(valFmt(hv))}</span>${unit ? ` <span class="muted">${escapeHtml(unit)}</span>` : ""}</div>`;
+
+        // position tooltip near cursor, keep inside canvas box
+        const r = c.getBoundingClientRect();
+        const tx = (st.hover.x + 12);
+        const ty = (st.hover.y + 12);
+        st.tooltip.style.left = `${Math.min(tx, r.width - 140)}px`;
+        st.tooltip.style.top = `${Math.min(ty, r.height - 70)}px`;
+        st.tooltip.style.display = "block";
+      }
+    } else {
+      if (st.tooltip) st.tooltip.style.display = "none";
+    }
+  }
+}
+
+
+function dailyValueOnLocalDay(dailyTime, dailyVals, dayDate){
+  if (!dailyTime || !dailyVals) return null;
+  const key = ymdLocal(dayDate);
+  for (let i=0;i<dailyTime.length;i++){
+    const t = dailyTime[i];
+    if (t === key) return dailyVals[i];
+    if (t > key) break;
+  }
+  return null;
+}
+
+function meanHourlyOnLocalDay(hourlyTime, hourlyVals, dayDate){
+  if (!hourlyTime || !hourlyVals) return null;
+  const start = startOfLocalDay(dayDate);
+  const end = addLocalDays(start, 1);
+  const t0 = start.getTime(), t1 = end.getTime();
+
+  let sum = 0, n = 0;
+  for (let i=0;i<hourlyTime.length;i++){
+    const dt = parseLocalDateTime(hourlyTime[i]);
+    if (!dt) continue;
+    const ms = dt.getTime();
+    if (ms < t0) continue;
+    if (ms >= t1) break;
+    const v = hourlyVals[i];
+    if (v == null || !isFinite(v)) continue;
+    sum += v; n++;
+  }
+  return n ? (sum / n) : null;
+}
+
+function computeLocationEnvMetricAt(wx, dayDate, metric){
+  if (!wx) return null;
+
+  const daily = wx.daily || {};
+  const hourly = wx.hourly || {};
+
+  if (metric === "rain_mm"){
+    return dailyValueOnLocalDay(daily.time, daily.precipitation_sum, dayDate);
+  }
+  if (metric === "et0_mm"){
+    return dailyValueOnLocalDay(daily.time, daily.et0_fao_evapotranspiration, dayDate);
+  }
+  if (metric === "temp_c"){
+    return meanHourlyOnLocalDay(hourly.time, hourly.temperature_2m, dayDate);
+  }
+  if (metric === "rh_pct"){
+    return meanHourlyOnLocalDay(hourly.time, hourly.relative_humidity_2m, dayDate);
+  }
+  if (metric === "vpd_kpa"){
+    return meanHourlyOnLocalDay(hourly.time, hourly.vapour_pressure_deficit, dayDate);
+  }
+  if (metric === "soil_9_27"){
+    return meanHourlyOnLocalDay(hourly.time, hourly.soil_moisture_9_27cm, dayDate);
+  }
+  if (metric === "soil_27_81"){
+    return meanHourlyOnLocalDay(hourly.time, hourly.soil_moisture_27_81cm, dayDate);
+  }
+
+  if (metric === "rain14_mm"){
+    const sum14 = sumDailyLocalWindow(daily.time, daily.precipitation_sum, dayDate, 14);
+    return (sum14 == null) ? null : (sum14 / 14);
+  }
+  if (metric === "et07_mm"){
+    const sum7 = sumDailyLocalWindow(daily.time, daily.et0_fao_evapotranspiration, dayDate, 7);
+    return (sum7 == null) ? null : (sum7 / 7);
+  }
+
+  return null;
+}
+
+function sumDailyLocalWindow(dailyTime, dailyVals, endDate, daysBack){
+  if (!dailyTime || !dailyVals) return null;
+  const endKey = ymdLocal(endDate);
+  const startKey = ymdLocal(addLocalDays(startOfLocalDay(endDate), -(daysBack - 1)));
+
+  let sum = 0, n = 0;
+  for (let i=0;i<dailyTime.length;i++){
+    const t = dailyTime[i];
+    if (t < startKey) continue;
+    if (t > endKey) break;
+    const v = dailyVals[i];
+    if (v == null || !isFinite(v)) continue;
+    sum += v; n++;
+  }
+  // If data is sparse, still return sum of what's available (n>0)
+  return n ? sum : null;
+}
+
+function computeDistrictEnvMeanAt(dayDate, metric){
+  if (!dataCache?.wxList || !dataCache.wxList.length) return null;
+
+  let sum = 0, n = 0;
+  for (let i=0;i<dataCache.wxList.length;i++){
+    const wx = dataCache.wxList[i];
+    const v = computeLocationEnvMetricAt(wx, dayDate, metric);
+    if (v == null || !isFinite(v)) continue;
+    sum += v; n++;
+  }
+  return n ? (sum / n) : null;
+}
+
+async function ensureDistrictEnvTrendComputed(force=false){
+  const canvas = document.getElementById("districtEnvChart");
+  const meta = document.getElementById("districtEnvMeta");
+  if (!canvas || !meta) return;
+
+  if (!dataCache?.wxList){ meta.textContent = "No data loaded"; return; }
+
+  const metric = getSelectedEnvMetric();
+  const def = ENV_METRICS[metric] || ENV_METRICS.rain_mm;
+
+  const win = getDistrictTrendWindow();
+
+  const rangeMin = dataCache.rangeMin ? new Date(dataCache.rangeMin) : null;
+  const rangeMax = dataCache.rangeMax ? new Date(dataCache.rangeMax) : null;
+
+  let start = win.start;
+  let end = win.end;
+  if (rangeMin && start < rangeMin) start = rangeMin;
+  if (rangeMax && end > rangeMax) end = rangeMax;
+
+  if (start > end){
+    meta.textContent = "No overlapping time window for district trend";
+    return;
+  }
+
+  const key = windowKey({start, end}) + "|" + metric;
+  if (!force && districtEnvTrend.key === key && districtEnvTrend.times?.length > 1) return;
+  if (districtEnvTrend.building) return districtEnvTrend.building;
+
+  meta.textContent = "Building district env trend from loaded data…";
+
+  const buildPromise = (async ()=>{
+    const times = [];
+    const values = [];
+
+    let d = localMidday(start);
+    const endDay = localMidday(end);
+
+    let safety = 0;
+    while (d <= endDay && safety < 400){
+      const meanV = computeDistrictEnvMeanAt(d, metric);
+      times.push(new Date(d));
+      values.push(meanV);
+
+      d = addLocalDays(d, 1);
+      safety++;
+      if (safety % 5 === 0) await new Promise(r=>setTimeout(r,0));
+    }
+
+    districtEnvTrend.key = key;
+    districtEnvTrend.metric = metric;
+    districtEnvTrend.start = start;
+    districtEnvTrend.end = end;
+    districtEnvTrend.times = times;
+    districtEnvTrend.values = values;
+
+    const latest = [...values].reverse().find(v => v != null && isFinite(v));
+    const rangeTxt = `${formatWhenNZ(start)} to ${formatWhenNZ(end)} • ${times.length} days`;
+    meta.textContent = (latest != null)
+      ? `${rangeTxt} • ${def.label} latest ${latest.toFixed(def.digits)} ${def.unit}`
+      : `${rangeTxt} • ${def.label}`;
+
+    districtEnvTrend.defaultMeta = meta.textContent;
+    renderDistrictEnvTrendChart();
+  })().finally(()=>{ districtEnvTrend.building = null; });
+
+  districtEnvTrend.building = buildPromise;
+  return buildPromise;
+}
+
+function envTrendLayout(w, h, minY, maxY){
+  const padL = 56, padR = 10, padT = 10, padB = 18;
+  const x0 = padL, x1 = w - padR;
+  const y0 = padT, y1 = h - padB;
+
+  const n = districtEnvTrend.times ? districtEnvTrend.times.length : 0;
+  const xAt = (i)=> x0 + (x1 - x0) * (n <= 1 ? 0 : i / (n - 1));
+  const yAt = (v)=> y1 - ((clamp(v, minY, maxY) - minY) / (maxY - minY)) * (y1 - y0);
+
+  return { padL, padR, padT, padB, x0, x1, y0, y1, minY, maxY, n, xAt, yAt };
+}
+
+function computeNiceExtent(values){
+  const finite = values.filter(v => v != null && isFinite(v));
+  if (!finite.length) return { min: 0, max: 1 };
+  let min = Math.min(...finite);
+  let max = Math.max(...finite);
+  if (min === max){
+    const pad = (min === 0) ? 1 : Math.abs(min) * 0.15;
+    min -= pad;
+    max += pad;
+  } else {
+    const pad = (max - min) * 0.12;
+    min -= pad;
+    max += pad;
+  }
+  // Avoid negative lower bound for strictly non-negative metrics
+  const metric = districtEnvTrend.metric;
+  if (metric === "rain_mm" || metric === "rain14_mm" || metric === "et0_mm" || metric === "et07_mm" || metric === "rh_pct" || metric.startsWith("soil_")){
+    min = Math.max(0, min);
+  }
+  return { min, max };
+}
+
+function drawEnvSeries(ctx, layout, values, stroke){
+  ctx.save();
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  const n = values.length;
+  let started = false;
+
+  ctx.beginPath();
+  for (let i=0;i<n;i++){
+    const v = values[i];
+    if (v == null || !isFinite(v)){
+      started = false;
+      continue;
+    }
+    const x = layout.xAt(i);
+    const y = layout.yAt(v);
+    if (!started){
+      ctx.moveTo(x, y);
+      started = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawEnvAxes(ctx, layout, def){
+  // Grid lines + y-axis labels
+  const ticks = 5;
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.fillStyle = "rgba(255,255,255,0.58)";
+  ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+
+  for (let i=0;i<=ticks;i++){
+    const t = i / ticks;
+    const y = layout.y0 + (layout.y1 - layout.y0) * t;
+
+    // Grid
+    ctx.beginPath();
+    ctx.moveTo(layout.x0, y);
+    ctx.lineTo(layout.x1, y);
+    ctx.stroke();
+
+    // Label
+    const v = layout.maxY - (layout.maxY - layout.minY) * t;
+    const label = v.toFixed(def.digits);
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, layout.x0 - 8, y);
+  }
+
+  // x-axis baseline
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.beginPath();
+  ctx.moveTo(layout.x0, layout.y1);
+  ctx.lineTo(layout.x1, layout.y1);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function ensureDistrictEnvHoverHooks(){
+  const canvas = document.getElementById("districtEnvChart");
+  if (!canvas || canvas._hoverHooked) return;
+  canvas._hoverHooked = true;
+
+  const tip = document.getElementById("districtEnvTooltip");
+
+  const onMove = (e)=>{
+    const r = canvas.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+
+    const def = ENV_METRICS[districtEnvTrend.metric] || ENV_METRICS.rain_mm;
+    const ext = computeNiceExtent(districtEnvTrend.values || []);
+    const layout = envTrendLayout(r.width, r.height, ext.min, ext.max);
+
+    if (x < layout.x0 || x > layout.x1 || y < layout.y0 || y > layout.y1){
+      districtEnvHover.idx = null;
+      if (tip) tip.style.display = "none";
+      renderDistrictEnvTrendChart();
+      return;
+    }
+
+    const t = (x - layout.x0) / (layout.x1 - layout.x0);
+    const idx = clamp(Math.round(t * (layout.n - 1)), 0, layout.n - 1);
+
+    districtEnvHover.idx = idx;
+    districtEnvHover.x = x;
+    districtEnvHover.y = y;
+    districtEnvHover.active = true;
+
+    renderDistrictEnvTrendChart();
+  };
+
+  const onLeave = ()=>{
+    districtEnvHover.idx = null;
+    districtEnvHover.active = false;
+
+    const meta = document.getElementById("districtEnvMeta");
+    if (meta && districtEnvTrend.defaultMeta) meta.textContent = districtEnvTrend.defaultMeta;
+
+    if (tip) tip.style.display = "none";
+    renderDistrictEnvTrendChart();
+  };
+
+  canvas.addEventListener("mousemove", onMove);
+  canvas.addEventListener("mouseleave", onLeave);
+  canvas.addEventListener("touchmove", (e)=>{
+    if (!e.touches || !e.touches.length) return;
+    onMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
+  }, { passive: true });
+  canvas.addEventListener("touchend", onLeave);
+}
+
+function renderDistrictEnvTrendChart(){
+  const canvas = document.getElementById("districtEnvChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  ensureDistrictEnvHoverHooks();
+  const tip = document.getElementById("districtEnvTooltip");
+
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(rect.width));
+  const h = Math.max(1, Math.floor(rect.height));
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0,0,w,h);
+
+  const metric = districtEnvTrend.metric || getSelectedEnvMetric();
+  const def = ENV_METRICS[metric] || ENV_METRICS.rain_mm;
+
+  const values = districtEnvTrend.values || [];
+  const ext = computeNiceExtent(values);
+  const layout = envTrendLayout(w, h, ext.min, ext.max);
+
+  // Axes + grid
+  drawEnvAxes(ctx, layout, def);
+
+  // Line
+  drawEnvSeries(ctx, layout, values, cssVar("--ok"));
+
+  // Hover marker + tooltip
+  if (districtEnvHover.active && districtEnvHover.idx != null && layout.n > 0){
+    const i = districtEnvHover.idx;
+    const x = layout.xAt(i);
+    const v = values[i];
+
+    if (v != null && isFinite(v)){
+      const y = layout.yAt(v);
+
+      // Vertical line
+      ctx.save();
+      ctx.strokeStyle = "rgba(56,189,248,0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, layout.y0);
+      ctx.lineTo(x, layout.y1);
+      ctx.stroke();
+
+      // Dot
+      ctx.fillStyle = cssVar("--ok");
+      ctx.beginPath();
+      ctx.arc(x, y, 3.3, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      const when = districtEnvTrend.times[i];
+      const dateTxt = when ? when.toLocaleDateString("en-NZ", { year:"numeric", month:"short", day:"2-digit" }) : "";
+      const valTxt = v.toFixed(def.digits);
+
+      if (tip){
+        tip.style.display = "block";
+        tip.style.left = Math.min(w - 160, Math.max(10, x + 10)) + "px";
+        tip.style.top = "10px";
+        tip.innerHTML = `<div style="font-weight:700; margin-bottom:2px;">${def.label}</div>
+          <div class="muted">${dateTxt}</div>
+          <div style="margin-top:6px;"><span style="font-weight:700">${valTxt}</span> <span class="muted">${def.unit}</span></div>`;
+      }
+
+      const meta = document.getElementById("districtEnvMeta");
+      if (meta){
+        meta.textContent = `${def.label} on ${dateTxt}: ${valTxt} ${def.unit}`;
+      }
+    } else {
+      if (tip) tip.style.display = "none";
+    }
+  }
+}
+
+
+
+    
+// ---- District River and Groundwater Trend (Normalised Stress, Interactive Hover) ----
+// This chart shows a district-wide daily mean "hydrology stress" index per day.
+// Each gauge is normalised using its own min/max over the displayed window so values are comparable
+// across different rivers and bores (0 = relatively high water for that gauge, 100 = relatively low).
+
+const districtHydroTrend = {
+  key: null,
+  start: null,
+  end: null,
+  times: [],
+  river: [],
+  gw: [],
+  nRiver: [],
+  nGw: [],
+  building: null,
+  defaultMeta: ""
+};
+
+const districtRiverHover = { idx: null, x: 0, y: 0, active: false };
+const districtGWHover = { idx: null, x: 0, y: 0, active: false };
+
+// Cache long-window series so we don't refetch on hover or re-render
+const districtHydroHistoryCache = new Map();
+
+function parseHilltopTimeToDate(t){
+  if (!t) return null;
+  if (t instanceof Date && !isNaN(t.getTime())) return t;
+  const s = String(t).trim();
+  // ISO or parseable formats
+  let d = new Date(s);
+  if (!isNaN(d.getTime())) return d;
+
+  // Common Hilltop JSON format: "YYYY-MM-DD HH:MM[:SS]"
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (m){
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const da = Number(m[3]);
+    const hh = Number(m[4]);
+    const mm = Number(m[5]);
+    const ss = Number(m[6] || 0);
+    d = new Date(y, mo, da, hh, mm, ss, 0);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // Try again with a "T"
+  d = new Date(s.replace(" ", "T"));
+  if (!isNaN(d.getTime())) return d;
+
+  return null;
+}
+
+function dailyMeanFromSeries(series){
+  const tmp = new Map(); // dayKey -> {sum,n}
+  if (!series || !Array.isArray(series.times) || !Array.isArray(series.values)) return tmp;
+
+  for (let i=0;i<series.times.length;i++){
+    const d = parseHilltopTimeToDate(series.times[i]);
+    const v = series.values[i];
+    if (!d || v == null || !isFinite(v)) continue;
+
+    const key = ymdLocal(d);
+    if (!key) continue;
+
+    const cur = tmp.get(key) || { sum: 0, n: 0 };
+    cur.sum += Number(v);
+    cur.n += 1;
+    tmp.set(key, cur);
+  }
+
+  const meanMap = new Map(); // dayKey -> mean
+  for (const [k, obj] of tmp.entries()){
+    meanMap.set(k, obj.n ? (obj.sum / obj.n) : null);
+  }
+  return meanMap;
+}
+
+function normaliseStressFromDailyMap(meanMap){
+  let min = Infinity, max = -Infinity;
+  for (const v of meanMap.values()){
+    if (v == null || !isFinite(v)) continue;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  if (!isFinite(min) || !isFinite(max) || max === min){
+    return { min: null, max: null, stress: new Map() };
+  }
+
+  const stress = new Map(); // dayKey -> 0..100
+  for (const [k, v] of meanMap.entries()){
+    if (v == null || !isFinite(v)){
+      stress.set(k, null);
+      continue;
+    }
+    const t = (v - min) / (max - min);
+    const s = clamp((1 - t) * 100, 0, 100);
+    stress.set(k, s);
+  }
+  return { min, max, stress };
+}
+
+function hydroLayout(w, h, n){
+  const padL = 42, padR = 10, padT = 10, padB = 22;
+  const x0 = padL, x1 = w - padR;
+  const y0 = padT, y1 = h - padB;
+
+  const xAt = (i)=>{
+    if (n <= 1) return x0;
+    return x0 + (x1 - x0) * (i / (n - 1));
+  };
+
+  const yAt = (v)=>{
+    const t = clamp((v - 0) / (100 - 0), 0, 1);
+    return y1 - t * (y1 - y0);
+  };
+
+  return { padL, padR, padT, padB, x0, x1, y0, y1, xAt, yAt };
+}
+
+function drawHydroAxes(ctx, layout){
+  const ticks = 5;
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.fillStyle = "rgba(255,255,255,0.58)";
+  ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+
+  for (let i=0;i<=ticks;i++){
+    const t = i / ticks;
+    const v = 0 + t * (100 - 0);
+    const y = layout.yAt(v);
+
+    ctx.beginPath();
+    ctx.moveTo(layout.x0, y);
+    ctx.lineTo(layout.x1, y);
+    ctx.stroke();
+
+    const txt = String(Math.round(v));
+    ctx.fillText(txt, 8, y + 4);
+  }
+  ctx.restore();
+}
+
+function drawHydroLine(ctx, layout, values){
+  const n = values ? values.length : 0;
+  if (!n) return;
+
+  ctx.save();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = cssVar("--ok");
+  ctx.beginPath();
+
+  let started = false;
+  for (let i=0;i<n;i++){
+    const v = values[i];
+    if (v == null || !isFinite(v)){
+      started = false;
+      continue;
+    }
+    const x = layout.xAt(i);
+    const y = layout.yAt(v);
+    if (!started){
+      ctx.moveTo(x, y);
+      started = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+async function buildDistrictHydroStressSeries(kind, start, end){
+  const list = (kind === "river") ? (dataCache.riverForLoc || []) : (dataCache.gwForLoc || []);
+  const sites = [];
+
+  for (const g of list){
+    if (!g || !g.site) continue;
+    // Enforce the same 10 km rule for safety
+    if (isFinite(g.distanceKm) && g.distanceKm > 10) continue;
+    sites.push(g.site);
+  }
+
+  // Unique site+measurement pairs
+  const unique = new Map();
+  for (const s of sites){
+    const meas = (kind === "river") ? pickRiverHistoryMeasurement(s) : pickGroundwaterHistoryMeasurement(s);
+    const siteName = s.name || s.title || "";
+    if (!siteName) continue;
+    const key = `${siteName}||${meas.name}`;
+    if (!unique.has(key)) unique.set(key, { siteName, measName: meas.name });
+  }
+
+  const uniquePairs = [...unique.values()];
+  const msDay = 24 * 60 * 60 * 1000;
+  const daysBack = Math.max(2, Math.ceil((end.getTime() - start.getTime()) / msDay) + 2);
+  const endStamp = formatDateTimeLocal(end);
+
+  // Fetch and normalise per site
+  const stressMaps = [];
+  for (const p of uniquePairs){
+    const cacheKey = `DH|${kind}|${p.siteName}||${p.measName}||${endStamp}||${daysBack}`;
+    let series = districtHydroHistoryCache.get(cacheKey);
+
+    if (!series){
+      try{
+        series = await fetchRiverHistory(p.siteName, p.measName, daysBack, end);
+        districtHydroHistoryCache.set(cacheKey, series);
+      } catch {
+        continue;
+      }
+    }
+
+    if (!series || !series.values || series.values.length < 2) continue;
+
+    const daily = dailyMeanFromSeries(series);
+    const norm = normaliseStressFromDailyMap(daily);
+    if (!norm || !norm.stress || norm.stress.size === 0) continue;
+
+    stressMaps.push(norm.stress);
+
+    // Be nice to the UI thread
+    if (stressMaps.length % 2 === 0) await new Promise(r=>setTimeout(r,0));
+  }
+
+  return { stressMaps, nSites: stressMaps.length };
+}
+
+function computeDistrictHydroDailyMean(times, stressMaps){
+  const values = [];
+  const nUsed = [];
+  for (const d of times){
+    const key = ymdLocal(d);
+    let sum = 0, n = 0;
+    for (const m of stressMaps){
+      const v = m.get(key);
+      if (v == null || !isFinite(v)) continue;
+      sum += v; n++;
+    }
+    values.push(n ? (sum / n) : null);
+    nUsed.push(n);
+  }
+  return { values, nUsed };
+}
+
+async function ensureDistrictHydroTrendComputed(force=false){
+  const riverCanvas = document.getElementById("districtRiverChart");
+  const gwCanvas = document.getElementById("districtGWChart");
+  const meta = document.getElementById("districtHydroMeta");
+  if (!riverCanvas || !gwCanvas || !meta) return;
+
+  if (!dataCache?.wxList){ meta.textContent = "No data loaded"; return; }
+
+  const win = getDistrictTrendWindow();
+  const rangeMin = dataCache.rangeMin ? new Date(dataCache.rangeMin) : null;
+  const rangeMax = dataCache.rangeMax ? new Date(dataCache.rangeMax) : null;
+
+  let start = win.start;
+  let end = win.end;
+  if (rangeMin && start < rangeMin) start = rangeMin;
+  if (rangeMax && end > rangeMax) end = rangeMax;
+
+  if (start > end){
+    meta.textContent = "No overlapping time window for hydrology";
+    districtHydroTrend.key = null;
+    districtHydroTrend.times = [];
+    districtHydroTrend.river = [];
+    districtHydroTrend.gw = [];
+    renderDistrictHydroTrendCharts();
+    return;
+  }
+
+  const key = `hydro|${timeMode}|${start.toISOString().slice(0,16)}|${end.toISOString().slice(0,16)}|${(dataCache.loadedAt||"")}`;
+
+  if (!force && districtHydroTrend.key === key){
+    renderDistrictHydroTrendCharts();
+    if (districtHydroTrend.defaultMeta) meta.textContent = districtHydroTrend.defaultMeta;
+    return;
+  }
+
+  if (districtHydroTrend.building) return districtHydroTrend.building;
+
+  meta.textContent = "Building district hydrology trends (Hilltop)...";
+
+  const buildPromise = (async ()=>{
+    // Build daily timeline (inclusive)
+    const times = [];
+    let d = localMidday(start);
+    const endDay = localMidday(end);
+    let safety = 0;
+    while (d <= endDay && safety < 400){
+      times.push(new Date(d));
+      d = addLocalDays(d, 1);
+      safety++;
+      if (safety % 10 === 0) await new Promise(r=>setTimeout(r,0));
+    }
+
+    const [riverRes, gwRes] = await Promise.all([
+      buildDistrictHydroStressSeries("river", start, end),
+      buildDistrictHydroStressSeries("gw", start, end)
+    ]);
+
+    const riverDaily = computeDistrictHydroDailyMean(times, riverRes.stressMaps);
+    const gwDaily = computeDistrictHydroDailyMean(times, gwRes.stressMaps);
+
+    districtHydroTrend.key = key;
+    districtHydroTrend.start = start;
+    districtHydroTrend.end = end;
+    districtHydroTrend.times = times;
+    districtHydroTrend.river = riverDaily.values;
+    districtHydroTrend.gw = gwDaily.values;
+    districtHydroTrend.nRiver = riverDaily.nUsed;
+    districtHydroTrend.nGw = gwDaily.nUsed;
+
+    const latestRiver = [...riverDaily.values].reverse().find(v => v != null && isFinite(v));
+    const latestGw = [...gwDaily.values].reverse().find(v => v != null && isFinite(v));
+
+    const rangeTxt = `${formatWhenNZ(start)} to ${formatWhenNZ(end)} • ${times.length} days`;
+    const rTxt = (latestRiver != null) ? `River ${latestRiver.toFixed(1)} (n=${riverRes.nSites})` : `River n=${riverRes.nSites}`;
+    const gTxt = (latestGw != null) ? `Groundwater ${latestGw.toFixed(1)} (n=${gwRes.nSites})` : `Groundwater n=${gwRes.nSites}`;
+
+    meta.textContent = `${rangeTxt} • ${rTxt} • ${gTxt}`;
+    districtHydroTrend.defaultMeta = meta.textContent;
+
+    renderDistrictHydroTrendCharts();
+  })().finally(()=>{ districtHydroTrend.building = null; });
+
+  districtHydroTrend.building = buildPromise;
+  return buildPromise;
+}
+
+function ensureDistrictHydroHoverHooks(){
+  const riverCanvas = document.getElementById("districtRiverChart");
+  const gwCanvas = document.getElementById("districtGWChart");
+
+  if (riverCanvas && !riverCanvas._hydroHoverBound){
+    riverCanvas._hydroHoverBound = true;
+
+    const onMove = (e)=>{
+      const rect = riverCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      districtRiverHover.x = x;
+      districtRiverHover.y = y;
+      districtRiverHover.active = true;
+      renderDistrictHydroTrendCharts();
+    };
+
+    const onLeave = ()=>{
+      districtRiverHover.active = false;
+      districtRiverHover.idx = null;
+      const tip = document.getElementById("districtRiverTooltip");
+      if (tip) tip.style.display = "none";
+      const meta = document.getElementById("districtHydroMeta");
+      if (meta && districtHydroTrend.defaultMeta) meta.textContent = districtHydroTrend.defaultMeta;
+      renderDistrictHydroTrendCharts();
+    };
+
+    riverCanvas.addEventListener("mousemove", onMove);
+    riverCanvas.addEventListener("mouseleave", onLeave);
+    riverCanvas.addEventListener("touchmove", (e)=>{
+      if (!e.touches || !e.touches.length) return;
+      onMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
+    }, { passive:true });
+    riverCanvas.addEventListener("touchend", onLeave);
+  }
+
+  if (gwCanvas && !gwCanvas._hydroHoverBound){
+    gwCanvas._hydroHoverBound = true;
+
+    const onMove = (e)=>{
+      const rect = gwCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      districtGWHover.x = x;
+      districtGWHover.y = y;
+      districtGWHover.active = true;
+      renderDistrictHydroTrendCharts();
+    };
+
+    const onLeave = ()=>{
+      districtGWHover.active = false;
+      districtGWHover.idx = null;
+      const tip = document.getElementById("districtGWTooltip");
+      if (tip) tip.style.display = "none";
+      const meta = document.getElementById("districtHydroMeta");
+      if (meta && districtHydroTrend.defaultMeta) meta.textContent = districtHydroTrend.defaultMeta;
+      renderDistrictHydroTrendCharts();
+    };
+
+    gwCanvas.addEventListener("mousemove", onMove);
+    gwCanvas.addEventListener("mouseleave", onLeave);
+    gwCanvas.addEventListener("touchmove", (e)=>{
+      if (!e.touches || !e.touches.length) return;
+      onMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
+    }, { passive:true });
+    gwCanvas.addEventListener("touchend", onLeave);
+  }
+}
+
+function renderOneHydroChart(canvasId, tooltipId, values, nUsedArr, hoverState, title){
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  ensureDistrictHydroHoverHooks();
+
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(rect.width));
+  const h = Math.max(1, Math.floor(rect.height));
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0,0,w,h);
+
+  // Background
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.10)";
+  ctx.fillRect(0,0,w,h);
+  ctx.restore();
+
+  const n = values ? values.length : 0;
+  const layout = hydroLayout(w, h, n);
+
+  drawHydroAxes(ctx, layout);
+  drawHydroLine(ctx, layout, values);
+
+  // Hover marker + tooltip
+  const tip = document.getElementById(tooltipId);
+  if (hoverState.active && n > 0){
+    const x = clamp(hoverState.x, layout.x0, layout.x1);
+    const frac = (layout.x1 === layout.x0) ? 0 : ((x - layout.x0) / (layout.x1 - layout.x0));
+    const i = clamp(Math.round(frac * (n - 1)), 0, n - 1);
+    hoverState.idx = i;
+
+    const v = values[i];
+    const xP = layout.xAt(i);
+
+    // Vertical guide
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xP, layout.y0);
+    ctx.lineTo(xP, layout.y1);
+    ctx.stroke();
+    ctx.restore();
+
+    if (v != null && isFinite(v)){
+      const yP = layout.yAt(v);
+
+      ctx.save();
+      ctx.fillStyle = cssVar("--ok");
+      ctx.beginPath();
+      ctx.arc(xP, yP, 3.3, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      const when = districtHydroTrend.times[i];
+      const dateTxt = when ? when.toLocaleDateString("en-NZ", { year:"numeric", month:"short", day:"2-digit" }) : "";
+      const valTxt = v.toFixed(1);
+      const nTxt = (nUsedArr && nUsedArr[i] != null) ? `n=${nUsedArr[i]}` : "";
+
+      if (tip){
+        tip.style.display = "block";
+        // Keep within chart
+        const desiredLeft = xP + 10;
+        const maxLeft = w - 180;
+        tip.style.left = clamp(desiredLeft, 10, maxLeft) + "px";
+        tip.style.top = "10px";
+        tip.innerHTML = `<div style="font-weight:700; margin-bottom:2px;">${title}</div>` +
+          `<div class="tiny muted">${dateTxt}</div>` +
+          `<div style="margin-top:4px;"><span style="font-weight:700;">${valTxt}</span> / 100 <span class="tiny muted">${nTxt}</span></div>` +
+          `<div class="tiny muted" style="margin-top:4px;">0 = high water for that gauge, 100 = low</div>`;
+      }
+
+      // Also update meta line for quick glance
+      const meta = document.getElementById("districtHydroMeta");
+      if (meta){
+        const otherLatestRiver = [...(districtHydroTrend.river||[])].reverse().find(x=>x!=null && isFinite(x));
+        const otherLatestGw = [...(districtHydroTrend.gw||[])].reverse().find(x=>x!=null && isFinite(x));
+        const base = districtHydroTrend.defaultMeta || "";
+        // Replace meta with hover context
+        meta.textContent = `${dateTxt} • ${title}: ${valTxt} (${nTxt || "n=0"}) • River latest ${otherLatestRiver!=null?otherLatestRiver.toFixed(1):"–"} • Groundwater latest ${otherLatestGw!=null?otherLatestGw.toFixed(1):"–"}`;
+      }
+    } else {
+      if (tip) tip.style.display = "none";
+    }
+  } else {
+    if (tip) tip.style.display = "none";
+  }
+}
+
+function renderDistrictHydroTrendCharts(){
+  renderOneHydroChart("districtRiverChart", "districtRiverTooltip", districtHydroTrend.river, districtHydroTrend.nRiver, districtRiverHover, "River Stress");
+  renderOneHydroChart("districtGWChart", "districtGWTooltip", districtHydroTrend.gw, districtHydroTrend.nGw, districtGWHover, "Groundwater Stress");
+}
+
+
+function scheduleDistrictTrendBuild(){
+      const canvas = document.getElementById("districtTrendChart");
+      if (!canvas) return;
+
+      // Make sure env selector is initialised even if the user never opens District Summary first.
+      const envSel = document.getElementById("districtEnvMetric");
+      if (envSel && !envSel._hooked){
+        envSel._hooked = true;
+        const saved = localStorage.getItem(STORAGE_KEY_ENV_METRIC);
+        if (saved) envSel.value = saved;
+        envSel.addEventListener("change", ()=>{
+          localStorage.setItem(STORAGE_KEY_ENV_METRIC, envSel.value);
+          // Force rebuild for new metric
+          districtEnvTrend.key = null;
+          scheduleDistrictTrendBuild();
+        });
+      }
+
+      window.clearTimeout(scheduleDistrictTrendBuild._t);
+      scheduleDistrictTrendBuild._t = window.setTimeout(()=>{
+        ensureDistrictTrendComputed(false).catch(()=>{});
+        renderDistrictTrendChart();
+
+        ensureDistrictEnvTrendComputed(false).catch(()=>{});
+        renderDistrictEnvTrendChart();
+
+        ensureDistrictHydroTrendComputed(false).catch(()=>{});
+        renderDistrictHydroTrendCharts();
+}, 60);
+    }
+
+    function selectLocation(id, panTo=false){
+      selectedId = id;
+      localStorage.setItem(STORAGE_KEY_LASTSEL, id);
+
+      const row = computed.find(r => r.loc.id === id);
+      if (!row) return;
+
+      const trs = $("tbody").querySelectorAll("tr");
+      trs.forEach(tr => {
+        if (tr.dataset.id === id) tr.style.outline = "2px solid rgba(56,189,248,0.25)";
+        else tr.style.outline = "none";
+      });
+
+      if (panTo && map){
+        map.setView([row.loc.lat, row.loc.lon], Math.max(map.getZoom(), 9));
+      }
+
+      renderDetails(row);
+    }
+
+    function renderDetails(row){
+      const cat = categoryForIndex(row.index.score);
+      const panel = $("detailPanel");
+
+      const parts = row.index.parts;
+      const m = row.index.metrics;
+
+      panel.innerHTML = `
+        <h3>${escapeHtml(row.loc.name)}</h3>
+
+        <div class="grid2">
+          <div class="miniCard">
+            <div class="k">Drought Index</div>
+            <div class="v mono">${fmt(row.index.score, 0)} <span style="font-size:12px; font-weight:600; opacity:0.85;">${cat.name}</span></div>
+            <div class="s">Composite signal from soil, rain, evap demand, humidity and river when available</div>
+          </div>
+
+          <div class="miniCard">
+            <div class="k">Key Observations</div>
+            <div class="s">
+              Rain 14d: <strong class="mono">${fmt(m.pastRain14, 1)} mm</strong><br/>
+              Forecast Rain 7d: <strong class="mono">${fmt(m.forecastRain7, 1)} mm</strong><br/>
+              Forecast ET0 7d: <strong class="mono">${fmt(m.et0_7, 1)} mm</strong><br/>
+              Forecast VPD Mean: <strong class="mono">${fmt(m.vpdMean, 2)}</strong><br/>
+              RH Mean 7d: <strong class="mono">${fmt(m.rhMean7, 0)}%</strong><br/>
+              ${buildRiverGaugeHtml(row.riverGauge)}
+              ${buildGroundwaterGaugeHtml(row.gwGauge)}
+              River Discharge (Modelled): <strong class="mono">${m.riverNow == null ? "-" : fmt(m.riverNow, 2)}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="miniCard">
+            <div class="k">Component Scores (0 wet, 1 dry)</div>
+            <div class="s">
+              Soil: <strong class="mono">${fmt(parts.soil, 2)}</strong><br/>
+              Rain: <strong class="mono">${fmt(parts.rain, 2)}</strong><br/>
+              Evap Demand: <strong class="mono">${fmt(parts.evap, 2)}</strong><br/>
+              Humidity: <strong class="mono">${fmt(parts.humidity, 2)}</strong><br/>
+              River: <strong class="mono">${fmt(parts.river, 2)}</strong>
+            </div>
+          </div>
+
+          <div class="miniCard">
+            <div class="k">Soil Moisture Layers</div>
+            <div class="s">
+              ${row.index.soilDetails.map(d => {
+                const cur = d.current == null ? "-" : fmt(d.current, 3);
+                const dry = d.dryness == null ? "-" : fmt(d.dryness, 2);
+                return `<div style="display:flex; justify-content:space-between; gap:10px;">
+                  <span>${escapeHtml(d.label)}</span>
+                  <span class="mono">${cur} <span style="opacity:0.75;">dry ${dry}</span></span>
+                </div>`;
+              }).join("")}
+            </div>
+          </div>
+        </div>
+
+        <div class="miniCard">
+          <div class="k">Recent Trend (Daily Rain Soil River Groundwater)</div>
+          <div class="s muted">Daily rain (mm), daily average soil moisture (9-27 cm), river history (nearest gauge), and groundwater level history (nearest bore) for the last 7 days</div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-top:8px;">
+            <div>
+              <div class="muted" style="font-size:12px; margin-bottom:6px;">Daily Rain</div>
+              <div class="trendWrap"><canvas class="spark recentCanvas" id="sparkRain"></canvas><div id="sparkRainTooltip" class="chartTooltip" style="display:none;"></div></div>
+            </div>
+            <div>
+              <div class="muted" style="font-size:12px; margin-bottom:6px;">Soil 9-27 cm (Daily Avg)</div>
+              <div class="trendWrap"><canvas class="spark recentCanvas" id="sparkSoil"></canvas><div id="sparkSoilTooltip" class="chartTooltip" style="display:none;"></div></div>
+            </div>
+            <div>
+              <div class="muted" style="font-size:12px; margin-bottom:6px;">River (Nearest Gauge)</div>
+              <div class="trendWrap"><canvas class="spark recentCanvas" id="sparkRiver"></canvas><div id="sparkRiverTooltip" class="chartTooltip" style="display:none;"></div></div>
+              <div class="tiny muted" id="sparkRiverMeta" style="margin-top:4px;"></div>
+            </div>
+            <div>
+              <div class="muted" style="font-size:12px; margin-bottom:6px;">Groundwater (Nearest Bore)</div>
+              <div class="trendWrap"><canvas class="spark recentCanvas" id="sparkGW"></canvas><div id="sparkGWTooltip" class="chartTooltip" style="display:none;"></div></div>
+              <div class="tiny muted" id="sparkGWMeta" style="margin-top:4px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="miniCard">
+          <div class="k">Interpretation Tips</div>
+          <div class="s">
+            This index is designed to be operational. If soil dryness is high and rain dryness is high, your drought risk is elevated even if humidity is moderate. If forecast rain is substantial, rain dryness will be lower and the index should ease. If you see a mismatch with local impacts, tune thresholds and weights in the droughtConfig block.
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+  const asOf = getAsOfDate();
+  const dates = row.dailySeries?.dates ?? [];
+  const rainFull = row.dailySeries?.precip ?? [];
+  const soilFull = row.dailySeries?.soil9_27_avg ?? [];
+
+  const rain = sliceDailyToWindowSeries(dates, rainFull, asOf, 7);
+  const soil = sliceDailyToWindowSeries(dates, soilFull, asOf, 7);
+
+  setMiniTrendSeries(
+    "sparkRain",
+    "sparkRainTooltip",
+    rain.dates,
+    rain.values,
+    { label: "Daily Rain", unit: "mm", valFmt: (v) => fmt(v, 1), yFmt: (v) => fmt(v, 1) }
+  );
+
+  setMiniTrendSeries(
+    "sparkSoil",
+    "sparkSoilTooltip",
+    soil.dates,
+    soil.values,
+    { label: "Soil 9–27 cm (Daily Avg)", unit: "", valFmt: (v) => fmt(v, 3), yFmt: (v) => fmt(v, 2) }
+  );
+
+  updateRiverSpark(row);
+  updateGroundwaterSpark(row);
+}, 0);
+}
+
+    function computeDailySeries(wx){
+      const daily = wx?.daily || {};
+      const hourly = wx?.hourly || {};
+      const out = { dates: [], precip: [], soil9_27_avg: [] };
+
+      if (Array.isArray(daily.time) && Array.isArray(daily.precipitation_sum)){
+        out.dates = daily.time.slice();
+        out.precip = daily.precipitation_sum.slice();
+      }
+
+      if (Array.isArray(hourly.time) && Array.isArray(hourly.soil_moisture_9_27cm)){
+        const byDay = new Map();
+        for (let i=0;i<hourly.time.length;i++){
+          const k = dayKeyFromIso(hourly.time[i]);
+          const v = hourly.soil_moisture_9_27cm[i];
+          if (v == null || isNaN(v)) continue;
+          const cur = byDay.get(k) || { sum: 0, n: 0 };
+          cur.sum += v;
+          cur.n += 1;
+          byDay.set(k, cur);
+        }
+        const dates = out.dates.length ? out.dates : Array.from(byDay.keys()).sort();
+        out.soil9_27_avg = dates.map(d => {
+          const s = byDay.get(d);
+          return s && s.n ? (s.sum / s.n) : null;
+        });
+        if (!out.dates.length) out.dates = dates;
+      }
+
+      return out;
+    }
+
+    /***********************
+     * Main Data Flow
+     ***********************/
+    async function refresh(){
+      const pastDays = clamp(Number($("pastDays").value) || 30, 7, 92);
+      const forecastDays = clamp(Number($("forecastDays").value) || 7, 3, 16);
+      $("pastDays").value = pastDays;
+      $("forecastDays").value = forecastDays;
+
+      if (timeMode === "historic"){
+        const now = nowLocal();
+        if (!(asOfSnapshot instanceof Date) || isNaN(asOfSnapshot.getTime())){
+          asOfSnapshot = new Date(now.getTime());
+        }
+        if (asOfSnapshot > now){
+          asOfSnapshot = new Date(now.getTime());
+          localStorage.setItem(STORAGE_KEY_ASOF, asOfSnapshot.toISOString());
+          updateTimeControls();
+          showToast("Historic date is in the future. Using current time instead.");
+        }
+        $("tableHint").textContent = `Loading historical data as of ${formatDateTimeLocal(asOfSnapshot)}...`;
+      } else {
+        $("tableHint").textContent = "Loading Open-Meteo, river and groundwater data...";
+      }
+      setStatus("Loading");
+
+      const urlForecast = buildForecastUrl(locations, pastDays, forecastDays);
+      const urlFlood = buildFloodUrl(locations, pastDays, forecastDays);
+
+      try{
+        const [forecastData, floodData, nrcRivers, nrcGw] = await Promise.allSettled([
+          fetchJson(urlForecast, 25000),
+          fetchJson(urlFlood, 25000),
+          (NRC_RIVERS_URL ? fetchJson(NRC_RIVERS_URL, 25000) : Promise.resolve(null)),
+          (NRC_GW_URL ? fetchJson(NRC_GW_URL, 25000) : Promise.resolve(null))
+        ]).then(results => results.map(r => r.status === "fulfilled" ? r.value : null));
+
+        if (!forecastData){
+          throw new Error("Forecast API failed");
+        }
+
+        const wxList = Array.isArray(forecastData) ? forecastData : [forecastData];
+const floodList = floodData ? (Array.isArray(floodData) ? floodData : [floodData]) : [];
+
+const riverSites = Array.isArray(nrcRivers) ? nrcRivers : [];
+const riverForLoc = locations.map(loc => pickNearestRiverSite(loc, riverSites));
+
+const gwSites = Array.isArray(nrcGw) ? nrcGw : [];
+const gwForLoc = locations.map(loc => pickNearestGroundwaterSite(loc, gwSites));
+
+if (timeMode === "historic"){
+  await hydrateNrcGaugesAtAsOf(riverForLoc, gwForLoc, getAsOfDate());
+}
+
+dataCache.wxList = wxList;
+dataCache.floodList = floodList;
+dataCache.riverSites = riverSites;
+dataCache.gwSites = gwSites;
+dataCache.riverForLoc = riverForLoc;
+dataCache.gwForLoc = gwForLoc;
+dataCache.loadedAt = new Date();
+dataCache.pastDays = pastDays;
+dataCache.forecastDays = forecastDays;
+
+const range = deriveWxRange(wxList[0]);
+dataCache.rangeMin = range.min;
+dataCache.rangeMax = range.max;
+updateTimeInputMinMax();
+clampAsOfToRange();
+
+recomputeFromCache();
+
+if (timeMode === "historic"){
+  updatePlaybackSlider();
+  if (historicRangeStart && historicRangeEnd){
+    setPlaybackStatus("Range loaded. Press Play.");
+  }
+}
+
+setStatus("Ready");
+
+      } catch (err){
+        console.error(err);
+        setStatus("Error");
+        document.getElementById("tableHint").textContent = "Error loading data";
+        showToast("Could not load one or more datasets. Check your network and try again.");
+      }
+    }
+
+    /***********************
+     * Locations Modal
+     ***********************/
+    function openModal(){
+      document.getElementById("locationsJson").value = JSON.stringify(locations, null, 2);
+      document.getElementById("modalBack").style.display = "flex";
+    }
+    function closeModal(){
+      document.getElementById("modalBack").style.display = "none";
+    }
+
+    /***********************
+     * Boot
+     ***********************/
+    window.addEventListener("load", () => {
+      locations = loadLocations();
+      initMap();
+
+// District env metric selector
+const envSel = document.getElementById("districtEnvMetric");
+if (envSel && !envSel._hooked){
+  envSel._hooked = true;
+  const saved = localStorage.getItem(STORAGE_KEY_ENV_METRIC);
+  if (saved) envSel.value = saved;
+  envSel.addEventListener("change", ()=>{
+    localStorage.setItem(STORAGE_KEY_ENV_METRIC, envSel.value);
+    districtEnvTrend.key = null;
+    scheduleDistrictTrendBuild();
+  });
+}
+
+// Time explorer controls
+const selTimeMode = document.getElementById("timeMode");
+const inpAsOf = document.getElementById("asOfInput");
+if (selTimeMode && inpAsOf){
+  const savedMode = localStorage.getItem(STORAGE_KEY_TIMEMODE);
+  if (savedMode === "historic" || savedMode === "live") timeMode = savedMode;
+  else if (savedMode === "snapshot") timeMode = "historic";
+
+  const savedAsOf = localStorage.getItem(STORAGE_KEY_ASOF);
+  if (savedAsOf){
+    const d = new Date(savedAsOf);
+    if (!isNaN(d.getTime())) asOfSnapshot = d;
+  }
+  if (!asOfSnapshot) asOfSnapshot = new Date();
+
+  updateTimeControls();
+
+  
+selTimeMode.addEventListener("change", () => {
+    stopPlayback();
+    timeMode = selTimeMode.value === "historic" ? "historic" : "live";
+    localStorage.setItem(STORAGE_KEY_TIMEMODE, timeMode);
+    if (timeMode === "historic"){
+      // keep existing as-of (or now) and show controls
+      if (!(asOfSnapshot instanceof Date) || isNaN(asOfSnapshot.getTime())){
+        asOfSnapshot = new Date(nowLocal().getTime());
+        localStorage.setItem(STORAGE_KEY_ASOF, asOfSnapshot.toISOString());
+      }
+    }
+    updateTimeControls();
+    updatePlaybackSlider();
+    refresh();
+  });
+
+  
+inpAsOf.addEventListener("change", async () => {
+  const d = parseDateTimeLocal(inpAsOf.value);
+  if (!d){
+    showToast("Invalid historic date and time.");
+    return;
+  }
+  // Seek within cached window when possible to avoid refetching on every change.
+  await seekCursor(d, { allowRefresh: true });
+});
+
+
+  if (timeMode === "live") inpAsOf.disabled = true;
+
+
+// Playback controls (historic range)
+syncPlaybackInputs();
+showPlaybackPanel(timeMode === "historic");
+updatePlaybackSlider();
+
+const inpRangeStart = document.getElementById("rangeStartInput");
+const inpRangeEnd = document.getElementById("rangeEndInput");
+const btnLoadRange = document.getElementById("btnLoadRange");
+const btnPlay = document.getElementById("btnPlay");
+const btnPause = document.getElementById("btnPause");
+const btnStepBack = document.getElementById("btnStepBack");
+const btnStepFwd = document.getElementById("btnStepFwd");
+const selStep = document.getElementById("playStep");
+const selSpeed = document.getElementById("playSpeed");
+const chkLoop = document.getElementById("playLoop");
+const chkHydro = document.getElementById("playHydro");
+const playSlider = document.getElementById("playSlider");
+
+function readAndPersistPlaybackSettings(){
+  if (selStep){
+    playbackState.stepMinutes = Number(selStep.value) || playbackState.stepMinutes;
+    localStorage.setItem(STORAGE_KEY_PLAY_STEP, String(playbackState.stepMinutes));
+  }
+  if (selSpeed){
+    playbackState.speedMs = Number(selSpeed.value) || playbackState.speedMs;
+    localStorage.setItem(STORAGE_KEY_PLAY_SPEED, String(playbackState.speedMs));
+  }
+  if (chkLoop){
+    playbackState.loop = !!chkLoop.checked;
+    localStorage.setItem(STORAGE_KEY_PLAY_LOOP, String(playbackState.loop));
+  }
+  if (chkHydro){
+    playbackState.hydro = !!chkHydro.checked;
+    localStorage.setItem(STORAGE_KEY_PLAY_HYDRO, String(playbackState.hydro));
+  }
+}
+
+if (selStep) selStep.addEventListener("change", () => { readAndPersistPlaybackSettings(); updatePlaybackSlider(); });
+if (selSpeed) selSpeed.addEventListener("change", () => { readAndPersistPlaybackSettings(); if (playbackState.isPlaying){ stopPlayback(); startPlayback(); } });
+if (chkLoop) chkLoop.addEventListener("change", () => { readAndPersistPlaybackSettings(); });
+if (chkHydro) chkHydro.addEventListener("change", () => { readAndPersistPlaybackSettings(); });
+
+if (btnLoadRange){
+  btnLoadRange.addEventListener("click", async () => {
+    readAndPersistPlaybackSettings();
+    stopPlayback();
+
+    const dStart = inpRangeStart ? parseDateTimeLocal(inpRangeStart.value) : null;
+    const dEnd = inpRangeEnd ? parseDateTimeLocal(inpRangeEnd.value) : null;
+    if (!dStart || !dEnd){
+      showToast("Please set Range Start and Range End.");
+      return;
+    }
+
+    historicRangeStart = dStart;
+    historicRangeEnd = dEnd;
+    if (historicRangeStart > historicRangeEnd){
+      const tmp = historicRangeStart; historicRangeStart = historicRangeEnd; historicRangeEnd = tmp;
+    }
+
+    localStorage.setItem(STORAGE_KEY_RANGE_START, historicRangeStart.toISOString());
+    localStorage.setItem(STORAGE_KEY_RANGE_END, historicRangeEnd.toISOString());
+
+    // Set cursor to range start for a consistent playback start
+    asOfSnapshot = new Date(historicRangeStart.getTime());
+    localStorage.setItem(STORAGE_KEY_ASOF, asOfSnapshot.toISOString());
+    if (inpAsOf) inpAsOf.value = formatDateTimeLocal(asOfSnapshot);
+
+    updatePlaybackSlider();
+    setPlaybackStatus(`Loading range ${formatDateTimeLocal(historicRangeStart)} to ${formatDateTimeLocal(historicRangeEnd)}...`);
+
+    // Fetch once for the whole range (with buffers)
+    await refresh();
+
+    setPlaybackStatus("Range loaded. Press Play.");
+    updatePlaybackSlider();
+  });
+}
+
+if (playSlider){
+  playSlider.addEventListener("input", async () => {
+    stopPlayback();
+    const c = getCursorFromSlider();
+    if (c) await seekCursor(c, { allowRefresh: false });
+  });
+}
+
+if (btnStepBack){
+  btnStepBack.addEventListener("click", async () => {
+    stopPlayback();
+    const slider = document.getElementById("playSlider");
+    if (!slider) return;
+    let v = Number(slider.value) || 0;
+    v = Math.max(Number(slider.min)||0, v-1);
+    slider.value = String(v);
+    const c = getCursorFromSlider();
+    if (c) await seekCursor(c, { allowRefresh: false });
+  });
+}
+
+if (btnStepFwd){
+  btnStepFwd.addEventListener("click", async () => {
+    stopPlayback();
+    const slider = document.getElementById("playSlider");
+    if (!slider) return;
+    let v = Number(slider.value) || 0;
+    v = Math.min(Number(slider.max)||0, v+1);
+    slider.value = String(v);
+    const c = getCursorFromSlider();
+    if (c) await seekCursor(c, { allowRefresh: false });
+  });
+}
+
+if (btnPlay) btnPlay.addEventListener("click", () => { readAndPersistPlaybackSettings(); startPlayback(); });
+if (btnPause) btnPause.addEventListener("click", () => { stopPlayback(); });
+
+}
+
+
+      document.getElementById("btnRefresh").addEventListener("click", refresh);
+      document.getElementById("btnEditLocations").addEventListener("click", openModal);
+      document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+
+      document.getElementById("btnResetLocations").addEventListener("click", () => {
+        locations = DEFAULT_LOCATIONS.slice();
+        document.getElementById("locationsJson").value = JSON.stringify(locations, null, 2);
+        showToast("Reset to default locations.");
+      });
+
+      document.getElementById("btnSaveLocations").addEventListener("click", () => {
+        const parsed = safeJsonParse(document.getElementById("locationsJson").value);
+        if (!Array.isArray(parsed)){
+          showToast("Invalid JSON. Expected an array of locations.");
+          return;
+        }
+        const cleaned = parsed
+          .filter(x => x && typeof x === "object")
+          .map(x => ({
+            id: String(x.id ?? "").trim() || ("loc_" + Math.random().toString(16).slice(2)),
+            name: String(x.name ?? "Unnamed").trim(),
+            lat: Number(x.lat),
+            lon: Number(x.lon)
+          }))
+          .filter(x => isFinite(x.lat) && isFinite(x.lon) && x.name);
+
+        if (!cleaned.length){
+          showToast("No valid locations found. Each location needs name, lat and lon.");
+          return;
+        }
+        locations = cleaned;
+        saveLocations(locations);
+        closeModal();
+        showToast("Locations saved. Refreshing data.");
+        refresh();
+      });
+
+      document.getElementById("modalBack").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("modalBack")) closeModal();
+      });
+
+      refresh();
+    });
+  </script>
+</body>
+</html>
