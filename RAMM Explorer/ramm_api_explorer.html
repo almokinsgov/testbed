@@ -1,0 +1,1585 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RAMM AWM API Explorer</title>
+
+  <!-- Leaflet (Map) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Proj4 (NZTM to WGS84) -->
+  <script src="https://cdn.jsdelivr.net/npm/proj4@2.10.0/dist/proj4.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0d10;
+      --panel:#12151b;
+      --panel2:#0f1217;
+      --text:#e9eef7;
+      --muted:#9aa7bd;
+      --line:#243042;
+      --accent:#6aa9ff;
+      --good:#58d68d;
+      --bad:#ff6b6b;
+      --warn:#ffcc66;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:var(--sans);
+      line-height:1.35;
+    }
+    header{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background:linear-gradient(180deg, rgba(18,21,27,0.98), rgba(18,21,27,0.92));
+      border-bottom:1px solid var(--line);
+      padding:12px 14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    header h1{
+      font-size:15px;
+      margin:0;
+      font-weight:700;
+      letter-spacing:0.2px;
+      color:#f4f7ff;
+    }
+    .tag{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--line);
+      padding:2px 8px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.03);
+    }
+    .grow{flex:1}
+    .row{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+    .field{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--line);
+      border-radius:10px;
+    }
+    .field label{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    input[type="text"], input[type="password"], input[type="number"], select, textarea{
+      color:var(--text);
+      background:transparent;
+      border:0;
+      outline:none;
+      font-size:12px;
+      min-width:180px;
+    }
+    textarea{
+      font-family:var(--mono);
+      min-width:320px;
+      min-height:110px;
+      resize:vertical;
+      white-space:pre;
+      tab-size:2;
+    }
+    input[type="checkbox"]{ transform: translateY(1px); }
+    .btn{
+      cursor:pointer;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.04);
+      color:var(--text);
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:12px;
+      font-weight:600;
+    }
+    .btn:hover{ border-color:#38537a; background:rgba(106,169,255,0.08); }
+    .btn.primary{ border-color:#2f5ea5; background:rgba(106,169,255,0.15); }
+    .btn.primary:hover{ background:rgba(106,169,255,0.22); }
+    .btn.good{ border-color:#2b7b54; background:rgba(88,214,141,0.12); }
+    .btn.bad{ border-color:#7a2f2f; background:rgba(255,107,107,0.12); }
+    .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+    .app{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      min-height:calc(100vh - 0px);
+    }
+    aside{
+      border-right:1px solid var(--line);
+      background:var(--panel2);
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:calc(100vh - 58px);
+    }
+    main{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:calc(100vh - 58px);
+    }
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .card-h{
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .card-h h2{
+      font-size:13px;
+      margin:0;
+      color:#f4f7ff;
+      font-weight:700;
+    }
+    .card-b{ padding:10px 12px; }
+    .muted{ color:var(--muted); font-size:12px; }
+    .tiny{ font-size:11px; color:var(--muted); }
+    .mono{ font-family:var(--mono); }
+    .pill{
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.03);
+      font-size:11px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .pill.good{ border-color:#2b7b54; color:#c9f7de; background:rgba(88,214,141,0.08); }
+    .pill.bad{ border-color:#7a2f2f; color:#ffd1d1; background:rgba(255,107,107,0.08); }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .grid3{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:10px;
+    }
+    .list{
+      max-height:58vh;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(255,255,255,0.02);
+    }
+    .list-item{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(36,48,66,0.6);
+      cursor:pointer;
+    }
+    .list-item:hover{ background:rgba(106,169,255,0.07); }
+    .list-item.active{ background:rgba(106,169,255,0.12); border-bottom-color:rgba(106,169,255,0.2); }
+    .list-item:last-child{ border-bottom:0; }
+    .li-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .li-title strong{ font-size:12px; }
+    .li-sub{ font-size:12px; color:var(--muted); margin-top:4px; }
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      background:rgba(255,255,255,0.02);
+    }
+    .tab{
+      cursor:pointer;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.03);
+      font-size:12px;
+      color:var(--muted);
+      user-select:none;
+    }
+    .tab.active{
+      border-color:#2f5ea5;
+      background:rgba(106,169,255,0.16);
+      color:var(--text);
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(0,0,0,0.15);
+      max-height:48vh;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+    }
+    th, td{
+      padding:8px 10px;
+      border-bottom:1px solid rgba(36,48,66,0.6);
+      vertical-align:top;
+      text-align:left;
+      max-width:420px;
+    }
+    th{
+      position:sticky;
+      top:0;
+      background:rgba(18,21,27,0.98);
+      z-index:5;
+      color:#cfe1ff;
+      cursor:pointer;
+      user-select:none;
+      border-bottom:1px solid rgba(47,94,165,0.25);
+    }
+    tr:hover td{ background:rgba(106,169,255,0.06); }
+    tr.active td{ background:rgba(106,169,255,0.12); }
+    td .cell{
+      display:block;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .status{
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:50%;
+      background:var(--muted);
+    }
+    .dot.good{ background:var(--good); }
+    .dot.bad{ background:var(--bad); }
+    .dot.warn{ background:var(--warn); }
+
+    #map{
+      height:52vh;
+      border-radius:12px;
+      border:1px solid var(--line);
+      overflow:hidden;
+    }
+    .split{
+      display:grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap:10px;
+    }
+    .codebox{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(0,0,0,0.2);
+      padding:10px;
+      overflow:auto;
+      max-height:52vh;
+      font-family:var(--mono);
+      font-size:11px;
+      white-space:pre;
+    }
+    .kvs{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap:8px;
+      align-items:center;
+    }
+    .kv input[type="text"]{
+      min-width:auto;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:7px 10px;
+      background:rgba(255,255,255,0.03);
+    }
+    .notice{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,204,102,0.35);
+      background:rgba(255,204,102,0.08);
+      color:#ffe7bb;
+      font-size:12px;
+    }
+    .foot{
+      font-size:11px;
+      color:var(--muted);
+      padding:10px 12px;
+    }
+    @media (max-width: 1100px){
+      .app{ grid-template-columns: 1fr; }
+      aside{ min-height:unset; }
+      main{ min-height:unset; }
+      .split{ grid-template-columns: 1fr; }
+      textarea{ min-width:100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>RAMM AWM API Explorer</h1>
+  <span class="tag mono">Single File</span>
+  <span class="tag">Table View</span>
+  <span class="tag">Map View</span>
+
+  <div class="grow"></div>
+
+  <div class="row">
+    <div class="field">
+      <label for="baseUrl">Base URL</label>
+      <input id="baseUrl" type="text" value="https://api-auea.ramm.com/v1" spellcheck="false" />
+    </div>
+
+    <div class="field">
+      <label for="token">Token</label>
+      <input id="token" type="password" placeholder="Paste token here" spellcheck="false" />
+      <button class="btn" id="toggleToken">Show</button>
+    </div>
+
+    <div class="field">
+      <label for="authMode">Auth</label>
+      <select id="authMode">
+        <option value="header">Header (Bearer)</option>
+        <option value="query">Query (?token=)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="useCors">CORS Proxy</label>
+      <input id="useCors" type="checkbox" />
+      <span class="tiny mono">corsproxy.io</span>
+    </div>
+
+    <div class="field">
+      <label for="inCrs">Input CRS</label>
+      <select id="inCrs">
+        <option value="EPSG:2193">NZTM2000 (EPSG:2193)</option>
+        <option value="EPSG:4326">WGS84 (EPSG:4326)</option>
+      </select>
+    </div>
+
+    <button class="btn primary" id="btnTestToken">Test Token</button>
+    <button class="btn" id="btnSaveSettings">Save</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside>
+    <div class="card">
+      <div class="card-h">
+        <h2>Tables</h2>
+        <div class="status">
+          <span class="dot" id="tablesDot"></span>
+          <span class="tiny" id="tablesStatus">Not Loaded</span>
+        </div>
+      </div>
+      <div class="card-b">
+        <div class="grid">
+          <div class="field" style="width:100%">
+            <label for="tableSearch">Search</label>
+            <input id="tableSearch" type="text" placeholder="name or description" />
+          </div>
+          <button class="btn primary" id="btnLoadTables">Load</button>
+        </div>
+        <div class="tiny" style="margin-top:8px">
+          Uses <span class="mono">GET /data/tables</span>
+        </div>
+        <div class="list" id="tablesList" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h2>Quick Actions</h2>
+      </div>
+      <div class="card-b">
+        <div class="row">
+          <button class="btn" id="btnLoadRoadClose">Load ud_road_close_restrict</button>
+          <button class="btn" id="btnLoadSchema">Load Schema</button>
+          <button class="btn" id="btnClear">Clear</button>
+        </div>
+        <div class="foot">
+          Tip: Turn on <span class="mono">getGeometry</span> for map plotting.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h2>Request Builder</h2>
+      </div>
+      <div class="card-b">
+        <div class="field" style="width:100%">
+          <label for="reqPath">Path</label>
+          <input id="reqPath" type="text" value="/data/ud_road_close_restrict" spellcheck="false" />
+        </div>
+
+        <div style="margin-top:10px" class="kvs" id="paramsBox"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="btnAddParam">Add Param</button>
+          <button class="btn primary" id="btnRun">Run</button>
+        </div>
+
+        <div class="tiny" style="margin-top:8px">
+          Default params: <span class="mono">getGeometry=true</span> <span class="mono">expandLookups=true</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="card">
+      <div class="card-h">
+        <h2>Current Table</h2>
+        <div class="status">
+          <span class="pill mono" id="currentTablePill">None Selected</span>
+          <span class="pill" id="rowCountPill">0 Rows</span>
+          <span class="pill" id="geomCountPill">0 With Geometry</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="table">Table View</div>
+        <div class="tab" data-tab="map">Map View</div>
+        <div class="tab" data-tab="json">JSON View</div>
+        <div class="tab" data-tab="schema">Schema View</div>
+        <div class="tab" data-tab="debug">Request And Response</div>
+      </div>
+
+      <div class="card-b" id="tab_table">
+        <div class="grid3">
+          <div class="field" style="width:100%">
+            <label for="dataColumns">Columns</label>
+            <input id="dataColumns" type="text" placeholder="Comma-separated (optional)" spellcheck="false" />
+          </div>
+          <div class="field" style="width:100%">
+            <label for="assetId">Asset ID</label>
+            <input id="assetId" type="text" placeholder="optional" spellcheck="false" />
+          </div>
+          <div class="field" style="width:100%">
+            <label for="loadType">Load Type</label>
+            <select id="loadType">
+              <option value="">(default)</option>
+              <option value="0">0 All Columns</option>
+              <option value="1">1 Only Defaults</option>
+              <option value="2">2 Only Summary</option>
+              <option value="3">3 Only User Defined</option>
+              <option value="4">4 Only Structure</option>
+              <option value="5">5 Only Misc</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <label class="pill"><input id="optGetGeometry" type="checkbox" checked /> getGeometry</label>
+          <label class="pill"><input id="optExpandLookups" type="checkbox" checked /> expandLookups</label>
+          <label class="pill"><input id="optGetMetadata" type="checkbox" /> getMetadata</label>
+          <label class="pill"><input id="optGetSchema" type="checkbox" /> getSchema</label>
+          <label class="pill"><input id="optGetLookups" type="checkbox" /> getLookups</label>
+
+          <button class="btn primary" id="btnLoadData">Load Data</button>
+          <button class="btn" id="btnExportJson">Export JSON</button>
+          <button class="btn" id="btnExportCsv">Export CSV</button>
+
+          <div class="grow"></div>
+
+          <div class="field">
+            <label for="rowSearch">Search Rows</label>
+            <input id="rowSearch" type="text" placeholder="filter client side" />
+          </div>
+        </div>
+
+        <div class="notice" id="bigTableNotice" style="display:none; margin-top:10px">
+          This table might be large. Consider setting Columns, using Asset ID, or using a server-side endpoint like <span class="mono">POST /data/table</span> (max 5000 rows per page).
+        </div>
+
+        <div class="table-wrap" style="margin-top:10px">
+          <table id="dataTable"></table>
+        </div>
+
+        <div class="split" style="margin-top:10px">
+          <div>
+            <div class="tiny" style="margin-bottom:6px">Selected Row</div>
+            <div class="codebox" id="selectedRowBox">{}</div>
+          </div>
+          <div>
+            <div class="tiny" style="margin-bottom:6px">Column Visibility</div>
+            <div class="codebox" id="columnsBox" style="font-family:var(--sans); white-space:normal; line-height:1.6"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-b" id="tab_map" style="display:none">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn" id="btnFitMap">Fit To Data</button>
+          <button class="btn" id="btnClearMap">Clear Map</button>
+          <span class="pill mono" id="mapHint">Click map to copy coords</span>
+          <div class="grow"></div>
+          <div class="field">
+            <label for="markerLabelField">Label</label>
+            <select id="markerLabelField"></select>
+          </div>
+        </div>
+
+        <div id="map"></div>
+        <div class="tiny" style="margin-top:8px" id="coordsReadout"></div>
+      </div>
+
+      <div class="card-b" id="tab_json" style="display:none">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn" id="btnCopyJson">Copy JSON</button>
+          <span class="tiny">Shows the last loaded data array</span>
+        </div>
+        <div class="codebox" id="jsonBox">[]</div>
+      </div>
+
+      <div class="card-b" id="tab_schema" style="display:none">
+        <div class="row" style="margin-bottom:10px">
+          <div class="field">
+            <label for="schemaLoadType">Load Type</label>
+            <select id="schemaLoadType">
+              <option value="0">0 All</option>
+              <option value="1">1 Defaults</option>
+              <option value="2">2 Summary</option>
+              <option value="3">3 User Defined</option>
+              <option value="4">4 Structure</option>
+              <option value="5">5 Misc</option>
+            </select>
+          </div>
+          <div class="field" style="width:100%">
+            <label for="schemaColumns">Columns</label>
+            <input id="schemaColumns" type="text" placeholder="Comma-separated (optional)" spellcheck="false" />
+          </div>
+          <button class="btn primary" id="btnFetchSchema">Fetch</button>
+        </div>
+        <div class="codebox" id="schemaBox">[]</div>
+      </div>
+
+      <div class="card-b" id="tab_debug" style="display:none">
+        <div class="split">
+          <div>
+            <div class="tiny" style="margin-bottom:6px">Last Request</div>
+            <div class="codebox" id="reqBox">n/a</div>
+          </div>
+          <div>
+            <div class="tiny" style="margin-bottom:6px">Last Response</div>
+            <div class="codebox" id="resBox">n/a</div>
+          </div>
+        </div>
+        <div class="foot">
+          Token can be sent as <span class="mono">Authorization: Bearer [token]</span> or as a <span class="mono">?token=</span> query parameter depending on the Auth setting.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h2>Notes</h2>
+      </div>
+      <div class="card-b">
+        <div class="muted">
+          Your token is stored only in your browser <span class="mono">localStorage</span> if you click Save.
+          If you are unsure about coordinate systems, switch Input CRS to WGS84 to disable projection conversion.
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* =========================
+   Projection Setup
+   ========================= */
+(function initProj(){
+  // NZTM2000 (EPSG:2193)
+  // Common proj4 definition used widely. If your data is already WGS84, set Input CRS to EPSG:4326.
+  proj4.defs("EPSG:2193", "+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996 +x_0=1600000 +y_0=10000000 +ellps=GRS80 +units=m +no_defs");
+})();
+
+/* =========================
+   Utilities
+   ========================= */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+function safeJsonStringify(obj, space = 2){
+  try { return JSON.stringify(obj, null, space); }
+  catch (e){ return String(obj); }
+}
+
+function downloadText(filename, text, mime="application/json"){
+  const blob = new Blob([text], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+function normalizePath(p){
+  if(!p) return "/";
+  if(!p.startsWith("/")) p = "/" + p;
+  return p;
+}
+
+function buildFinalUrl(path, params){
+  const base = ($("#baseUrl").value || "https://api-auea.ramm.com/v1").replace(/\/+$/,"");
+  const url = new URL(base + normalizePath(path));
+  Object.entries(params || {}).forEach(([k,v]) => {
+    if(v === undefined || v === null || v === "") return;
+    url.searchParams.set(k, String(v));
+  });
+  return url.toString();
+}
+
+function maybeProxy(url){
+  if(!$("#useCors").checked) return url;
+  return "https://corsproxy.io/?url=" + encodeURIComponent(url);
+}
+
+function getAuthConfig(){
+  const token = ($("#token").value || "").trim();
+  const mode = $("#authMode").value;
+  return {token, mode};
+}
+
+function makeHeaders(){
+  const {token, mode} = getAuthConfig();
+  const headers = { "Accept":"application/json" };
+  if(token && mode === "header"){
+    headers["Authorization"] = "Bearer " + token;
+  }
+  return headers;
+}
+
+/* =========================
+   WKT Parsing (POINT, LINESTRING, POLYGON, MULTI*)
+   ========================= */
+function parseWkt(wkt){
+  if(!wkt || typeof wkt !== "string") return null;
+  const s = wkt.trim();
+  const up = s.toUpperCase();
+  const type = up.split("(")[0].trim();
+
+  function parseCoordsList(str){
+    return str.split(",").map(pair => {
+      const parts = pair.trim().split(/\s+/).filter(Boolean);
+      if(parts.length < 2) return null;
+      const x = Number(parts[0]);
+      const y = Number(parts[1]);
+      if(!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      return [x,y];
+    }).filter(Boolean);
+  }
+
+  function insideParens(str){
+    const start = str.indexOf("(");
+    const end = str.lastIndexOf(")");
+    if(start < 0 || end < 0 || end <= start) return "";
+    return str.slice(start+1, end).trim();
+  }
+
+  if(type === "POINT"){
+    const inner = insideParens(s);
+    const coords = parseCoordsList(inner.replace(/[()]/g,""));
+    if(coords.length) return {type:"Point", coords:coords[0]};
+    return null;
+  }
+
+  if(type === "LINESTRING"){
+    const inner = insideParens(s);
+    const coords = parseCoordsList(inner);
+    return coords.length ? {type:"LineString", coords} : null;
+  }
+
+  if(type === "POLYGON"){
+    // Supports first ring only
+    const inner = insideParens(s);
+    const ringText = inner.replace(/^\(/,"").replace(/\)$/,"");
+    const coords = parseCoordsList(ringText);
+    return coords.length ? {type:"Polygon", coords:[coords]} : null;
+  }
+
+  if(type.startsWith("MULTIPOINT")){
+    const inner = insideParens(s).replace(/[()]/g,"");
+    const coords = parseCoordsList(inner);
+    return coords.length ? {type:"MultiPoint", coords} : null;
+  }
+
+  if(type.startsWith("MULTILINESTRING")){
+    const inner = insideParens(s);
+    // crude split on "),(" boundaries
+    const parts = inner.split("),").map(p => p.replace(/[()]/g,"").trim()).filter(Boolean);
+    const lines = parts.map(p => parseCoordsList(p)).filter(a => a.length);
+    return lines.length ? {type:"MultiLineString", coords:lines} : null;
+  }
+
+  if(type.startsWith("MULTIPOLYGON")){
+    const inner = insideParens(s);
+    // crude: take first polygon first ring
+    const first = inner.split(")),")[0];
+    const ring = first.replace(/[()]/g,"").trim();
+    const coords = parseCoordsList(ring);
+    return coords.length ? {type:"MultiPolygon", coords: [ [coords] ] } : null;
+  }
+
+  return null;
+}
+
+/* =========================
+   Coordinate Conversion
+   ========================= */
+function isProbablyLonLat(x,y){
+  return Math.abs(x) <= 180 && Math.abs(y) <= 90;
+}
+
+function toLatLng(x,y){
+  const inCrs = $("#inCrs").value;
+  if(inCrs === "EPSG:4326" || isProbablyLonLat(x,y)){
+    return [y,x];
+  }
+  try{
+    const out = proj4("EPSG:2193", "EPSG:4326", [x,y]); // [lon,lat]
+    return [out[1], out[0]];
+  }catch(e){
+    // fallback: treat as lonlat
+    return [y,x];
+  }
+}
+
+/* =========================
+   API Request Runner
+   ========================= */
+async function apiFetchJson(path, params = {}, fetchInit = {}){
+  const {token, mode} = getAuthConfig();
+  const p = {...params};
+
+  if(token && mode === "query"){
+    p.token = token;
+  }
+
+  const rawUrl = buildFinalUrl(path, p);
+  const url = maybeProxy(rawUrl);
+
+  const headers = {...makeHeaders(), ...(fetchInit.headers || {})};
+  const started = performance.now();
+  let res, text;
+  try{
+    res = await fetch(url, {method:"GET", ...fetchInit, headers});
+    text = await res.text();
+  }catch(err){
+    const elapsed = performance.now() - started;
+    setDebug({url: rawUrl, proxiedUrl: url, method:"GET", headersSent: headers, params: p}, {ok:false, status:0, elapsedMs: Math.round(elapsed), error:String(err)});
+    throw err;
+  }
+  const elapsed = performance.now() - started;
+
+  let json = null;
+  try{ json = text ? JSON.parse(text) : null; }catch(e){ /* keep null */ }
+
+  setDebug(
+    {url: rawUrl, proxiedUrl: url, method: (fetchInit.method || "GET"), headersSent: headers, params: p, body: fetchInit.body || null},
+    {ok: res.ok, status: res.status, elapsedMs: Math.round(elapsed), text: text.slice(0, 200000), jsonPreview: json}
+  );
+
+  if(!res.ok){
+    const msg = (json && (json.message || json.error)) ? (json.message || json.error) : text;
+    throw new Error("HTTP " + res.status + " " + msg);
+  }
+  return json !== null ? json : text;
+}
+
+function setDebug(reqObj, resObj){
+  $("#reqBox").textContent = safeJsonStringify(reqObj, 2);
+  $("#resBox").textContent = safeJsonStringify(resObj, 2);
+}
+
+/* =========================
+   State
+   ========================= */
+let tables = [];
+let activeTable = "";
+let rawItems = [];
+let flatRows = [];
+let visibleColumns = [];
+let sortState = {key:null, dir:1};
+let selectedIndex = -1;
+
+const mapState = {
+  map:null,
+  layer:L.layerGroup(),
+  selectedLayer:null,
+  markersByIndex:new Map()
+};
+
+function setStatusDot(dotEl, kind){
+  dotEl.classList.remove("good","bad","warn");
+  if(kind) dotEl.classList.add(kind);
+}
+
+function setTablesStatus(kind, text){
+  setStatusDot($("#tablesDot"), kind);
+  $("#tablesStatus").textContent = text;
+}
+
+/* =========================
+   Tables List
+   ========================= */
+function renderTablesList(){
+  const q = ($("#tableSearch").value || "").trim().toLowerCase();
+  const listEl = $("#tablesList");
+  listEl.innerHTML = "";
+
+  const filtered = tables.filter(t => {
+    if(!q) return true;
+    const hay = (t.tableName + " " + (t.tableDescription || "") + " " + (t.tableGroup || "")).toLowerCase();
+    return hay.includes(q);
+  });
+
+  filtered.forEach(t => {
+    const div = document.createElement("div");
+    div.className = "list-item" + (t.tableName === activeTable ? " active" : "");
+    div.innerHTML = `
+      <div class="li-title">
+        <strong class="mono">${escapeHtml(t.tableName)}</strong>
+        ${t.tablePermissions && t.tablePermissions.enquiry ? `<span class="pill good">enquiry</span>` : `<span class="pill bad">no access</span>`}
+      </div>
+      <div class="li-sub">${escapeHtml(t.tableDescription || "")}</div>
+      <div class="tiny" style="margin-top:6px">
+        ${t.isLookupTable ? `<span class="pill">lookup</span>` : ``}
+        ${t.tableGroup ? `<span class="pill">${escapeHtml(t.tableGroup)}</span>` : ``}
+      </div>
+    `;
+    div.addEventListener("click", () => {
+      setActiveTable(t.tableName);
+      renderTablesList();
+    });
+    listEl.appendChild(div);
+  });
+
+  if(!filtered.length){
+    listEl.innerHTML = `<div class="list-item"><div class="li-sub">No matches</div></div>`;
+  }
+}
+
+async function loadTables(){
+  setTablesStatus("warn", "Loading...");
+  try{
+    const json = await apiFetchJson("/data/tables", {});
+    tables = Array.isArray(json) ? json : [];
+    setTablesStatus("good", "Loaded " + tables.length);
+    if(!activeTable && tables.length) setActiveTable(tables[0].tableName);
+    renderTablesList();
+  }catch(e){
+    console.error(e);
+    setTablesStatus("bad", "Error");
+    alert("Failed to load tables. Check token, auth mode and CORS.\n\n" + e.message);
+  }
+}
+
+function setActiveTable(name){
+  activeTable = name || "";
+  $("#currentTablePill").textContent = activeTable ? name : "None Selected";
+  $("#reqPath").value = activeTable ? ("/data/" + activeTable) : "/data/ud_road_close_restrict";
+}
+
+/* =========================
+   Data Loading And Flattening
+   ========================= */
+function pickDefaultColumns(rows){
+  if(!rows.length) return [];
+  const keys = new Set();
+  rows.slice(0, 200).forEach(r => Object.keys(r).forEach(k => keys.add(k)));
+  const all = Array.from(keys);
+
+  const preferred = ["road_id","road_status","cause","type","c_description","start_name","end_name","s_datetime","e_datetime","latest","info_updated","system_id","easting","northing","easting_end","northing_end","geometry"];
+  const picked = [];
+  preferred.forEach(k => { if(all.includes(k)) picked.push(k); });
+  all.forEach(k => { if(picked.length < 14 && !picked.includes(k) && !k.startsWith("_")) picked.push(k); });
+  return picked;
+}
+
+function flattenItems(items){
+  const rows = [];
+  items.forEach((it, idx) => {
+    const d = (it && it.data && typeof it.data === "object") ? it.data : {};
+    const row = {...d};
+    row._index = idx;
+    row._entityId = (it && it.itemMetadata && it.itemMetadata.rammEntityId) ? it.itemMetadata.rammEntityId : null;
+    row._geometry = (it && it.geometry) || d.geometry || null;
+    rows.push(row);
+  });
+  return rows;
+}
+
+function updateCounts(){
+  $("#rowCountPill").textContent = flatRows.length + " Rows";
+  const withGeom = flatRows.filter(r => !!r._geometry).length;
+  $("#geomCountPill").textContent = withGeom + " With Geometry";
+}
+
+function escapeHtml(str){
+  return String(str ?? "").replace(/[&<>"']/g, s => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[s]));
+}
+
+async function loadDataForActiveTable(){
+  if(!activeTable){
+    alert("Select a table first.");
+    return;
+  }
+
+  const params = {};
+  const cols = ($("#dataColumns").value || "").trim();
+  const assetId = ($("#assetId").value || "").trim();
+  const loadType = ($("#loadType").value || "").trim();
+  if(cols) params.columns = cols;
+  if(assetId) params.assetId = assetId;
+  if(loadType) params.loadType = loadType;
+
+  params.expandLookups = $("#optExpandLookups").checked ? "true" : "false";
+  params.getMetadata = $("#optGetMetadata").checked ? "true" : "false";
+  params.getSchema = $("#optGetSchema").checked ? "true" : "false";
+  params.getLookups = $("#optGetLookups").checked ? "true" : "false";
+  params.getGeometry = $("#optGetGeometry").checked ? "true" : "false";
+
+  const isPotentiallyBig = !assetId && !cols;
+  $("#bigTableNotice").style.display = isPotentiallyBig ? "block" : "none";
+
+  try{
+    const json = await apiFetchJson("/data/" + activeTable, params);
+    rawItems = Array.isArray(json) ? json : [];
+    flatRows = flattenItems(rawItems);
+    updateCounts();
+    $("#jsonBox").textContent = safeJsonStringify(rawItems, 2);
+
+    visibleColumns = pickDefaultColumns(flatRows);
+    selectedIndex = -1;
+    renderColumnVisibility();
+    renderTable();
+    refreshLabelFieldDropdown();
+    plotRowsOnMap();
+  }catch(e){
+    console.error(e);
+    alert("Failed to load data.\n\n" + e.message);
+  }
+}
+
+function renderColumnVisibility(){
+  if(!flatRows.length){
+    $("#columnsBox").innerHTML = "<div class='muted'>No data loaded</div>";
+    return;
+  }
+  const allCols = unionColumns(flatRows);
+  const box = $("#columnsBox");
+  box.innerHTML = "";
+
+  const wrap = document.createElement("div");
+  wrap.style.display = "flex";
+  wrap.style.flexWrap = "wrap";
+  wrap.style.gap = "8px";
+
+  allCols.forEach(col => {
+    if(col.startsWith("_")) return;
+    const id = "col_" + col.replace(/[^a-z0-9_]/gi,"_");
+    const label = document.createElement("label");
+    label.className = "pill";
+    label.style.cursor = "pointer";
+    label.innerHTML = `<input type="checkbox" id="${id}" ${visibleColumns.includes(col) ? "checked" : ""} /> ${escapeHtml(col)}`;
+    label.querySelector("input").addEventListener("change", (ev) => {
+      if(ev.target.checked){
+        if(!visibleColumns.includes(col)) visibleColumns.push(col);
+      }else{
+        visibleColumns = visibleColumns.filter(c => c !== col);
+      }
+      renderTable();
+    });
+    wrap.appendChild(label);
+  });
+
+  box.appendChild(wrap);
+}
+
+function unionColumns(rows){
+  const keys = new Set();
+  rows.slice(0, 400).forEach(r => Object.keys(r).forEach(k => keys.add(k)));
+  return Array.from(keys).sort((a,b)=>a.localeCompare(b));
+}
+
+/* =========================
+   Table Rendering
+   ========================= */
+function rowMatchesQuery(row, q){
+  if(!q) return true;
+  const values = visibleColumns.map(c => row[c]);
+  const hay = values.map(v => v === null || v === undefined ? "" : String(v)).join(" ").toLowerCase();
+  return hay.includes(q);
+}
+
+function getFilteredRows(){
+  const q = ($("#rowSearch").value || "").trim().toLowerCase();
+  if(!q) return flatRows.slice();
+  return flatRows.filter(r => rowMatchesQuery(r, q));
+}
+
+function sortRows(rows){
+  if(!sortState.key) return rows;
+  const k = sortState.key;
+  const dir = sortState.dir;
+  return rows.slice().sort((a,b) => {
+    const va = a[k];
+    const vb = b[k];
+    if(va === vb) return 0;
+    if(va === null || va === undefined) return 1;
+    if(vb === null || vb === undefined) return -1;
+
+    const na = Number(va), nb = Number(vb);
+    const bothNum = Number.isFinite(na) && Number.isFinite(nb);
+    if(bothNum) return (na - nb) * dir;
+
+    return String(va).localeCompare(String(vb)) * dir;
+  });
+}
+
+function renderTable(){
+  const table = $("#dataTable");
+  table.innerHTML = "";
+
+  if(!flatRows.length){
+    table.innerHTML = `<tr><td class="muted">No data loaded</td></tr>`;
+    $("#selectedRowBox").textContent = "{}";
+    return;
+  }
+
+  const rows = sortRows(getFilteredRows());
+  const cols = visibleColumns.slice();
+  const thead = document.createElement("thead");
+  const trh = document.createElement("tr");
+  cols.forEach(c => {
+    const th = document.createElement("th");
+    const arrow = (sortState.key === c) ? (sortState.dir === 1 ? " ▲" : " ▼") : "";
+    th.textContent = c + arrow;
+    th.title = "Sort by " + c;
+    th.addEventListener("click", () => {
+      if(sortState.key === c) sortState.dir *= -1;
+      else sortState = {key:c, dir:1};
+      renderTable();
+    });
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  rows.slice(0, 5000).forEach(r => {
+    const tri = document.createElement("tr");
+    tri.dataset.index = String(r._index);
+
+    if(r._index === selectedIndex) tri.classList.add("active");
+
+    tri.addEventListener("click", () => {
+      selectedIndex = r._index;
+      $("#selectedRowBox").textContent = safeJsonStringify(rawItems[selectedIndex], 2);
+      highlightMapSelection(selectedIndex);
+      renderTable();
+    });
+
+    cols.forEach(c => {
+      const td = document.createElement("td");
+      const v = r[c];
+      const span = document.createElement("span");
+      span.className = "cell";
+      span.textContent = (v === null || v === undefined) ? "" : String(v);
+      td.appendChild(span);
+      tri.appendChild(td);
+    });
+    tbody.appendChild(tri);
+  });
+
+  table.appendChild(tbody);
+
+  if(rows.length > 5000){
+    const tfoot = document.createElement("tfoot");
+    const trf = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = cols.length;
+    td.className = "muted";
+    td.textContent = "Showing first 5000 rows. Use Columns or Asset ID to reduce results.";
+    trf.appendChild(td);
+    tfoot.appendChild(trf);
+    table.appendChild(tfoot);
+  }
+}
+
+/* =========================
+   Map
+   ========================= */
+function initMapIfNeeded(){
+  if(mapState.map) return;
+
+  mapState.map = L.map("map", {zoomControl:true}).setView([-36.85, 174.76], 8);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(mapState.map);
+
+  mapState.layer.addTo(mapState.map);
+
+  mapState.map.on("click", (ev) => {
+    const lat = ev.latlng.lat;
+    const lon = ev.latlng.lng;
+
+    let nztm = null;
+    try{
+      const out = proj4("EPSG:4326", "EPSG:2193", [lon,lat]);
+      nztm = {easting: out[0], northing: out[1]};
+    }catch(e){}
+
+    const lines = [
+      `Lat,Lon: ${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+      nztm ? `NZTM: ${nztm.easting.toFixed(2)}, ${nztm.northing.toFixed(2)}` : ""
+    ].filter(Boolean).join("\n");
+
+    $("#coordsReadout").textContent = lines;
+
+    try{
+      navigator.clipboard.writeText(lines);
+      $("#mapHint").textContent = "Copied";
+      setTimeout(() => $("#mapHint").textContent = "Click map to copy coords", 900);
+    }catch(e){}
+  });
+}
+
+function clearMap(){
+  if(!mapState.map) return;
+  mapState.layer.clearLayers();
+  mapState.markersByIndex.clear();
+  mapState.selectedLayer = null;
+}
+
+function plotRowsOnMap(){
+  initMapIfNeeded();
+  clearMap();
+
+  if(!flatRows.length) return;
+
+  const labelField = $("#markerLabelField").value || "road_id";
+
+  let any = false;
+  flatRows.forEach((r, idx) => {
+    const wkt = r._geometry;
+    const geom = parseWkt(wkt);
+    const label = (r[labelField] ?? r.road_id ?? r.system_id ?? r._index);
+
+    const popupHtml = `
+      <div style="min-width:220px">
+        <div class="mono" style="font-weight:700">${escapeHtml(String(label))}</div>
+        <div class="tiny">${escapeHtml(String(r.road_status ?? ""))}</div>
+        <div class="tiny">${escapeHtml(String(r.cause ?? ""))}</div>
+        <div class="tiny">${escapeHtml(String(r.c_description ?? ""))}</div>
+        <div class="tiny mono" style="margin-top:6px">${escapeHtml(String(wkt ?? ""))}</div>
+      </div>
+    `;
+
+    if(geom && geom.type === "Point"){
+      const [lat,lon] = toLatLng(geom.coords[0], geom.coords[1]);
+      const m = L.circleMarker([lat,lon], {radius:6, weight:2, opacity:0.9, fillOpacity:0.5});
+      m.bindPopup(popupHtml);
+      m.on("click", () => { selectedIndex = r._index; $("#selectedRowBox").textContent = safeJsonStringify(rawItems[selectedIndex], 2); renderTable(); });
+      m.addTo(mapState.layer);
+      mapState.markersByIndex.set(r._index, m);
+      any = true;
+
+      // Optional endpoint marker if present
+      if(Number.isFinite(Number(r.easting_end)) && Number.isFinite(Number(r.northing_end))){
+        const [lat2,lon2] = toLatLng(Number(r.easting_end), Number(r.northing_end));
+        const m2 = L.circleMarker([lat2,lon2], {radius:4, weight:1, opacity:0.9, fillOpacity:0.4});
+        m2.bindPopup(popupHtml);
+        m2.addTo(mapState.layer);
+      }
+      return;
+    }
+
+    if(geom && (geom.type === "LineString" || geom.type === "MultiLineString")){
+      const lines = (geom.type === "LineString") ? [geom.coords] : geom.coords;
+      lines.forEach(coords => {
+        const latlngs = coords.map(([x,y]) => toLatLng(x,y));
+        const line = L.polyline(latlngs, {weight:4, opacity:0.8});
+        line.bindPopup(popupHtml);
+        line.on("click", () => { selectedIndex = r._index; $("#selectedRowBox").textContent = safeJsonStringify(rawItems[selectedIndex], 2); renderTable(); });
+        line.addTo(mapState.layer);
+        mapState.markersByIndex.set(r._index, line);
+        any = true;
+      });
+      return;
+    }
+
+    if(geom && (geom.type === "Polygon" || geom.type === "MultiPolygon")){
+      const polys = (geom.type === "Polygon") ? [geom.coords] : geom.coords;
+      polys.forEach(poly => {
+        const rings = poly.map(ring => ring.map(([x,y]) => toLatLng(x,y)));
+        const pg = L.polygon(rings, {weight:2, opacity:0.9, fillOpacity:0.25});
+        pg.bindPopup(popupHtml);
+        pg.on("click", () => { selectedIndex = r._index; $("#selectedRowBox").textContent = safeJsonStringify(rawItems[selectedIndex], 2); renderTable(); });
+        pg.addTo(mapState.layer);
+        mapState.markersByIndex.set(r._index, pg);
+        any = true;
+      });
+      return;
+    }
+
+    // Fallback: use easting/northing if present
+    const ex = Number(r.easting), ny = Number(r.northing);
+    if(Number.isFinite(ex) && Number.isFinite(ny)){
+      const [lat,lon] = toLatLng(ex, ny);
+      const m = L.circleMarker([lat,lon], {radius:6, weight:2, opacity:0.9, fillOpacity:0.5});
+      m.bindPopup(popupHtml);
+      m.on("click", () => { selectedIndex = r._index; $("#selectedRowBox").textContent = safeJsonStringify(rawItems[selectedIndex], 2); renderTable(); });
+      m.addTo(mapState.layer);
+      mapState.markersByIndex.set(r._index, m);
+      any = true;
+    }
+  });
+
+  if(any) fitMapToData();
+}
+
+function highlightMapSelection(rowIndex){
+  initMapIfNeeded();
+  const layer = mapState.markersByIndex.get(rowIndex);
+  if(!layer) return;
+
+  try{
+    if(layer.getBounds){
+      mapState.map.fitBounds(layer.getBounds().pad(0.2));
+    }else if(layer.getLatLng){
+      mapState.map.setView(layer.getLatLng(), Math.max(mapState.map.getZoom(), 14));
+    }
+  }catch(e){}
+
+  try{ layer.openPopup(); }catch(e){}
+}
+
+function fitMapToData(){
+  initMapIfNeeded();
+  const layers = mapState.layer.getLayers();
+  if(!layers.length) return;
+  const group = L.featureGroup(layers);
+  try{
+    mapState.map.fitBounds(group.getBounds().pad(0.15));
+  }catch(e){}
+}
+
+function refreshLabelFieldDropdown(){
+  const sel = $("#markerLabelField");
+  const keys = unionColumns(flatRows).filter(k => !k.startsWith("_"));
+  const preferred = ["road_id","road_status","cause","system_id","start_name","end_name","event_name","type"];
+  const ordered = Array.from(new Set([...preferred, ...keys]));
+  sel.innerHTML = ordered.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join("");
+  if(preferred.includes("road_id")) sel.value = "road_id";
+}
+
+/* =========================
+   Schema Fetch
+   ========================= */
+async function fetchSchema(){
+  if(!activeTable){
+    alert("Select a table first.");
+    return;
+  }
+  const loadType = $("#schemaLoadType").value;
+  const columns = ($("#schemaColumns").value || "").trim();
+
+  const params = { loadType };
+  if(columns) params.columns = columns;
+
+  try{
+    const json = await apiFetchJson("/schema/" + activeTable, params);
+    $("#schemaBox").textContent = safeJsonStringify(json, 2);
+  }catch(e){
+    console.error(e);
+    alert("Failed to fetch schema.\n\n" + e.message);
+  }
+}
+
+/* =========================
+   Request Builder Params
+   ========================= */
+function addParamRow(k="", v=""){
+  const wrap = document.createElement("div");
+  wrap.className = "kv";
+  wrap.innerHTML = `
+    <input type="text" placeholder="key" value="${escapeHtml(k)}" />
+    <input type="text" placeholder="value" value="${escapeHtml(v)}" />
+    <button class="btn bad">Remove</button>
+  `;
+  wrap.querySelector("button").addEventListener("click", () => wrap.remove());
+  $("#paramsBox").appendChild(wrap);
+}
+
+function getParamsFromBuilder(){
+  const params = {};
+  $$("#paramsBox .kv").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const k = (inputs[0].value || "").trim();
+    const v = (inputs[1].value || "").trim();
+    if(!k) return;
+    params[k] = v;
+  });
+  return params;
+}
+
+async function runBuilder(){
+  const path = ($("#reqPath").value || "").trim();
+  if(!path){
+    alert("Enter a path like /data/tables");
+    return;
+  }
+  const params = getParamsFromBuilder();
+  try{
+    const json = await apiFetchJson(path, params);
+    // if response looks like data items, auto-populate viewer
+    if(Array.isArray(json) && json.length && json[0] && typeof json[0] === "object" && ("data" in json[0])){
+      rawItems = json;
+      flatRows = flattenItems(rawItems);
+      updateCounts();
+      $("#jsonBox").textContent = safeJsonStringify(rawItems, 2);
+      visibleColumns = pickDefaultColumns(flatRows);
+      selectedIndex = -1;
+      renderColumnVisibility();
+      renderTable();
+      refreshLabelFieldDropdown();
+      plotRowsOnMap();
+      setActiveTableFromPath(path);
+    }else{
+      $("#jsonBox").textContent = safeJsonStringify(json, 2);
+      alert("Request succeeded. View JSON in JSON View and details in Request And Response.");
+    }
+  }catch(e){
+    console.error(e);
+    alert("Request failed.\n\n" + e.message);
+  }
+}
+
+function setActiveTableFromPath(path){
+  // If path is /data/{table} then set active table
+  const m = normalizePath(path).match(/^\/data\/([^\/\?]+)$/i);
+  if(m && m[1]){
+    activeTable = m[1];
+    $("#currentTablePill").textContent = activeTable;
+    renderTablesList();
+  }
+}
+
+/* =========================
+   Exports
+   ========================= */
+function exportJson(){
+  if(!rawItems.length){
+    alert("No data loaded.");
+    return;
+  }
+  const name = (activeTable || "data") + ".json";
+  downloadText(name, safeJsonStringify(rawItems, 2), "application/json");
+}
+
+function exportCsv(){
+  if(!flatRows.length){
+    alert("No data loaded.");
+    return;
+  }
+  const cols = visibleColumns.slice();
+  const rows = sortRows(getFilteredRows()).slice(0, 5000);
+  const esc = (v) => {
+    const s = (v === null || v === undefined) ? "" : String(v);
+    if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  };
+  const lines = [];
+  lines.push(cols.map(esc).join(","));
+  rows.forEach(r => lines.push(cols.map(c => esc(r[c])).join(",")));
+  const name = (activeTable || "data") + ".csv";
+  downloadText(name, lines.join("\n"), "text/csv");
+}
+
+/* =========================
+   Tabs
+   ========================= */
+function showTab(tabName){
+  $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tabName));
+  ["table","map","json","schema","debug"].forEach(n => {
+    $("#tab_" + n).style.display = (n === tabName) ? "block" : "none";
+  });
+  if(tabName === "map"){
+    initMapIfNeeded();
+    setTimeout(() => { try{ mapState.map.invalidateSize(); }catch(e){} }, 80);
+  }
+}
+
+/* =========================
+   Settings Storage
+   ========================= */
+const LS_KEY = "ramm_api_explorer_settings_v1";
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(s.baseUrl) $("#baseUrl").value = s.baseUrl;
+    if(s.token) $("#token").value = s.token;
+    if(s.authMode) $("#authMode").value = s.authMode;
+    if(typeof s.useCors === "boolean") $("#useCors").checked = s.useCors;
+    if(s.inCrs) $("#inCrs").value = s.inCrs;
+  }catch(e){}
+}
+
+function saveSettings(){
+  const s = {
+    baseUrl: ($("#baseUrl").value || "").trim(),
+    token: ($("#token").value || "").trim(),
+    authMode: $("#authMode").value,
+    useCors: $("#useCors").checked,
+    inCrs: $("#inCrs").value
+  };
+  localStorage.setItem(LS_KEY, JSON.stringify(s));
+  alert("Saved in localStorage for this browser.");
+}
+
+/* =========================
+   Token Test
+   ========================= */
+async function testToken(){
+  try{
+    const json = await apiFetchJson("/about/user", {});
+    alert("Token ok.\n\n" + (json && (json.userName || json.name || json.email || "User info loaded")));
+  }catch(e){
+    alert("Token test failed.\n\n" + e.message);
+  }
+}
+
+/* =========================
+   Wiring
+   ========================= */
+function wire(){
+  // Tabs
+  $$(".tab").forEach(t => t.addEventListener("click", () => showTab(t.dataset.tab)));
+
+  // Tables list
+  $("#btnLoadTables").addEventListener("click", loadTables);
+  $("#tableSearch").addEventListener("input", renderTablesList);
+
+  // Data controls
+  $("#btnLoadData").addEventListener("click", loadDataForActiveTable);
+  $("#rowSearch").addEventListener("input", renderTable);
+
+  $("#btnExportJson").addEventListener("click", exportJson);
+  $("#btnExportCsv").addEventListener("click", exportCsv);
+
+  // Quick actions
+  $("#btnLoadRoadClose").addEventListener("click", () => {
+    setActiveTable("ud_road_close_restrict");
+    $("#dataColumns").value = "";
+    $("#assetId").value = "";
+    $("#optGetGeometry").checked = true;
+    $("#optExpandLookups").checked = true;
+    loadDataForActiveTable();
+  });
+
+  $("#btnLoadSchema").addEventListener("click", () => {
+    if(!activeTable) setActiveTable("ud_road_close_restrict");
+    showTab("schema");
+    fetchSchema();
+  });
+
+  $("#btnClear").addEventListener("click", () => {
+    rawItems = [];
+    flatRows = [];
+    selectedIndex = -1;
+    $("#dataTable").innerHTML = "";
+    $("#selectedRowBox").textContent = "{}";
+    $("#jsonBox").textContent = "[]";
+    $("#schemaBox").textContent = "[]";
+    $("#rowCountPill").textContent = "0 Rows";
+    $("#geomCountPill").textContent = "0 With Geometry";
+    clearMap();
+    renderColumnVisibility();
+  });
+
+  // Map buttons
+  $("#btnFitMap").addEventListener("click", fitMapToData);
+  $("#btnClearMap").addEventListener("click", clearMap);
+  $("#markerLabelField").addEventListener("change", plotRowsOnMap);
+
+  // Schema
+  $("#btnFetchSchema").addEventListener("click", fetchSchema);
+
+  // Request builder
+  $("#btnAddParam").addEventListener("click", () => addParamRow());
+  $("#btnRun").addEventListener("click", runBuilder);
+
+  // Default builder params
+  $("#paramsBox").innerHTML = "";
+  addParamRow("getGeometry", "true");
+  addParamRow("expandLookups", "true");
+
+  // Header settings
+  $("#btnTestToken").addEventListener("click", testToken);
+  $("#btnSaveSettings").addEventListener("click", saveSettings);
+
+  $("#toggleToken").addEventListener("click", () => {
+    const el = $("#token");
+    const show = el.type === "password";
+    el.type = show ? "text" : "password";
+    $("#toggleToken").textContent = show ? "Hide" : "Show";
+  });
+
+  // Copy JSON
+  $("#btnCopyJson").addEventListener("click", async () => {
+    try{
+      await navigator.clipboard.writeText($("#jsonBox").textContent || "[]");
+      alert("Copied JSON.");
+    }catch(e){
+      alert("Could not copy.");
+    }
+  });
+
+  // Load saved settings
+  loadSettings();
+}
+
+wire();
+</script>
+</body>
+</html>
