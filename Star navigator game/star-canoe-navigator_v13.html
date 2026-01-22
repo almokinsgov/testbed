@@ -1,0 +1,2079 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Star Canoe Navigator</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: #02030a; overflow: hidden; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    #hud {
+      position: fixed; inset: 0; pointer-events: none; color: rgba(240,240,255,0.92);
+    }
+    .panel {
+      position: absolute; left: 16px; top: 16px;
+      background: rgba(10,12,20,0.58);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 12px 12px;
+      width: min(420px, calc(100vw - 32px));
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .k { opacity: 0.75; font-size: 12px; }
+    .v { font-variant-numeric: tabular-nums; }
+    button, input[type="range"], input[type="checkbox"] { pointer-events: auto; }
+    button {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(240,240,255,0.92);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+    button:hover { background: rgba(255,255,255,0.11); }
+    .small { font-size: 12px; opacity: 0.86; line-height: 1.35; }
+    #help {
+      position: absolute; left: 16px; top: 220px;
+      width: min(420px, calc(100vw - 32px));
+      background: rgba(10,12,20,0.58);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 12px 12px;
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+      display: none;
+    }
+    #help h3 { margin: 0 0 8px 0; font-size: 14px; letter-spacing: 0.2px; }
+    #help p { margin: 8px 0; }
+    #centerSight {
+      position: absolute; left: 50%; top: 62%;
+      transform: translate(-50%, -50%);
+      width: 320px; height: 120px;
+      pointer-events: none;
+      opacity: 0.9;
+      display: none;
+    }
+    #toast {
+      position: absolute; left: 50%; bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(10,12,20,0.58);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 10px 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 250ms ease;
+      text-align: center;
+      max-width: min(720px, calc(100vw - 32px));
+    }
+    #win {
+      position: absolute; inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(2,3,10,0.72);
+      pointer-events: auto;
+    }
+    #win .card {
+      width: min(640px, calc(100vw - 32px));
+      background: rgba(10,12,20,0.75);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 18px 18px;
+      backdrop-filter: blur(10px);
+      color: rgba(240,240,255,0.94);
+    }
+    #win h2 { margin: 0 0 8px 0; font-size: 18px; }
+    #win p { margin: 8px 0; opacity: 0.88; line-height: 1.5; }
+    #win .row { margin-top: 12px; }
+    canvas { display: block; }
+  
+    #options {
+      position: absolute; left: 16px; top: 220px;
+      width: min(520px, calc(100vw - 32px));
+      background: rgba(10,12,20,0.62);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 12px 12px;
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+      display: none;
+      max-height: calc(100vh - 260px);
+      overflow: auto;
+    }
+    #options h3 { margin: 0 0 8px 0; font-size: 14px; letter-spacing: 0.2px; }
+    #options select {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(240,240,255,0.92);
+      border-radius: 10px;
+      padding: 6px 8px;
+    }
+
+    #debugPanel {
+      position: absolute; left: 16px; top: 610px;
+      width: min(520px, calc(100vw - 32px));
+      background: rgba(10,12,20,0.62);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 12px 12px;
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+      display: none;
+      max-height: calc(100vh - 650px);
+      overflow: auto;
+    }
+    #debugPanel h3 { margin: 0 0 8px 0; font-size: 14px; letter-spacing: 0.2px; }
+    .mono { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; opacity: 0.92; white-space: pre-wrap; }
+
+    input[type="range"] { width: 220px; }
+    @media (max-width: 520px) {
+      input[type="range"] { width: 180px; }
+      #debugPanel { top: 660px; max-height: calc(100vh - 700px); }
+    }
+
+
+    /* DOM Star Labels Overlay */
+    #labelLayer{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+      font-size: 13px;
+      color: rgba(220,230,255,0.92);
+      text-shadow: 0 0 8px rgba(0,0,0,0.95);
+      z-index: 5;
+    }
+    .starLabelTag{
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: rgba(10,12,20,0.18);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(4px);
+      white-space: nowrap;
+      letter-spacing: 0.2px;
+    }
+
+    /* Debug panel should always be visible on screen when enabled */
+    #debugPanel{
+      left: auto;
+      right: 16px;
+      top: 16px;
+      width: min(460px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+    }
+
+    @media (max-width: 520px) {
+      #debugPanel{
+        left: 16px;
+        right: 16px;
+        top: 420px;
+        width: min(520px, calc(100vw - 32px));
+        max-height: calc(100vh - 460px);
+      }
+    }
+
+  
+
+    /* Map Modal */
+    #mapModal{
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(2,3,10,0.70);
+      pointer-events: auto;
+      z-index: 20;
+    }
+    #mapModal[aria-hidden="false"]{ display: grid; }
+    .mapCard{
+      width: min(980px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      background: rgba(10,12,20,0.78);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 14px 14px;
+      backdrop-filter: blur(10px);
+      color: rgba(240,240,255,0.94);
+    }
+    .mapGrid{
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 12px;
+      align-items: start;
+    }
+    #leafletMap{
+      width: 100%;
+      height: min(520px, 60vh);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      overflow: hidden;
+    }
+    .wpList{
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .wpItem{
+      padding: 10px 10px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .wpName{ font-size: 13px; letter-spacing: 0.2px; }
+    .wpMeta{ font-size: 12px; opacity: 0.82; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .wpBtns{ margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .leaflet-container{ background: #070a18; }
+    @media (max-width: 900px){
+      .mapGrid{ grid-template-columns: 1fr; }
+      #leafletMap{ height: min(520px, 52vh); }
+    }
+
+
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+</head>
+<body>
+  <div id="hud">
+    <div class="panel">
+      <div class="row" style="justify-content: space-between;">
+        <div>
+          <div style="font-size: 14px; letter-spacing: 0.2px;">Star Canoe Navigator</div>
+          <div class="small">Third person canoe, low poly ocean, real stars (RA/Dec) with time and location shift</div>
+        </div>
+        <div class="row">
+          <button id="btnJournal">Journal</button>
+          <button id="btnOptions">Options</button>
+          <button id="btnMap">Map</button>
+          <button id="btnReset">Reset</button>
+        </div>
+      </div>
+
+      <div style="height: 8px;"></div>
+
+      <div class="row">
+        <div><span class="k">Lat</span> <span class="v" id="latOut">-35.1000</span></div>
+        <div><span class="k">Lon</span> <span class="v" id="lonOut">173.2600</span></div>
+        <div><span class="k">Time</span> <span class="v" id="timeOut">--</span></div>
+      </div>
+
+      <div style="height: 6px;"></div>
+
+      <div class="row">
+        <div><span class="k">Heading</span> <span class="v" id="hdgOut">0</span>°</div>
+        <div><span class="k">Speed</span> <span class="v" id="spdOut">0.0</span> m/s</div>
+        <div><span class="k">Range</span> <span class="v" id="rngOut">--</span> km</div>
+      </div>
+
+      <div style="height: 8px;"></div>
+
+      <div class="row">
+        <label class="small">
+  <input id="chkSight" type="checkbox">
+  Prow Sight
+</label>
+<label class="small"><input id="chkCompass" type="checkbox" /> Show Compass (Accessibility)</label>
+        <label class="small"><input id="chkLabels" type="checkbox" checked /> Star Labels</label>
+        <label class="small"><input id="chkFreeLook" type="checkbox" /> Free Look</label>
+        <label class="small"><input id="chkDebug" type="checkbox" /> Debug</label>
+      </div>
+
+      <div style="height: 8px;"></div>
+
+      <div class="row">
+        <div class="small" style="min-width: 140px;">Time Speed</div>
+        <input id="timeScale" type="range" min="10" max="2400" value="600" />
+        <div class="small"><span class="v" id="tsOut">600</span>x</div>
+      </div>
+
+      <div style="height: 8px;"></div>
+
+      <div class="small">
+        Controls: W paddle, A/D steer, Shift sprint paddle, Space brake drift, J journal
+      </div>
+    </div>
+
+    <div id="help">
+      <h3>Journal</h3>
+      <p class="small">
+        The sea is not empty. It drifts and it lies.
+        A destination waits beyond the mist line where a low island breaks the swell.
+      </p>
+      <p class="small">
+        Your only reliable guide is the southern sky.
+        The carved mark on your prow sight was made for <b>Canopus</b> (bright southern star).
+        Keep Canopus on the mark and hold steady.
+      </p>
+      <p class="small">
+        If you lose the guide, find the <b>Southern Cross</b> and follow its long axis toward the southern sea.
+        The Cross and the Centaur will orient you when doubt sets in.
+      </p>
+      <p class="small">
+        You are not chasing a star. You are holding a relationship between the sky and your course.
+      </p>
+      <div class="row">
+        <button id="btnCloseJournal">Close</button>
+      </div>
+    </div>
+
+    <div id="options" aria-hidden="true">
+      <h3>Options</h3>
+
+      <div class="small" style="margin-top:6px; opacity:0.9;">Stars</div>
+      <div class="row" style="margin-top:6px;">
+        <div class="small" style="min-width:120px;">Brightness</div>
+        <input id="rngStarBright" type="range" min="0.3" max="3.0" step="0.05" value="1.45" />
+        <div class="small"><span class="v" id="outStarBright">1.45</span>x</div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div class="small" style="min-width:120px;">Size</div>
+        <input id="rngStarSize" type="range" min="0.6" max="2.6" step="0.05" value="1.55" />
+        <div class="small"><span class="v" id="outStarSize">1.55</span>x</div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <label class="small"><input id="chkBgStars" type="checkbox" checked /> Background Starfield</label>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div class="small" style="min-width:120px;">Background Density</div>
+        <input id="rngBgDensity" type="range" min="0" max="6000" step="50" value="2400" />
+        <div class="small"><span class="v" id="outBgDensity">2400</span></div>
+      </div>
+      <div class="small" style="margin-top:6px; opacity:0.78;">Background stars are synthetic but still use RA/Dec so they shift correctly with time and location.</div>
+
+      <div class="small" style="margin-top:12px; opacity:0.9;">Camera</div>
+      <div class="row" style="margin-top:6px;">
+        <div class="small" style="min-width:120px;">Distance</div>
+        <input id="rngCamDist" type="range" min="6" max="22" step="0.1" value="11.5" />
+        <div class="small"><span class="v" id="outCamDist">11.5</span> m</div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div class="small" style="min-width:120px;">Height</div>
+        <input id="rngCamHeight" type="range" min="2" max="10" step="0.1" value="5.2" />
+        <div class="small"><span class="v" id="outCamHeight">5.2</span> m</div>
+      </div>
+
+      <div class="row" style="margin-top:6px;">
+        <div class="small" style="min-width:120px;">Head Tilt</div>
+        <input id="rngHeadTilt" type="range" min="-20" max="20" step="0.5" value="0" />
+        <div class="small"><span class="v" id="outHeadTilt">0</span>°</div>
+      </div>
+      <div class="small" style="margin-top:6px; opacity:0.78;">Head tilt is camera roll for horizon comfort and immersion.</div>
+      <div class="row" style="margin-top:6px;">
+        <div class="small" style="min-width:120px;">Gaze</div>
+        <select id="selGaze">
+          <option value="canoe">Track Canoe</option>
+          <option value="ahead">Fixed Gaze Ahead</option>
+        </select>
+        <div class="small" style="opacity:0.85;">Look target mode</div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div class="small" style="min-width:120px;">Gaze Distance</div>
+        <input id="rngGazeDist" type="range" min="3" max="45" step="0.5" value="18" />
+        <div class="small"><span class="v" id="outGazeDist">18</span> m</div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <label class="small"><input id="chkPause" type="checkbox" /> Pause</label>
+        <button id="btnResetCam">Reset Camera</button>
+        <button id="btnCloseOptions">Close</button>
+      </div>
+
+      <div class="small" style="margin-top:8px;">Free Look: toggle it in the main panel, then drag the mouse to look around. Use the wheel to zoom.</div>
+    </div>
+
+    <div id="debugPanel" aria-hidden="true">
+      <h3>Debug</h3>
+      <pre id="dbgText" class="mono"></pre>
+    </div>
+
+
+    <div id="mapModal" aria-hidden="true">
+      <div class="mapCard">
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <div>Map</div>
+          <div class="row">
+            <button id="btnMapClose">Close</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+          <label class="small"><input id="chkMapFollow" type="checkbox" checked /> Follow Canoe</label>
+          <label class="small"><input id="chkMapAdd" type="checkbox" /> Add Waypoint (Click Map)</label>
+          <button id="btnMapClearTarget">Clear Target</button>
+        </div>
+
+        <div class="mapGrid" style="margin-top: 10px;">
+          <div class="mapLeft">
+            <div id="leafletMap"></div>
+            <div class="small" style="margin-top: 8px; opacity: 0.82;">Tip: drag waypoint markers to reposition. Click a waypoint marker for actions.</div>
+          </div>
+          <div class="mapRight">
+            <div class="small" style="opacity: 0.9; margin-bottom: 6px;">Waypoints</div>
+            <div id="wpList" class="wpList"></div>
+            <div class="row" style="margin-top: 10px;">
+              <button id="btnWpExport">Export</button>
+              <button id="btnWpImport">Import</button>
+              <button id="btnWpClear">Clear</button>
+            </div>
+            <div id="mapInfo" class="small" style="margin-top: 10px; opacity: 0.88;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="labelLayer" aria-hidden="true"></div>
+
+    <svg id="centerSight" viewBox="0 0 320 120" aria-hidden="true">
+      <!-- Prow sight: center notch and a carved mark offset to the right or left -->
+      <defs>
+        <filter id="g" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="0.6" result="b"/>
+          <feMerge>
+            <feMergeNode in="b"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <g filter="url(#g)" fill="none" stroke="rgba(255,255,255,0.36)" stroke-width="2">
+        <path d="M140 85 L160 65 L180 85" />
+        <line x1="160" y1="62" x2="160" y2="92" />
+        <line x1="70" y1="92" x2="250" y2="92" />
+      </g>
+      <g id="carvedMark" transform="translate(0,0)" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2">
+        <path d="M0 0 L0 0" />
+      </g>
+      <g id="compassRose" style="display:none">
+        <text x="160" y="18" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="12">N</text>
+        <text x="160" y="114" text-anchor="middle" fill="rgba(255,255,255,0.45)" font-size="12">S</text>
+        <text x="18" y="66" text-anchor="middle" fill="rgba(255,255,255,0.45)" font-size="12">W</text>
+        <text x="302" y="66" text-anchor="middle" fill="rgba(255,255,255,0.45)" font-size="12">E</text>
+      </g>
+    </svg>
+
+    <div id="toast"></div>
+
+    <div id="win">
+      <div class="card">
+        <h2>Landfall</h2>
+        <p>
+          The island rises out of the dark like a thought you tried to forget.
+          The sky settles and the drift becomes quiet.
+        </p>
+        <p class="small">
+          This prototype uses simplified currents and a small embedded star catalog.
+          If you want, the next step is to load real coastline, bathymetry and surface currents from lightweight datasets.
+        </p>
+        <div class="row">
+          <button id="btnPlayAgain">Play Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
+
+    // -----------------------------
+    // Helpers
+    // -----------------------------
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const degToRad = d => d * Math.PI / 180;
+    const radToDeg = r => r * 180 / Math.PI;
+
+    function wrapDeg(d) {
+      let x = d % 360;
+      if (x < 0) x += 360;
+      return x;
+    }
+    function shortestAngleDeg(a, b) {
+      // returns signed delta from a to b in degrees in range [-180, 180]
+      let d = wrapDeg(b) - wrapDeg(a);
+      if (d > 180) d -= 360;
+      if (d < -180) d += 360;
+      return d;
+    }
+
+    // WGS84 approx
+    const EARTH_R = 6371000; // meters
+    function metersToLat(m) { return radToDeg(m / EARTH_R); }
+    function metersToLon(m, latDeg) { return radToDeg(m / (EARTH_R * Math.cos(degToRad(latDeg)))); }
+
+    function haversineMeters(lat1, lon1, lat2, lon2) {
+      const p1 = degToRad(lat1), p2 = degToRad(lat2);
+      const dP = degToRad(lat2 - lat1);
+      const dL = degToRad(lon2 - lon1);
+      const a = Math.sin(dP/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dL/2)**2;
+      return 2 * EARTH_R * Math.asin(Math.sqrt(a));
+    }
+
+    function bearingDeg(lat1, lon1, lat2, lon2) {
+      const p1 = degToRad(lat1), p2 = degToRad(lat2);
+      const dL = degToRad(lon2 - lon1);
+      const y = Math.sin(dL) * Math.cos(p2);
+      const x = Math.cos(p1)*Math.sin(p2) - Math.sin(p1)*Math.cos(p2)*Math.cos(dL);
+      return wrapDeg(radToDeg(Math.atan2(y, x)));
+    }
+
+    function toast(msg, ms = 1600) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.opacity = "1";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.style.opacity = "0", ms);
+    }
+
+    // -----------------------------
+    // Minimal Bright Star Catalog (RA hours, Dec degrees, Mag)
+    // Use J2000 values (no precession correction in this prototype)
+    // -----------------------------
+    const STARS = [
+      { id: "Canopus",     raH:  6 + 23/60 + 57/3600, decD: -(52 + 41/60 + 45/3600), mag: -0.74 },
+      { id: "Sirius",      raH:  6 + 45/60 +  9/3600, decD: -(16 + 42/60 + 58/3600), mag: -1.46 },
+      { id: "Achernar",    raH:  1 + 37/60 + 43/3600, decD: -(57 + 14/60 + 12/3600), mag:  0.46 },
+      { id: "Alpha Cen",   raH: 14 + 39/60 + 36/3600, decD: -(60 + 50/60 +  2/3600), mag: -0.27 },
+
+      { id: "Acrux",       raH: 12 + 26/60 + 35/3600, decD: -(63 +  5/60 + 56/3600), mag:  0.77 },
+      { id: "Mimosa",      raH: 12 + 47/60 + 43/3600, decD: -(59 + 41/60 + 19/3600), mag:  1.25 },
+      { id: "Gacrux",      raH: 12 + 31/60 + 10/3600, decD: -(57 +  6/60 + 47/3600), mag:  1.63 },
+      { id: "Delta Cru",   raH: 12 + 15/60 +  8/3600, decD: -(58 + 44/60 + 56/3600), mag:  2.79 },
+
+      { id: "Betelgeuse",  raH:  5 + 55/60 + 10/3600, decD:  (7 + 24/60 + 25/3600), mag:  0.50 },
+      { id: "Rigel",       raH:  5 + 14/60 + 32/3600, decD: -(8 + 12/60 +  6/3600), mag:  0.13 },
+      { id: "Bellatrix",   raH:  5 + 25/60 +  7/3600, decD:  (6 + 20/60 + 59/3600), mag:  1.64 },
+      { id: "Saiph",       raH:  5 + 47/60 + 45/3600, decD: -(9 + 40/60 + 10/3600), mag:  2.06 },
+      { id: "Mintaka",     raH:  5 + 32/60 +  0/3600, decD: -(0 + 18/60 +  0/3600), mag:  2.23 },
+      { id: "Alnilam",     raH:  5 + 36/60 + 12/3600, decD: -(1 + 12/60 +  7/3600), mag:  1.69 },
+      { id: "Alnitak",     raH:  5 + 40/60 + 45/3600, decD: -(1 + 56/60 + 33/3600), mag:  1.74 },
+
+      { id: "Fomalhaut",   raH: 22 + 57/60 + 39/3600, decD: -(29 + 37/60 + 20/3600), mag:  1.16 },
+      { id: "Antares",     raH: 16 + 29/60 + 24/3600, decD: -(26 + 25/60 + 55/3600), mag:  1.06 },
+      { id: "Spica",       raH: 13 + 25/60 + 11/3600, decD: -(11 +  9/60 + 41/3600), mag:  0.98 },
+      { id: "Arcturus",    raH: 14 + 15/60 + 39/3600, decD:  (19 + 10/60 + 57/3600), mag: -0.05 },
+      { id: "Aldebaran",   raH:  4 + 35/60 + 55/3600, decD:  (16 + 30/60 + 33/3600), mag:  0.85 },
+      { id: "Vega",        raH: 18 + 36/60 + 56/3600, decD:  (38 + 47/60 +  1/3600), mag:  0.03 },
+      { id: "Altair",      raH: 19 + 50/60 + 47/3600, decD:  ( 8 + 52/60 +  6/3600), mag:  0.77 },
+      { id: "Deneb",       raH: 20 + 41/60 + 25/3600, decD:  (45 + 16/60 + 49/3600), mag:  1.25 },
+      { id: "Polaris",     raH:  2 + 31/60 + 49/3600, decD:  (89 + 15/60 + 51/3600), mag:  1.98 }
+    ];
+
+    const STAR_BY_ID = new Map(STARS.map(s => [s.id, s]));
+
+    // Constellation line segments (subset)
+    const CONSTELLATIONS = [
+      {
+        name: "Southern Cross",
+        pairs: [
+          ["Gacrux", "Acrux"],
+          ["Mimosa", "Delta Cru"],
+          ["Gacrux", "Mimosa"],
+          ["Delta Cru", "Acrux"]
+        ]
+      },
+      {
+        name: "Orion",
+        pairs: [
+          ["Betelgeuse", "Bellatrix"],
+          ["Bellatrix", "Rigel"],
+          ["Rigel", "Saiph"],
+          ["Saiph", "Betelgeuse"],
+          ["Mintaka", "Alnilam"],
+          ["Alnilam", "Alnitak"]
+        ]
+      }
+    ];
+
+    // -----------------------------
+    // Astronomy: convert RA/Dec to Alt/Az for observer at lat/lon and time
+    // -----------------------------
+    function toJulian(date) {
+      return date.getTime() / 86400000 + 2440587.5;
+    }
+
+    function gmstDeg(date) {
+      const JD = toJulian(date);
+      const T = (JD - 2451545.0) / 36525.0;
+      let GMST = 280.46061837
+        + 360.98564736629 * (JD - 2451545.0)
+        + 0.000387933 * T * T
+        - (T * T * T) / 38710000.0;
+      GMST = ((GMST % 360) + 360) % 360;
+      return GMST;
+    }
+
+    function raDecToAltAz(raH, decD, latD, lonD, date) {
+      const raRad = degToRad(raH * 15);
+      const decRad = degToRad(decD);
+      const latRad = degToRad(latD);
+
+      const LSTdeg = wrapDeg(gmstDeg(date) + lonD);
+      const lstRad = degToRad(LSTdeg);
+
+      const haRad = lstRad - raRad;
+
+      const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
+      const alt = Math.asin(clamp(sinAlt, -1, 1));
+
+      const az = Math.atan2(
+        -Math.sin(haRad),
+        Math.tan(decRad) * Math.cos(latRad) - Math.sin(latRad) * Math.cos(haRad)
+      );
+
+      return {
+        altRad: alt,
+        azRad: wrapRad(az),
+        altDeg: radToDeg(alt),
+        azDeg: wrapDeg(radToDeg(az))
+      };
+    }
+
+    function wrapRad(r) {
+      let x = r % (Math.PI * 2);
+      if (x < 0) x += Math.PI * 2;
+      return x;
+    }
+
+    // Convert local horizon coords to world direction where +Z is North and +X is East
+    function altAzToDir(altRad, azRad) {
+      const cosAlt = Math.cos(altRad);
+      const x = cosAlt * Math.sin(azRad); // East
+      const z = cosAlt * Math.cos(azRad); // North
+      const y = Math.sin(altRad);         // Up
+      return new THREE.Vector3(x, y, z).normalize();
+    }
+
+    // -----------------------------
+    // Scene Setup
+    // -----------------------------
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x02030a, 1);
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x02030a, 0.000045);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 50000);
+
+    const moonLight = new THREE.DirectionalLight(0xdde6ff, 0.55);
+    moonLight.position.set(-0.6, 1.0, 0.4);
+    scene.add(moonLight);
+
+    const ambient = new THREE.AmbientLight(0x7a86aa, 0.18);
+    scene.add(ambient);
+
+    // Ocean
+    const OCEAN_SIZE = 24000;
+    const OCEAN_SEG = 240;
+    const oceanGeo = new THREE.PlaneGeometry(OCEAN_SIZE, OCEAN_SIZE, OCEAN_SEG, OCEAN_SEG);
+    oceanGeo.rotateX(-Math.PI / 2);
+
+    const oceanMat = new THREE.MeshStandardMaterial({
+      color: 0x061a2a,
+      roughness: 0.95,
+      metalness: 0.0,
+      flatShading: true
+    });
+
+    const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+    ocean.receiveShadow = false;
+    scene.add(ocean);
+
+    // Simple wave function (cheap and deterministic)
+    function waveHeight(x, z, t) {
+      return (
+        Math.sin((x * 0.0012) + t * 0.7) * 0.45 +
+        Math.cos((z * 0.0010) + t * 0.6) * 0.35 +
+        Math.sin(((x + z) * 0.0008) + t * 0.9) * 0.25
+      );
+    }
+
+    function updateOcean(t) {
+      const pos = oceanGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        const y = waveHeight(x, z, t);
+        pos.setY(i, y);
+      }
+      pos.needsUpdate = true;
+      oceanGeo.computeVertexNormals();
+    }
+
+    // Canoe (low poly)
+    function makeCanoe() {
+      const g = new THREE.Group();
+
+      const hull = new THREE.Mesh(
+        new THREE.ConeGeometry(1.2, 6.2, 6, 1),
+        new THREE.MeshStandardMaterial({ color: 0x3b2a1a, roughness: 0.85, metalness: 0.0, flatShading: true })
+      );
+      hull.rotation.x = Math.PI / 2;
+      hull.position.y = 0.25;
+      g.add(hull);
+
+      const rim = new THREE.Mesh(
+        new THREE.TorusGeometry(1.05, 0.12, 8, 12),
+        new THREE.MeshStandardMaterial({ color: 0x2a1e14, roughness: 0.9, metalness: 0.0, flatShading: true })
+      );
+      rim.rotation.x = Math.PI / 2;
+      rim.position.y = 0.7;
+      rim.scale.set(1.0, 2.3, 1.0);
+      g.add(rim);
+
+      const seat = new THREE.Mesh(
+        new THREE.BoxGeometry(0.7, 0.15, 0.9),
+        new THREE.MeshStandardMaterial({ color: 0x231a12, roughness: 0.9, flatShading: true })
+      );
+      seat.position.set(0, 0.55, -0.2);
+      g.add(seat);
+
+      const paddle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.08, 2.3),
+        new THREE.MeshStandardMaterial({ color: 0x4b341f, roughness: 0.85, flatShading: true })
+      );
+      paddle.position.set(0.65, 0.85, -0.1);
+      paddle.rotation.y = 0.35;
+      g.add(paddle);
+
+      return g;
+    }
+
+    const canoe = makeCanoe();
+    scene.add(canoe);
+
+    // Islands (procedural, low poly)
+    function makeIsland(x, z, r, h, color = 0x233019) {
+      const geo = new THREE.ConeGeometry(r, h, 10, 1);
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.95, flatShading: true });
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(x, h * 0.35, z);
+      m.rotation.y = Math.random() * Math.PI * 2;
+      m.castShadow = false;
+      m.receiveShadow = false;
+
+      // add a few jagged rocks
+      const rocks = new THREE.Group();
+      for (let i = 0; i < 6; i++) {
+        const rg = new THREE.DodecahedronGeometry(r * (0.10 + Math.random() * 0.15), 0);
+        const rm = new THREE.MeshStandardMaterial({ color: 0x222227, roughness: 0.98, flatShading: true });
+        const rock = new THREE.Mesh(rg, rm);
+        const ang = Math.random() * Math.PI * 2;
+        const rr = r * (0.35 + Math.random() * 0.45);
+        rock.position.set(Math.cos(ang) * rr, 0.25 + Math.random() * 0.55, Math.sin(ang) * rr);
+        rock.rotation.set(Math.random(), Math.random(), Math.random());
+        rocks.add(rock);
+      }
+      rocks.position.copy(m.position);
+      scene.add(rocks);
+
+      return m;
+    }
+
+    // -----------------------------
+    // Game State: start and destination use real lat/lon and simple equirectangular local frame
+    // -----------------------------
+    const START = { lat: -35.098679, lon: 173.264026 }; // near Kaitaia offshore (example)
+    const DEST  = { lat: -35.047400, lon: 173.945000 }; // toward Kerikeri offshore (example)
+
+    // Local tangent frame anchored at start
+    const local = {
+      lat: START.lat,
+      lon: START.lon,
+      x: 0, // meters East of start
+      z: 0  // meters North of start
+    };
+
+    // Place destination island using local conversion
+    function latLonToLocal(lat, lon) {
+      const dLat = degToRad(lat - START.lat);
+      const dLon = degToRad(lon - START.lon);
+      const x = dLon * EARTH_R * Math.cos(degToRad(START.lat));
+      const z = dLat * EARTH_R;
+      return { x, z };
+    }
+
+    const destLocal = latLonToLocal(DEST.lat, DEST.lon);
+
+    // Islands: destination and a couple decoys
+    const destIsland = makeIsland(destLocal.x, destLocal.z, 240, 210, 0x1d2a13);
+    scene.add(destIsland);
+
+    const decoy1 = makeIsland(destLocal.x - 1200, destLocal.z + 900, 160, 130, 0x203018);
+    scene.add(decoy1);
+
+    const decoy2 = makeIsland(destLocal.x + 900, destLocal.z - 1200, 180, 150, 0x1b2b15);
+    scene.add(decoy2);
+
+    // subtle destination "mist beacon"
+    const beacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(8, 18, 120, 10, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xbfd0ff, transparent: true, opacity: 0.06, roughness: 1.0, flatShading: true })
+    );
+    beacon.position.set(destLocal.x, 80, destLocal.z);
+    scene.add(beacon);
+
+    // -----------------------------
+    // Sky: stars and constellations
+    // -----------------------------
+    const skyGroup = new THREE.Group();
+    scene.add(skyGroup);
+
+    const STAR_RADIUS = 13000;
+
+    // Synthetic background starfield generator (stable seed) so the sky feels alive.
+    function makeRng(seed = 123456789) {
+      let x = seed >>> 0;
+      return () => {
+        // xorshift32
+        x ^= x << 13; x >>>= 0;
+        x ^= x >> 17; x >>>= 0;
+        x ^= x << 5;  x >>>= 0;
+        return (x >>> 0) / 4294967296;
+      };
+    }
+
+    function genBackgroundStars(count, seed = 0xC0A0E) {
+      const r = makeRng(seed);
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        // Uniform on the sphere for Dec
+        const u = r() * 2 - 1; // [-1, 1]
+        const decD = radToDeg(Math.asin(clamp(u, -1, 1)));
+        const raH = r() * 24;
+        // More dim stars than bright stars
+        const mag = 1.8 + 4.6 * Math.pow(r(), 1.65); // ~1.8..6.4
+        out.push({ id: `bg_${i}`, raH, decD, mag, bg: true });
+      }
+      return out;
+    }
+
+    let starsAll = [];
+
+    // Star rendering objects (rebuilt when density changes)
+    let starGeo = null;
+    let starPoints = null;
+    let starPos = null;
+    let starSize = null;
+    let starAlpha = null;
+
+    // Star shader
+    const starMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uSizeScale: { value: 1.55 },
+        uBrightness: { value: 1.45 }
+      },
+      vertexShader: `
+        attribute float aSize;
+        attribute float aAlpha;
+        varying float vAlpha;
+        uniform float uSizeScale;
+        void main() {
+          vAlpha = aAlpha;
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mv;
+          float size = aSize * uSizeScale * (4200.0 /  max(1.0, -mv.z));
+          gl_PointSize = clamp(size, 3.0, 64.0);
+        }
+      `,
+      fragmentShader: `
+        varying float vAlpha;
+        uniform float uBrightness;
+        void main() {
+          vec2 p = gl_PointCoord * 2.0 - 1.0;
+          float r2 = dot(p, p);
+          float core = smoothstep(1.0, 0.0, r2);
+          float glow = smoothstep(1.3, 0.0, r2) * 0.65;
+          float a = (core + glow) * vAlpha * uBrightness;
+          gl_FragColor = vec4(1.0, 1.0, 1.0, a);
+        }
+      `
+    });
+
+    function rebuildStarCloud() {
+      // Remove old
+      if (starPoints) skyGroup.remove(starPoints);
+
+      const bgCount = (chkBgStars.checked ? clamp(Number(rngBgDensity.value) || 0, 0, 6000) : 0);
+      const bg = bgCount > 0 ? genBackgroundStars(bgCount, 0xC0A0E) : [];
+
+      starsAll = [
+        ...STARS.map(s => ({ ...s, bg: false })),
+        ...bg
+      ];
+
+      starPos = new Float32Array(starsAll.length * 3);
+      starSize = new Float32Array(starsAll.length);
+      starAlpha = new Float32Array(starsAll.length);
+
+      starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+      starGeo.setAttribute("aSize", new THREE.BufferAttribute(starSize, 1));
+      starGeo.setAttribute("aAlpha", new THREE.BufferAttribute(starAlpha, 1));
+
+      starPoints = new THREE.Points(starGeo, starMat);
+      starPoints.frustumCulled = false;
+      skyGroup.add(starPoints);
+
+      // Apply uniforms from UI
+      starMat.uniforms.uBrightness.value = Number(rngStarBright.value);
+      starMat.uniforms.uSizeScale.value = Number(rngStarSize.value);
+
+      toast(`Starfield rebuilt: ${starsAll.length} stars`, 900);
+      cachedStarFrame.tKey = ""; // force refresh
+    }
+
+    // Constellation lines
+    const lineGeo = new THREE.BufferGeometry();
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x9fb3ff, transparent: true, opacity: 0.32, depthTest: false });
+    const lineSeg = new THREE.LineSegments(lineGeo, lineMat);
+    lineSeg.frustumCulled = false;
+    skyGroup.add(lineSeg);
+
+    // Labels for key stars (canvas)
+    const labelCanvas = document.createElement("canvas");
+    labelCanvas.width = 1024;
+    labelCanvas.height = 512;
+    const labelCtx = labelCanvas.getContext("2d");
+
+    const labelTex = new THREE.CanvasTexture(labelCanvas);
+    labelTex.minFilter = THREE.LinearFilter;
+    labelTex.magFilter = THREE.LinearFilter;
+
+    const labelSpriteMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, opacity: 0.95, depthTest: false });
+    const labelSprite = new THREE.Sprite(labelSpriteMat);
+    labelSprite.scale.set(5200, 2600, 1);
+    skyGroup.add(labelSprite);
+
+    function drawLabels(labelData) {
+      labelCtx.clearRect(0, 0, labelCanvas.width, labelCanvas.height);
+      labelCtx.fillStyle = "rgba(255,255,255,0.0)";
+      labelCtx.fillRect(0, 0, labelCanvas.width, labelCanvas.height);
+
+      labelCtx.font = "22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      labelCtx.textBaseline = "top";
+
+      for (const item of labelData) {
+        const { x, y, text, alpha } = item;
+        labelCtx.fillStyle = `rgba(220,230,255,${alpha})`;
+        labelCtx.fillText(text, x + 10, y - 6);
+      }
+
+      labelTex.needsUpdate = true;
+    }
+
+    // Project a world direction onto a fixed canvas billboard
+    function dirToLabelUV(dir, cam) {
+      const p = dir.clone().multiplyScalar(STAR_RADIUS).add(skyGroup.position);
+      const ndc = p.clone().project(cam);
+      const sx = (ndc.x * 0.5 + 0.5);
+      const sy = (-ndc.y * 0.5 + 0.5);
+      return { sx, sy };
+    }
+
+    let cachedStarFrame = { tKey: "", starDirs: new Map(), guideAzDeg: 0 };
+
+    function magToSizeAlpha(mag, isBg) {
+      // Tuned for visibility
+      let size = clamp(12.2 - mag * 2.05, 0.7, 12.5);
+      let alpha = clamp(1.35 - (mag + 0.2) * 0.18, 0.03, 1.2);
+      if (isBg) {
+        size *= 0.68;
+        alpha *= 0.45;
+      }
+      return { size, alpha };
+    }
+
+    function updateSky(observerLat, observerLon, date, canoePos, cam) {
+      skyGroup.position.copy(canoePos);
+
+      // Update star positions no more than once per second, but allow labels to update every call.
+      const key = `${Math.floor(date.getTime() / 1000)}|${observerLat.toFixed(4)}|${observerLon.toFixed(4)}|${starsAll.length}`;
+      const needRecalc = (key != cachedStarFrame.tKey);
+      if (needRecalc) {
+        cachedStarFrame.tKey = key;
+
+        // Build star positions
+        cachedStarFrame.starDirs.clear();
+        for (let i = 0; i < starsAll.length; i++) {
+          const s = starsAll[i];
+          const aa = raDecToAltAz(s.raH, s.decD, observerLat, observerLon, date);
+          const dir = altAzToDir(aa.altRad, aa.azRad);
+
+          const alt = aa.altDeg;
+          const horizonFade = clamp((alt + 10) / 22, 0, 1);
+
+          const p = dir.clone().multiplyScalar(STAR_RADIUS);
+          starPos[i*3 + 0] = p.x;
+          starPos[i*3 + 1] = p.y;
+          starPos[i*3 + 2] = p.z;
+
+          const m = magToSizeAlpha(s.mag, !!s.bg);
+          starSize[i] = m.size;
+          starAlpha[i] = m.alpha * horizonFade;
+
+          cachedStarFrame.starDirs.set(s.id, { dir, altDeg: alt, azDeg: aa.azDeg, bg: !!s.bg });
+        }
+
+        starGeo.attributes.position.needsUpdate = true;
+        starGeo.attributes.aSize.needsUpdate = true;
+        starGeo.attributes.aAlpha.needsUpdate = true;
+
+        // Constellation lines (only for the named stars)
+        const segments = [];
+        for (const c of CONSTELLATIONS) {
+          for (const [a, b] of c.pairs) {
+            const A = cachedStarFrame.starDirs.get(a);
+            const B = cachedStarFrame.starDirs.get(b);
+            if (!A || !B) continue;
+            if (A.altDeg < -6 && B.altDeg < -6) continue;
+            const pA = A.dir.clone().multiplyScalar(STAR_RADIUS);
+            const pB = B.dir.clone().multiplyScalar(STAR_RADIUS);
+            segments.push(pA.x, pA.y, pA.z, pB.x, pB.y, pB.z);
+          }
+        }
+        lineGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(segments), 3));
+
+        // Guide: Canopus azimuth
+        const can = cachedStarFrame.starDirs.get("Canopus");
+        cachedStarFrame.guideAzDeg = can ? can.azDeg : 0;
+      }
+
+      // (Canvas label sprite disabled; using DOM overlay labels instead)
+      labelSprite.visible = false;
+
+    }
+
+    // Star UI bindings are set up after the DOM elements are initialized.
+// -----------------------------
+    // Simplified Oceanography: current and wind fields
+    // -----------------------------
+    function oceanCurrentEastNorth(lat, lon, tSec) {
+      // Stylized approximation only:
+      // - a broad drift east-southeast
+      // - gentle eddies changing with time and position
+      const baseE = 0.18;     // m/s east
+      const baseN = -0.06;    // m/s south (negative north)
+      const a = 0.10 * Math.sin((lat + 40) * 0.7 + tSec * 0.00012);
+      const b = 0.10 * Math.cos((lon - 170) * 0.6 + tSec * 0.00010);
+      const eddyE = 0.08 * Math.sin((lon - 173.2) * 1.2 + (lat + 35.2) * 1.4 + tSec * 0.00018);
+      const eddyN = 0.08 * Math.cos((lon - 173.2) * 1.1 - (lat + 35.2) * 1.3 + tSec * 0.00016);
+      return { e: baseE + a + eddyE, n: baseN + b + eddyN };
+    }
+
+    function windEastNorth(tSec) {
+      // light wind with slow shifts
+      const e = 0.07 * Math.sin(tSec * 0.00015);
+      const n = 0.05 * Math.cos(tSec * 0.00012);
+      return { e, n };
+    }
+
+    // -----------------------------
+    // Navigation Puzzle: carved mark based on Canopus offset at start
+    // -----------------------------
+    // We compute a constant offset between Canopus azimuth and true bearing to destination at the start time.
+    // The player maintains that relationship without being told the number.
+    let guideOffsetDeg = 0;
+    function updateCarvedMarkVisual(offsetDeg) {
+      // Draw a small chevron mark offset along the prow sight line (in SVG)
+      // Offset range visual: +/- 60 degrees maps to +/- 90 px
+      const px = clamp(offsetDeg / 60, -1, 1) * 90;
+      const g = document.getElementById("carvedMark");
+      const x = 160 + px;
+      g.innerHTML = `
+        <path d="M ${x} 86 L ${x-8} 78 M ${x} 86 L ${x+8} 78" />
+        <line x1="${x}" y1="74" x2="${x}" y2="92" />
+      `;
+    }
+
+    // -----------------------------
+    // Input
+    // -----------------------------
+    const keys = new Set();
+    window.addEventListener("keydown", (e) => {
+      if (typeof uiModalOpen !== "undefined" && uiModalOpen) return;
+      keys.add(e.code);
+      if (e.code === "KeyJ") toggleJournal();
+    });
+    window.addEventListener("keyup", (e) => keys.delete(e.code));
+
+    // -----------------------------
+    // UI Wiring
+    // -----------------------------
+    const elLat = document.getElementById("latOut");
+    const elLon = document.getElementById("lonOut");
+    const elTime = document.getElementById("timeOut");
+    const elHdg = document.getElementById("hdgOut");
+    const elSpd = document.getElementById("spdOut");
+    const elRng = document.getElementById("rngOut");
+
+    const timeScaleEl = document.getElementById("timeScale");
+    const tsOut = document.getElementById("tsOut");
+    timeScaleEl.addEventListener("input", () => tsOut.textContent = timeScaleEl.value);
+
+    document.getElementById("btnJournal").addEventListener("click", () => toggleJournal());
+    document.getElementById("btnCloseJournal").addEventListener("click", () => toggleJournal(false));
+    document.getElementById("btnReset").addEventListener("click", () => resetGame());
+
+    // Options Panel
+    const optionsEl = document.getElementById("options");
+    document.getElementById("btnOptions").addEventListener("click", () => {
+      const show = optionsEl.style.display !== "block";
+      optionsEl.style.display = show ? "block" : "none";
+      optionsEl.setAttribute("aria-hidden", show ? "false" : "true");
+    });
+    document.getElementById("btnCloseOptions").addEventListener("click", () => {
+      optionsEl.style.display = "none";
+      optionsEl.setAttribute("aria-hidden", "true");
+    });
+
+
+    // -----------------------------
+    // Map Popup And Waypoints
+    // -----------------------------
+    const btnMap = document.getElementById("btnMap");
+    const mapModal = document.getElementById("mapModal");
+    const btnMapClose = document.getElementById("btnMapClose");
+    const chkMapFollow = document.getElementById("chkMapFollow");
+    const chkMapAdd = document.getElementById("chkMapAdd");
+    const btnMapClearTarget = document.getElementById("btnMapClearTarget");
+    const wpList = document.getElementById("wpList");
+    const btnWpExport = document.getElementById("btnWpExport");
+    const btnWpImport = document.getElementById("btnWpImport");
+    const btnWpClear = document.getElementById("btnWpClear");
+    const mapInfo = document.getElementById("mapInfo");
+    const pauseEl = document.getElementById("chkPause");
+
+    let uiModalOpen = false;
+    let pausedBeforeModal = false;
+
+    // Waypoint model
+    /** @type {{id:string,name:string,lat:number,lon:number}[]} */
+    let waypoints = [];
+    /** @type {{name:string,lat:number,lon:number,kind:string}|null} */
+    let navTarget = null;
+
+    // Leaflet objects
+    let lmap = null;
+    let boatMarker = null;
+    let destMarker = null;
+    let targetMarker = null;
+    /** @type {Map<string, any>} */
+    const wpMarkers = new Map();
+    let routeLine = null;
+
+    function currentTarget() {
+      if (navTarget) return navTarget;
+      return { name: 'Destination', lat: DEST.lat, lon: DEST.lon, kind: 'dest' };
+    }
+
+    function openMapModal() {
+      if (!mapModal) return;
+      uiModalOpen = true;
+      pausedBeforeModal = pauseEl ? !!pauseEl.checked : false;
+      if (pauseEl) pauseEl.checked = true;
+      keys.clear();
+      mapModal.setAttribute('aria-hidden', 'false');
+      ensureMapInit();
+      updateMapNow(true);
+      renderWaypointList();
+      toast('Map open: click to add waypoints when enabled');
+    }
+
+    function closeMapModal() {
+      if (!mapModal) return;
+      uiModalOpen = false;
+      if (pauseEl) pauseEl.checked = pausedBeforeModal;
+      mapModal.setAttribute('aria-hidden', 'true');
+      keys.clear();
+    }
+
+    if (btnMap) btnMap.addEventListener('click', () => {
+      const isOpen = mapModal && mapModal.getAttribute('aria-hidden') === 'false';
+      if (isOpen) closeMapModal(); else openMapModal();
+    });
+    if (btnMapClose) btnMapClose.addEventListener('click', closeMapModal);
+
+    window.addEventListener('keydown', (e) => {
+      if (!uiModalOpen) return;
+      if (e.code === 'Escape') closeMapModal();
+    }, { capture: true });
+
+    function ensureMapInit() {
+      if (lmap || !window.L) return;
+      const el = document.getElementById('leafletMap');
+      if (!el) return;
+
+      lmap = L.map(el, {
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: true,
+      });
+
+      // OSM tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(lmap);
+
+      // Markers
+      boatMarker = L.circleMarker([local.lat, local.lon], {
+        radius: 7,
+        weight: 2,
+        opacity: 0.95,
+        fillOpacity: 0.55,
+      }).addTo(lmap);
+
+      destMarker = L.marker([DEST.lat, DEST.lon]).addTo(lmap).bindPopup('Destination');
+
+      // Initial view
+      lmap.setView([local.lat, local.lon], 11);
+
+      // Click to add waypoint
+      lmap.on('click', (ev) => {
+        if (!chkMapAdd || !chkMapAdd.checked) return;
+        const ll = ev.latlng;
+        addWaypoint(ll.lat, ll.lng);
+      });
+
+      // Close when clicking dim background
+      mapModal.addEventListener('pointerdown', (e) => {
+        if (e.target === mapModal) closeMapModal();
+      });
+
+      if (btnMapClearTarget) btnMapClearTarget.addEventListener('click', () => {
+        navTarget = null;
+        updateMapNow(true);
+        toast('Target cleared (back to destination)');
+      });
+
+      if (btnWpClear) btnWpClear.addEventListener('click', () => {
+        waypoints = [];
+        navTarget = null;
+        syncWaypointsToMap();
+        renderWaypointList();
+        updateMapNow(true);
+        toast('Waypoints cleared');
+      });
+
+      if (btnWpExport) btnWpExport.addEventListener('click', async () => {
+        const payload = JSON.stringify({ waypoints }, null, 2);
+        let copied = false;
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(payload);
+            copied = true;
+          }
+        } catch (_) {}
+        if (copied) {
+          toast('Waypoints copied to clipboard');
+        } else {
+          window.prompt('Copy waypoints JSON:', payload);
+        }
+      });
+
+      if (btnWpImport) btnWpImport.addEventListener('click', () => {
+        const txt = window.prompt('Paste waypoints JSON (format: {"waypoints":[...]})');
+        if (!txt) return;
+        try {
+          const obj = JSON.parse(txt);
+          const arr = Array.isArray(obj) ? obj : obj.waypoints;
+          if (!Array.isArray(arr)) throw new Error('No waypoints array');
+          const cleaned = [];
+          for (const w of arr) {
+            const lat = Number(w.lat);
+            const lon = Number(w.lon);
+            if (!isFinite(lat) || !isFinite(lon)) continue;
+            cleaned.push({
+              id: String(w.id || `wp_${cleaned.length+1}`),
+              name: String(w.name || `WP ${cleaned.length+1}`),
+              lat,
+              lon,
+            });
+          }
+          waypoints = cleaned;
+          navTarget = null;
+          syncWaypointsToMap();
+          renderWaypointList();
+          updateMapNow(true);
+          toast(`Imported ${waypoints.length} waypoint(s)`);
+        } catch (err) {
+          console.warn(err);
+          toast('Import failed: invalid JSON');
+        }
+      });
+
+      syncWaypointsToMap();
+    }
+
+    function nextWpName() {
+      return `WP ${waypoints.length + 1}`;
+    }
+
+    function addWaypoint(lat, lon) {
+      const id = `wp_${Date.now().toString(36)}_${Math.floor(Math.random()*9999)}`;
+      const name = nextWpName();
+      waypoints.push({ id, name, lat, lon });
+      syncWaypointsToMap();
+      renderWaypointList();
+      updateMapNow(true);
+      toast(`${name} added`);
+    }
+
+    function syncWaypointsToMap() {
+      if (!lmap) return;
+
+      // Remove old
+      for (const [id, m] of wpMarkers.entries()) {
+        if (!waypoints.find(w => w.id === id)) {
+          try { lmap.removeLayer(m); } catch (_) {}
+          wpMarkers.delete(id);
+        }
+      }
+
+      // Add / update
+      for (const w of waypoints) {
+        let m = wpMarkers.get(w.id);
+        if (!m) {
+          m = L.marker([w.lat, w.lon], { draggable: true });
+          m.addTo(lmap);
+          m.on('dragend', () => {
+            const ll = m.getLatLng();
+            w.lat = ll.lat;
+            w.lon = ll.lng;
+            renderWaypointList();
+            updateMapNow(false);
+          });
+          m.on('click', () => {
+            const html = `<b>${escapeHtml(w.name)}</b><br/><span style="opacity:0.85; font-size:12px;">${w.lat.toFixed(5)}, ${w.lon.toFixed(5)}</span><br/><br/>` +
+              `<button data-act="target">Set As Target</button> ` +
+              `<button data-act="rename">Rename</button> ` +
+              `<button data-act="delete">Delete</button>`;
+            m.bindPopup(html, { closeButton: true }).openPopup();
+
+            // Attach once popup opens
+            setTimeout(() => {
+              const popupEl = document.querySelector('.leaflet-popup-content');
+              if (!popupEl) return;
+              popupEl.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const act = btn.getAttribute('data-act');
+                  if (act === 'target') setNavTarget(w);
+                  if (act === 'rename') renameWaypoint(w.id);
+                  if (act === 'delete') deleteWaypoint(w.id);
+                  try { m.closePopup(); } catch (_) {}
+                });
+              });
+            }, 0);
+          });
+          wpMarkers.set(w.id, m);
+        } else {
+          m.setLatLng([w.lat, w.lon]);
+        }
+      }
+
+      rebuildRouteLine();
+    }
+
+    function rebuildRouteLine() {
+      if (!lmap) return;
+      if (routeLine) {
+        try { lmap.removeLayer(routeLine); } catch (_) {}
+        routeLine = null;
+      }
+      const pts = [];
+      pts.push([START.lat, START.lon]);
+      for (const w of waypoints) pts.push([w.lat, w.lon]);
+      pts.push([DEST.lat, DEST.lon]);
+      routeLine = L.polyline(pts, { weight: 2, opacity: 0.55 }).addTo(lmap);
+    }
+
+    function renameWaypoint(id) {
+      const w = waypoints.find(x => x.id === id);
+      if (!w) return;
+      const n = window.prompt('Waypoint name:', w.name);
+      if (!n) return;
+      w.name = n.trim().slice(0, 60) || w.name;
+      renderWaypointList();
+      updateMapNow(false);
+    }
+
+    function deleteWaypoint(id) {
+      const idx = waypoints.findIndex(x => x.id === id);
+      if (idx < 0) return;
+      const w = waypoints[idx];
+      waypoints.splice(idx, 1);
+      if (navTarget && navTarget.kind === 'wp' && navTarget.name === w.name) {
+        navTarget = null;
+      }
+      syncWaypointsToMap();
+      renderWaypointList();
+      updateMapNow(true);
+      toast('Waypoint deleted');
+    }
+
+    function setNavTarget(w) {
+      navTarget = { name: w.name, lat: w.lat, lon: w.lon, kind: 'wp' };
+      updateMapNow(true);
+      toast(`Target set: ${w.name}`);
+    }
+
+    function renderWaypointList() {
+      if (!wpList) return;
+      wpList.innerHTML = '';
+
+      if (!waypoints.length) {
+        const d = document.createElement('div');
+        d.className = 'small';
+        d.style.opacity = '0.82';
+        d.textContent = 'No waypoints yet. Enable Add Waypoint and click the map.';
+        wpList.appendChild(d);
+        return;
+      }
+
+      for (const w of waypoints) {
+        const item = document.createElement('div');
+        item.className = 'wpItem';
+
+        const name = document.createElement('div');
+        name.className = 'wpName';
+        const isTarget = navTarget && navTarget.kind === 'wp' && navTarget.name === w.name;
+        name.textContent = isTarget ? `${w.name} (Target)` : w.name;
+
+        const meta = document.createElement('div');
+        meta.className = 'wpMeta';
+        meta.textContent = `${w.lat.toFixed(5)}, ${w.lon.toFixed(5)}`;
+
+        const btns = document.createElement('div');
+        btns.className = 'wpBtns';
+
+        const bTarget = document.createElement('button');
+        bTarget.textContent = 'Target';
+        bTarget.addEventListener('click', () => setNavTarget(w));
+
+        const bCenter = document.createElement('button');
+        bCenter.textContent = 'Center';
+        bCenter.addEventListener('click', () => {
+          ensureMapInit();
+          if (lmap) lmap.setView([w.lat, w.lon], Math.max(lmap.getZoom(), 12));
+        });
+
+        const bRename = document.createElement('button');
+        bRename.textContent = 'Rename';
+        bRename.addEventListener('click', () => renameWaypoint(w.id));
+
+        const bDel = document.createElement('button');
+        bDel.textContent = 'Delete';
+        bDel.addEventListener('click', () => deleteWaypoint(w.id));
+
+        btns.appendChild(bTarget);
+        btns.appendChild(bCenter);
+        btns.appendChild(bRename);
+        btns.appendChild(bDel);
+
+        item.appendChild(name);
+        item.appendChild(meta);
+        item.appendChild(btns);
+        wpList.appendChild(item);
+      }
+    }
+
+    function updateMapNow(forceCenter) {
+      if (!lmap || !boatMarker || !destMarker) return;
+
+      boatMarker.setLatLng([local.lat, local.lon]);
+
+      const tgt = currentTarget();
+      if (!targetMarker) {
+        targetMarker = L.circleMarker([tgt.lat, tgt.lon], { radius: 6, weight: 2, opacity: 0.9, fillOpacity: 0.2 });
+        targetMarker.addTo(lmap);
+      }
+      targetMarker.setLatLng([tgt.lat, tgt.lon]);
+
+      if (chkMapFollow && chkMapFollow.checked) {
+        if (forceCenter) {
+          lmap.setView([local.lat, local.lon], lmap.getZoom() || 11);
+        } else {
+          const c = lmap.getCenter();
+          const dlat = Math.abs(c.lat - local.lat);
+          const dlon = Math.abs(c.lng - local.lon);
+          if (dlat > 0.01 || dlon > 0.01) {
+            // if user dragged far away, do not snap unless they re-enable follow
+          }
+        }
+      }
+
+      // Info panel
+      if (mapInfo) {
+        const dist = haversineMeters(local.lat, local.lon, tgt.lat, tgt.lon);
+        const brg = bearingDeg(local.lat, local.lon, tgt.lat, tgt.lon);
+        const destDist = haversineMeters(local.lat, local.lon, DEST.lat, DEST.lon);
+        mapInfo.textContent = `Canoe: ${local.lat.toFixed(5)}, ${local.lon.toFixed(5)} | Target: ${tgt.name} | Target Range: ${(dist/1000).toFixed(2)} km | Target Bearing: ${brg.toFixed(0)}° | Dest Range: ${(destDist/1000).toFixed(2)} km`;
+      }
+    }
+
+    // Throttled live updates while map is open
+    let lastMapTick = 0;
+    function tickMapLive(nowMs) {
+      if (!mapModal) return;
+      if (mapModal.getAttribute('aria-hidden') !== 'false') return;
+      if (!lmap) return;
+      if (nowMs - lastMapTick < 220) return;
+      lastMapTick = nowMs;
+      updateMapNow(false);
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+
+    // Debug Panel
+    const debugEl = document.getElementById("debugPanel");
+    const dbgText = document.getElementById("dbgText");
+    const chkDebug = document.getElementById("chkDebug");
+    if (chkDebug) {
+      chkDebug.addEventListener("change", () => {
+      debugEl.style.display = chkDebug.checked ? "block" : "none";
+      debugEl.setAttribute("aria-hidden", chkDebug.checked ? "false" : "true");
+    });
+    } else {
+      console.warn("chkDebug element not found");
+    }
+
+    // DOM Star Labels (overlay)
+    const chkLabels = document.getElementById("chkLabels");
+    const labelLayer = document.getElementById("labelLayer");
+    const LABEL_TARGETS = [
+      { id: "Canopus", text: "Canopus" },
+      { id: "Acrux", text: "Acrux" },
+      { id: "Sirius", text: "Sirius" },
+      { id: "Alpha Cen", text: "Alpha Centauri" },
+      { id: "Achernar", text: "Achernar" }
+    ];
+    const labelEls = new Map();
+
+    function setLabelsVisible(v) {
+      if (!labelLayer) return;
+      labelLayer.style.display = v ? "block" : "none";
+      labelLayer.setAttribute("aria-hidden", v ? "false" : "true");
+    }
+
+    if (labelLayer) {
+      for (const t of LABEL_TARGETS) {
+        const el = document.createElement("div");
+        el.className = "starLabelTag";
+        el.textContent = t.text;
+        el.style.display = "none";
+        labelLayer.appendChild(el);
+        labelEls.set(t.id, el);
+      }
+    }
+
+    if (chkLabels) {
+      setLabelsVisible(chkLabels.checked);
+      chkLabels.addEventListener("change", () => setLabelsVisible(chkLabels.checked));
+    }
+
+    function updateDomLabels(cam) {
+      if (!chkLabels || !chkLabels.checked || !labelLayer) {
+        // hide all
+        if (labelLayer) {
+          for (const el of labelEls.values()) el.style.display = "none";
+        }
+        return;
+      }
+
+      // Use current skyGroup position even between 1 Hz sky updates
+      // (stars are anchored relative to the canoe)
+      // skyGroup.position is already updated in updateSky, but keep it tight for labels.
+      // NOTE: skyGroup is in module scope.
+
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+
+      for (const t of LABEL_TARGETS) {
+        const el = labelEls.get(t.id);
+        const st = cachedStarFrame.starDirs.get(t.id);
+        if (!el || !st || st.altDeg < -2) {
+          if (el) el.style.display = "none";
+          continue;
+        }
+
+        const p = st.dir.clone().multiplyScalar(STAR_RADIUS).add(skyGroup.position);
+        const ndc = p.clone().project(cam);
+
+        if (ndc.z < -1 || ndc.z > 1 || Math.abs(ndc.x) > 1.05 || Math.abs(ndc.y) > 1.05) {
+          el.style.display = "none";
+          continue;
+        }
+
+        const x = (ndc.x * 0.5 + 0.5) * w;
+        const y = (-ndc.y * 0.5 + 0.5) * h;
+        const a = clamp((st.altDeg + 2) / 18, 0.15, 0.95);
+
+        el.style.display = "block";
+        el.style.left = `${x.toFixed(1)}px`;
+        el.style.top = `${y.toFixed(1)}px`;
+        el.style.opacity = String(a);
+      }
+    }
+
+    // Star controls
+    const rngStarBright = document.getElementById("rngStarBright");
+    const outStarBright = document.getElementById("outStarBright");
+    const rngStarSize = document.getElementById("rngStarSize");
+    const outStarSize = document.getElementById("outStarSize");
+    const chkBgStars = document.getElementById("chkBgStars");
+    const rngBgDensity = document.getElementById("rngBgDensity");
+    const outBgDensity = document.getElementById("outBgDensity");
+
+    function syncStarUI() {
+      outStarBright.textContent = Number(rngStarBright.value).toFixed(2);
+      outStarSize.textContent = Number(rngStarSize.value).toFixed(2);
+      outBgDensity.textContent = String(Math.round(Number(rngBgDensity.value)));
+    }
+
+    function applyStarUniforms() {
+      starMat.uniforms.uBrightness.value = Number(rngStarBright.value);
+      starMat.uniforms.uSizeScale.value = Number(rngStarSize.value);
+    }
+
+    function onStarTuningInput() {
+      syncStarUI();
+      applyStarUniforms();
+    }
+
+    rngStarBright.addEventListener("input", onStarTuningInput);
+    rngStarSize.addEventListener("input", onStarTuningInput);
+    rngBgDensity.addEventListener("input", syncStarUI);
+
+    chkBgStars.addEventListener("change", () => {
+      rebuildStarCloud();
+      syncStarUI();
+    });
+    rngBgDensity.addEventListener("change", () => {
+      rebuildStarCloud();
+      syncStarUI();
+    });
+
+    syncStarUI();
+    applyStarUniforms();
+    rebuildStarCloud();
+
+    // Camera controls
+    const chkFreeLook = document.getElementById("chkFreeLook");
+    const chkPause = document.getElementById("chkPause");
+    const rngCamDist = document.getElementById("rngCamDist");
+    const outCamDist = document.getElementById("outCamDist");
+    const rngCamHeight = document.getElementById("rngCamHeight");
+    const outCamHeight = document.getElementById("outCamHeight");
+    const selGaze = document.getElementById("selGaze");
+    const rngGazeDist = document.getElementById("rngGazeDist");
+    const outGazeDist = document.getElementById("outGazeDist");
+    const rngHeadTilt = document.getElementById("rngHeadTilt");
+    const outHeadTilt = document.getElementById("outHeadTilt");
+
+    function syncCamUI() {
+      outCamDist.textContent = Number(rngCamDist.value).toFixed(1);
+      outCamHeight.textContent = Number(rngCamHeight.value).toFixed(1);
+      outGazeDist.textContent = Number(rngGazeDist.value).toFixed(0);
+      if (rngHeadTilt && outHeadTilt) outHeadTilt.textContent = Number(rngHeadTilt.value).toFixed(1);
+    }
+    rngCamDist.addEventListener("input", syncCamUI);
+    rngCamHeight.addEventListener("input", syncCamUI);
+    rngGazeDist.addEventListener("input", syncCamUI);
+    if (rngHeadTilt) rngHeadTilt.addEventListener("input", syncCamUI);
+    syncCamUI();
+
+    document.getElementById("btnResetCam").addEventListener("click", () => {
+      camYawOffsetDeg = 0;
+      camExtraHeight = 0;
+      toast("Camera reset");
+    });
+
+    document.getElementById("btnPlayAgain").addEventListener("click", () => { document.getElementById("win").style.display = "none"; resetGame(); });
+
+    const chkCompass = document.getElementById("chkCompass");
+    chkCompass.addEventListener("change", () => {
+      document.getElementById("compassRose").style.display = chkCompass.checked ? "block" : "none";
+    });
+    // Apply initial state
+    document.getElementById("compassRose").style.display = chkCompass.checked ? "block" : "none";
+
+    const chkSight = document.getElementById("chkSight");
+    const centerSight = document.getElementById("centerSight");
+    function syncSight() {
+      centerSight.style.display = chkSight.checked ? "block" : "none";
+      // If the user hides the sight, keep compass separate.
+      if (!chkSight.checked) document.getElementById("compassRose").style.display = chkCompass.checked ? "block" : "none";
+    }
+    chkSight.addEventListener("change", syncSight);
+    syncSight();
+
+
+    function toggleJournal(force) {
+      const h = document.getElementById("help");
+      const show = (typeof force === "boolean") ? force : (h.style.display !== "block");
+      h.style.display = show ? "block" : "none";
+    }
+
+    // -----------------------------
+    // Camera Follow
+    // -----------------------------
+    // -----------------------------
+    // Camera Follow And Free Look
+    // -----------------------------
+    let camYawOffsetDeg = 0;     // free look yaw around canoe
+    let camExtraHeight = 0;      // free look pitch simulated as height offset
+    let isDragging = false;
+    let lastPX = 0, lastPY = 0;
+
+    function updateCamera(dt) {
+      const dist = Number(rngCamDist.value);
+      const baseH = Number(rngCamHeight.value);
+
+      const yawDeg = wrapDeg(headingDeg + 180 + (chkFreeLook.checked ? camYawOffsetDeg : 0));
+      const yawRad = degToRad(yawDeg);
+
+      const behind = new THREE.Vector3(Math.sin(yawRad), 0, Math.cos(yawRad)); // points away from canoe (camera direction)
+      const up = new THREE.Vector3(0, 1, 0);
+
+      const camTarget = canoe.position.clone().add(new THREE.Vector3(0, 2.0, 0));
+      const camPos = canoe.position.clone()
+        .add(behind.multiplyScalar(dist))
+        .add(up.multiplyScalar(clamp(baseH + (chkFreeLook.checked ? camExtraHeight : 0), 1.8, 12.0)));
+
+      camera.position.lerp(camPos, 1 - Math.pow(0.02, dt * 60));
+
+      // Fixed gaze option
+      if (selGaze.value === "ahead") {
+        const hdgRad = degToRad(headingDeg);
+        const fE = Math.sin(hdgRad);
+        const fN = Math.cos(hdgRad);
+        const gaze = canoe.position.clone()
+          .add(new THREE.Vector3(fE, 0, fN).multiplyScalar(Number(rngGazeDist.value)))
+          .add(new THREE.Vector3(0, 1.4, 0));
+        camera.lookAt(gaze);
+      } else {
+        camera.lookAt(camTarget);
+      }
+
+      // Head tilt (camera roll)
+      if (typeof rngHeadTilt !== "undefined" && rngHeadTilt) {
+        const tiltRad = degToRad(Number(rngHeadTilt.value));
+        camera.rotateZ(tiltRad);
+      }
+    }
+
+    // Mouse look controls
+    renderer.domElement.addEventListener("pointerdown", (e) => {
+      if (!chkFreeLook.checked) return;
+      isDragging = true;
+      lastPX = e.clientX;
+      lastPY = e.clientY;
+      renderer.domElement.setPointerCapture(e.pointerId);
+    });
+    renderer.domElement.addEventListener("pointerup", (e) => {
+      isDragging = false;
+      try { renderer.domElement.releasePointerCapture(e.pointerId); } catch (_) {}
+    });
+    renderer.domElement.addEventListener("pointermove", (e) => {
+      if (!isDragging || !chkFreeLook.checked) return;
+      const dx = e.clientX - lastPX;
+      const dy = e.clientY - lastPY;
+      lastPX = e.clientX;
+      lastPY = e.clientY;
+
+      camYawOffsetDeg = clamp(camYawOffsetDeg + dx * 0.18, -220, 220);
+      camExtraHeight = clamp(camExtraHeight - dy * 0.015, -2.2, 3.8);
+    });
+    renderer.domElement.addEventListener("wheel", (e) => {
+      if (!chkFreeLook.checked) return;
+      e.preventDefault();
+      const v = Number(rngCamDist.value);
+      rngCamDist.value = String(clamp(v + (e.deltaY > 0 ? 0.6 : -0.6), 6, 22));
+      syncCamUI();
+    }, { passive: false });
+
+
+    // -----------------------------
+    // Game Loop State
+
+    // -----------------------------
+    let headingDeg = 86;       // initial heading east-ish
+    let speed = 0;             // m/s
+    let velE = 0, velN = 0;    // velocity in East and North (m/s) for local frame
+    let simTime = new Date("2026-01-20T09:30:00Z");
+    let lastCur = { e: 0, n: 0 };
+    let lastWnd = { e: 0, n: 0 };
+    let lastDesiredDeg = 0;
+    let lastDeltaDeg = 0; // start at night NZDT-ish (UTC here)
+    let lastSkyUpdate = 0;
+    let winShown = false;
+
+    const clock = new THREE.Clock();
+
+    function resetGame() {
+      local.lat = START.lat;
+      local.lon = START.lon;
+      local.x = 0;
+      local.z = 0;
+
+      canoe.position.set(0, 0.0, 0);
+      headingDeg = 86;
+      speed = 0;
+      velE = 0;
+      velN = 0;
+
+      simTime = new Date("2026-01-20T09:30:00Z");
+      winShown = false;
+
+      // Force sky update then compute guide offset
+      updateSky(local.lat, local.lon, simTime, canoe.position, camera);
+      const canAz = cachedStarFrame.guideAzDeg;
+      const destBearing = bearingDeg(local.lat, local.lon, DEST.lat, DEST.lon);
+      guideOffsetDeg = shortestAngleDeg(canAz, destBearing);
+      updateCarvedMarkVisual(guideOffsetDeg);
+
+      toast("Find Canopus and hold it on the carved mark.");
+    }
+
+    // -----------------------------
+    // Movement and Physics
+    // -----------------------------
+    function updateBoat(dt) {
+      const turnRate = 52; // deg/s at full steer
+      const accel = 1.35;  // m/s^2
+      const drag = 0.52;   // proportional drag
+      const brake = keys.has("Space");
+
+      const steerL = keys.has("KeyA") ? 1 : 0;
+      const steerR = keys.has("KeyD") ? 1 : 0;
+      const paddle = keys.has("KeyW") ? 1 : 0;
+      const sprint = keys.has("ShiftLeft") || keys.has("ShiftRight");
+
+      const steer = steerR - steerL;
+      headingDeg = wrapDeg(headingDeg + steer * turnRate * dt * clamp(0.6 + speed * 0.12, 0.6, 1.2));
+
+      const paddlePower = paddle ? (sprint ? 1.6 : 1.0) : 0.0;
+      speed += paddlePower * accel * dt;
+
+      // drag and brake
+      speed -= speed * drag * dt;
+      if (brake) speed -= speed * 1.2 * dt;
+      speed = clamp(speed, 0, 5.6);
+
+      // forward velocity component
+      const hdgRad = degToRad(headingDeg);
+      const fE = Math.sin(hdgRad);
+      const fN = Math.cos(hdgRad);
+
+      // currents and wind drift
+      const tSec = simTime.getTime() / 1000;
+      const cur = oceanCurrentEastNorth(local.lat, local.lon, tSec);
+      const wnd = windEastNorth(tSec);
+      lastCur = cur;
+      lastWnd = wnd;
+
+      // drift coupling
+      const driftE = cur.e + wnd.e * 0.4;
+      const driftN = cur.n + wnd.n * 0.4;
+
+      velE = fE * speed + driftE;
+      velN = fN * speed + driftN;
+
+      // integrate local position
+      local.x += velE * dt;
+      local.z += velN * dt;
+
+      // update lat lon from local
+      local.lat = START.lat + metersToLat(local.z);
+      local.lon = START.lon + metersToLon(local.x, START.lat);
+
+      // set canoe transform
+      const y = waveHeight(local.x, local.z, tSec * 0.5) + 0.25;
+      canoe.position.set(local.x, y, local.z);
+      canoe.rotation.y = degToRad(headingDeg);
+
+      // subtle bob
+      canoe.rotation.z = Math.sin(tSec * 0.9) * 0.012 + clamp(steer * 0.02, -0.02, 0.02);
+      canoe.rotation.x = Math.cos(tSec * 1.1) * 0.008 + clamp(paddlePower * 0.01, 0, 0.01);
+    }
+
+    // -----------------------------
+    // Guidance Feedback (Myst-style)
+    // -----------------------------
+    function guidanceFeedback() {
+      // Desired bearing derived from Canopus azimuth + constant offset from start
+      const can = cachedStarFrame.starDirs.get("Canopus");
+      if (!can || can.altDeg < -2) return { ok: false, delta: 999 };
+
+      const desired = wrapDeg(can.azDeg + guideOffsetDeg);
+      const delta = shortestAngleDeg(headingDeg, desired);
+      lastDesiredDeg = desired;
+      lastDeltaDeg = delta;
+
+      // Soft feedback: toast on strong alignment
+      if (Math.abs(delta) < 3.0 && speed > 0.6) {
+        if (!guidanceFeedback._armed) {
+          guidanceFeedback._armed = true;
+          toast("Course holds. Do not chase the star, hold the relationship.", 1100);
+        }
+      } else {
+        guidanceFeedback._armed = false;
+      }
+
+      return { ok: true, delta };
+    }
+
+    // -----------------------------
+    // Win Condition
+    // -----------------------------
+    function checkWin() {
+      const d = haversineMeters(local.lat, local.lon, DEST.lat, DEST.lon);
+      if (d < 220 && !winShown) {
+        winShown = true;
+        document.getElementById("win").style.display = "grid";
+      }
+      return d;
+    }
+
+    // -----------------------------
+    // Render Loop
+    // -----------------------------
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, clock.getDelta());
+
+      // advance sim time
+      const paused = !!chkPause.checked;
+      const timeScale = Number(timeScaleEl.value);
+      if (!paused) {
+        simTime = new Date(simTime.getTime() + dt * 1000 * timeScale);
+      }
+
+      if (!paused) {
+        updateBoat(dt);
+        // ocean mesh waves
+        updateOcean(simTime.getTime() / 1000);
+      }
+
+      // update camera
+      updateCamera(dt);
+
+      // update sky at 1 Hz (positions) and every frame for labels when Free Look is enabled
+      const nowMs = performance.now();
+      if (nowMs - lastSkyUpdate > 900) {
+        lastSkyUpdate = nowMs;
+        updateSky(local.lat, local.lon, simTime, canoe.position, camera);
+      } else if (chkFreeLook.checked || document.getElementById("chkLabels").checked) {
+        // label refresh only
+        updateSky(local.lat, local.lon, simTime, canoe.position, camera);
+      }
+
+
+      // guidance
+      const gf = guidanceFeedback();
+
+      // update HUD
+      elLat.textContent = local.lat.toFixed(5);
+      elLon.textContent = local.lon.toFixed(5);
+      elTime.textContent = simTime.toISOString().replace("T"," ").slice(0,19) + "Z";
+      elHdg.textContent = Math.round(headingDeg).toString();
+      elSpd.textContent = speed.toFixed(1);
+
+      const d = checkWin();
+      // HUD range shows current navigation target (waypoint target or destination)
+      const tgt = currentTarget();
+      const navDistM = haversineMeters(local.lat, local.lon, tgt.lat, tgt.lon);
+      elRng.textContent = (navDistM / 1000).toFixed(2);
+      // show carved mark relevance by tinting the SVG (if visible)
+      if (centerSight.style.display !== 'none') {
+        if (gf.ok) {
+          const a = clamp(1.0 - Math.abs(gf.delta) / 18.0, 0.15, 1.0);
+          centerSight.style.opacity = (0.55 + a * 0.45).toFixed(2);
+        } else {
+          centerSight.style.opacity = '0.55';
+        }
+      }
+
+      // Debug info
+      if (chkDebug.checked) {
+        const can = cachedStarFrame.starDirs.get("Canopus");
+        const canAlt = can ? can.altDeg : NaN;
+        const canAz = can ? can.azDeg : NaN;
+        const desired = lastDesiredDeg;
+        const delta = lastDeltaDeg;
+        const distM = d;
+        const brg = bearingDeg(local.lat, local.lon, DEST.lat, DEST.lon);
+        const tgt = currentTarget();
+        const navDistM = haversineMeters(local.lat, local.lon, tgt.lat, tgt.lon);
+        const navBrg = bearingDeg(local.lat, local.lon, tgt.lat, tgt.lon);
+
+        // count stars above a visibility threshold
+        let vis = 0;
+        for (let i = 0; i < (starAlpha ? starAlpha.length : 0); i++) if (starAlpha[i] > 0.08) vis++;
+
+        dbgText.textContent = [
+          `Paused: ${paused}`,
+          `Sim Time: ${simTime.toISOString()}`,
+          `Lat Lon: ${local.lat.toFixed(6)}  ${local.lon.toFixed(6)}`,
+          `Local XZ (m): ${local.x.toFixed(1)}  ${local.z.toFixed(1)}`,
+          `Heading: ${headingDeg.toFixed(2)} deg`,
+          `Speed: ${speed.toFixed(2)} m/s`,
+          `Vel EN: ${velE.toFixed(2)}  ${velN.toFixed(2)} m/s`,
+          `Current EN: ${lastCur.e.toFixed(2)}  ${lastCur.n.toFixed(2)} m/s`,
+          `Wind EN: ${lastWnd.e.toFixed(2)}  ${lastWnd.n.toFixed(2)} m/s`,
+          `Nav Target: ${tgt.name}`,
+          `Nav Range: ${(navDistM/1000).toFixed(2)} km`,
+          `Nav Bearing: ${navBrg.toFixed(2)} deg`,
+          `Dest Range: ${(distM/1000).toFixed(2)} km`,
+          `Dest Bearing: ${brg.toFixed(2)} deg`,
+          `Guide Offset: ${guideOffsetDeg.toFixed(2)} deg`,
+          `Desired Heading: ${desired.toFixed(2)} deg`,
+          `Delta: ${delta.toFixed(2)} deg`,
+          `Canopus Alt Az: ${isFinite(canAlt) ? canAlt.toFixed(2) : 'n/a'}  ${isFinite(canAz) ? canAz.toFixed(2) : 'n/a'}`,
+          `Stars Total: ${starsAll ? starsAll.length : 0}  Visible: ${vis}`,
+          `Star Brightness: ${Number(rngStarBright.value).toFixed(2)}x  Size: ${Number(rngStarSize.value).toFixed(2)}x`,
+          `Free Look: ${chkFreeLook.checked}  Yaw Offset: ${camYawOffsetDeg.toFixed(1)}  Extra Height: ${camExtraHeight.toFixed(2)}`,
+          `Camera Pos: ${camera.position.x.toFixed(1)}  ${camera.position.y.toFixed(1)}  ${camera.position.z.toFixed(1)}`,
+        ].join("\n");
+      }
+
+      // Keep sky anchored to the canoe even between 1 Hz sky recomputes
+      skyGroup.position.copy(canoe.position);
+
+      // DOM labels update (camera-dependent)
+      updateDomLabels(camera);
+
+      // Map live updates when open
+      tickMapLive(nowMs);
+
+      renderer.render(scene, camera);
+    }
+
+    // Resize
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Start
+    resetGame();
+    animate();
+  </script>
+</body>
+</html>
