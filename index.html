@@ -1,1 +1,3165 @@
-hello world
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Project Portfolio Browser</title>
+  <meta name="color-scheme" content="dark light" />
+  <style>
+    :root{
+      --bg: #0b0f17;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.09);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.68);
+      --muted2: rgba(255,255,255,0.52);
+      --border: rgba(255,255,255,0.12);
+      --border2: rgba(255,255,255,0.18);
+      --accent: #7c5cff;
+      --accent2:#33d6c5;
+      --good:#35d07f;
+      --warn:#ffcc66;
+      --bad:#ff5c7a;
+      --shadow: 0 18px 50px rgba(0,0,0,0.45);
+      --radius: 18px;
+      --radius2: 24px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f6f7fb;
+        --panel: rgba(20,24,32,0.05);
+        --panel2: rgba(20,24,32,0.08);
+        --text: rgba(10,12,18,0.92);
+        --muted: rgba(10,12,18,0.68);
+        --muted2: rgba(10,12,18,0.52);
+        --border: rgba(10,12,18,0.10);
+        --border2: rgba(10,12,18,0.14);
+        --shadow: 0 18px 50px rgba(16,20,30,0.12);
+      }
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:
+        radial-gradient(900px 600px at 25% -10%, rgba(124,92,255,0.22), transparent 60%),
+        radial-gradient(900px 600px at 90% 0%, rgba(51,214,197,0.16), transparent 55%),
+        radial-gradient(1200px 800px at 50% 110%, rgba(124,92,255,0.12), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+    button, input, select, textarea{
+      font-family:inherit;
+      color:inherit;
+    }
+
+    .app{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 22px 18px 60px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+.brand{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      min-width: 260px;
+      flex: 1 1 520px;
+    }
+
+.brand h1{
+      margin:0;
+      font-size: 22px;
+      letter-spacing: 0.2px;
+      font-weight: 750;
+      line-height:1.15;
+    }
+    .brand p{
+      margin:0;
+      color:var(--muted);
+      font-size: 13.5px;
+      line-height: 1.35;
+      max-width: 680px;
+    }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+      flex: 0 1 auto;
+      min-width: 280px;
+    }
+    .actions > *{ min-width: 0; }
+
+.btn{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.20);
+      transition: transform .06s ease, border-color .15s ease, background .15s ease;
+      user-select:none;
+    }
+    .btn:hover{ border-color: var(--border2); }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn.primary{
+      border-color: rgba(124,92,255,0.45);
+      background: linear-gradient(180deg, rgba(124,92,255,0.30), rgba(124,92,255,0.16));
+    }
+    .btn.good{
+      border-color: rgba(53,208,127,0.50);
+      background: linear-gradient(180deg, rgba(53,208,127,0.26), rgba(53,208,127,0.14));
+    }
+    .btn.ghost{
+      background: transparent;
+      box-shadow:none;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:flex-start;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      font-size: 12.5px;
+      color: var(--muted);
+      user-select:none;
+      max-width: 360px;
+      flex-wrap: wrap;
+      line-height: 1.2;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      font-size: 12.5px;
+      color: var(--muted);
+      user-select:none;
+      flex-wrap: wrap;
+      line-height: 1.2;
+    }
+    .pill input{
+      accent-color: var(--accent);
+    }
+
+    #sourceChip{
+      display:-webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      max-width: 260px;
+    }
+
+.chip strong{ color: var(--text); font-weight: 650; }
+
+    .panel{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      border-radius: var(--radius2);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .panelHeader{
+      padding: 14px 14px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border-bottom:1px solid var(--border);
+    }
+    .panelHeader h2{
+      margin:0;
+      font-size: 14px;
+      letter-spacing: 0.18px;
+      font-weight: 750;
+      color: var(--text);
+    }
+    .panelHeader .sub{
+      margin:0;
+      color:var(--muted);
+      font-size: 12.5px;
+    }
+
+    .panelBody{ padding: 14px; }
+
+    .repoGrid{
+      display:grid;
+      grid-template-columns: 1.2fr 1.2fr 0.9fr 1.2fr;
+      gap: 10px;
+    }
+    @media (max-width: 980px){
+      .repoGrid{ grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px){
+      .repoGrid{ grid-template-columns: 1fr; }
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      min-width: 0;
+    }
+    .field label{
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.15px;
+    }
+    .field input, .field select, .field textarea{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      padding: 10px 11px;
+      border-radius: 14px;
+      outline:none;
+      font-size: 13.5px;
+      width:100%;
+    }
+    .field textarea{
+      min-height: 110px;
+      resize: vertical;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus{
+      border-color: rgba(124,92,255,0.60);
+      box-shadow: 0 0 0 4px rgba(124,92,255,0.14);
+    }
+
+    .filtersRow{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-top: 14px;
+    }
+
+    .grow{ flex:1 1 auto; min-width: 220px; }
+
+    .tagBar{
+      display:flex;
+      gap: 8px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .tagBtn{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      padding: 7px 10px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-size: 12.5px;
+      color: var(--muted);
+      transition: border-color .15s ease, background .15s ease;
+      user-select:none;
+    }
+    .tagBtn:hover{ border-color: var(--border2); }
+    .tagBtn.active{
+      border-color: rgba(51,214,197,0.55);
+      background: rgba(51,214,197,0.12);
+      color: var(--text);
+    }
+
+    .statusRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    .grid{
+      margin-top: 16px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border:1px solid var(--border);
+      border-radius: var(--radius2);
+      background: rgba(255,255,255,0.05);
+      overflow:visible;
+      position:relative;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+      display:flex;
+      flex-direction:column;
+      min-height: 220px;
+    }
+
+    .cardTop{
+      display:flex;
+      gap: 12px;
+      padding: 14px;
+      align-items:flex-start;
+    }
+
+    .thumb{
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      border:1px solid var(--border);
+      background:
+        radial-gradient(18px 18px at 30% 25%, rgba(255,255,255,0.18), transparent 55%),
+        linear-gradient(135deg, rgba(124,92,255,0.28), rgba(51,214,197,0.16));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 820;
+      letter-spacing: 0.35px;
+      color: var(--text);
+      overflow:hidden;
+      flex:0 0 auto;
+      user-select:none;
+    }
+    .thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .cardMeta{
+      min-width: 0;
+      flex: 1 1 auto;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .cardTitleRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .cardMeta h3{
+      margin:0;
+      font-size: 15px;
+      font-weight: 780;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .badge{
+      font-size: 11.5px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(124,92,255,0.35);
+      background: rgba(124,92,255,0.12);
+      color: var(--text);
+      flex: 0 0 auto;
+      user-select:none;
+    }
+    .badge.featured{
+      border-color: rgba(51,214,197,0.44);
+      background: rgba(51,214,197,0.12);
+    }
+
+    .desc{
+      margin:0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      display:-webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+      min-height: 52px;
+    }
+
+    .miniRow{
+      display:flex;
+      gap: 8px;
+      flex-wrap:wrap;
+      margin-top: 2px;
+    }
+    .miniTag{
+      font-size: 11.5px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      user-select:none;
+    }
+
+    .cardBottom{
+      margin-top:auto;
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+      background: rgba(255,255,255,0.03);
+    }
+    .path{
+      color: var(--muted2);
+      font-size: 11.5px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      max-width: 360px;
+    }
+
+    .btnRow{
+      display:flex;
+      gap: 8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-left:auto;
+    }
+    .btnSmall{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      padding: 7px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-size: 12.5px;
+      color: var(--text);
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      user-select:none;
+    }
+    .btnSmall:hover{ border-color: var(--border2); }
+    .btnSmall.primary{
+      border-color: rgba(124,92,255,0.45);
+      background: rgba(124,92,255,0.16);
+    }
+
+    .menuWrap{ position: relative; z-index: 50; }
+    .menu{
+      position:absolute;
+      right:0;
+      top: 40px;
+      min-width: 260px;
+      border:1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(18,22,30,0.96);
+      box-shadow: var(--shadow);
+      padding: 8px;
+      z-index: 999;
+      max-height: 280px;
+      overflow:auto;
+      display:none;
+    }
+
+    .menuWrap.up .menu{ top:auto; bottom: 40px; }
+    @media (prefers-color-scheme: light){
+      .menu{ background: rgba(250,251,254,0.98); }
+    }
+    .menu.open{ display:block; }
+
+    /* File chooser modal */
+    .modal.chooser{
+      inset:auto;
+      top: 10vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(760px, 92vw);
+      height: auto;
+      max-height: 80vh;
+    }
+    @media (max-width: 720px){
+      .modal.chooser{
+        top: 6vh;
+        width: min(760px, 94vw);
+        max-height: 86vh;
+      }
+    }
+    .chooserWrap{
+      padding: 14px 14px 16px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+    .chooserHint{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .chooserList{
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow:hidden;
+    }
+    .chooserRow{
+      width:100%;
+      border:0;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      padding: 10px 12px;
+      text-align:left;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+    }
+    .chooserRow:last-child{ border-bottom: 0; }
+    .chooserRow:hover{ background: rgba(255,255,255,0.06); }
+    @media (prefers-color-scheme: light){
+      .chooserRow:hover{ background: rgba(0,0,0,0.04); }
+    }
+    .chooserRow .name{
+      font-weight: 650;
+      font-size: 13px;
+    }
+    .chooserRow .path{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .chooserActions{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-top: 6px;
+    }
+
+    .menu a, .menu button{
+      width:100%;
+      text-align:left;
+      border:1px solid transparent;
+      background: transparent;
+      padding: 10px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      color: var(--text);
+      font-size: 13px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .menu a:hover, .menu button:hover{
+      border-color: var(--border);
+      background: rgba(255,255,255,0.05);
+    }
+    .menu .subline{
+      font-size: 11.5px;
+      color: var(--muted);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      max-width: 200px;
+    }
+
+    .toastHost{
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      z-index: 100;
+      pointer-events:none;
+    }
+    .toast{
+      pointer-events:auto;
+      border:1px solid var(--border);
+      background: rgba(18,22,30,0.92);
+      padding: 10px 12px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      color: var(--text);
+      font-size: 13px;
+      max-width: 420px;
+      display:flex;
+      align-items:flex-start;
+      gap: 10px;
+    }
+    @media (prefers-color-scheme: light){
+      .toast{ background: rgba(255,255,255,0.98); }
+    }
+    .dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-top: 4px;
+      flex:0 0 auto;
+      background: var(--accent);
+    }
+    .dot.good{ background: var(--good); }
+    .dot.warn{ background: var(--warn); }
+    .dot.bad{ background: var(--bad); }
+    .toast .tTitle{ font-weight: 750; margin-bottom: 2px; }
+    .toast .tBody{ color: var(--muted); line-height:1.3; }
+    .toast .close{
+      margin-left:auto;
+      border:1px solid transparent;
+      background: transparent;
+      cursor:pointer;
+      color: var(--muted);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+    .toast .close:hover{ border-color: var(--border); color: var(--text); }
+
+    .modalOverlay{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display:none;
+      z-index: 90;
+    }
+    .modalOverlay.open{ display:block; }
+
+    .modal{
+      position: fixed;
+      inset: 24px 24px;
+      background: rgba(18,22,30,0.96);
+      border:1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      display:none;
+      z-index: 91;
+      overflow:hidden;
+    }
+    @media (prefers-color-scheme: light){
+      .modal{ background: rgba(255,255,255,0.98); }
+    }
+    @media (max-width: 720px){
+      .modal{ inset: 12px; border-radius: 20px; }
+    }
+    .modal.open{ display:flex; flex-direction:column; }
+
+    .modalTop{
+      padding: 12px 12px;
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    }
+    .modalTop .left{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+    }
+    .modalTop .title{
+      font-size: 13px;
+      font-weight: 780;
+      margin:0;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 70vw;
+    }
+    .modalTop .subtitle{
+      font-size: 12px;
+      color: var(--muted);
+      margin:0;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 70vw;
+    }
+    .modalTop .right{
+      display:flex;
+      gap: 8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+
+    .viewer{
+      flex:1 1 auto;
+      background: rgba(0,0,0,0.18);
+      position: relative;
+    }
+    .viewer iframe{
+      border:0;
+      width:100%;
+      height:100%;
+      display:block;
+      background: white;
+    }
+
+    .drawer{
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: min(520px, 92vw);
+      background: rgba(18,22,30,0.98);
+      border-left: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transform: translateX(105%);
+      transition: transform .18s ease;
+      z-index: 95;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    @media (prefers-color-scheme: light){
+      .drawer{ background: rgba(255,255,255,0.99); }
+    }
+    .drawer.open{ transform: translateX(0); }
+    .drawerTop{
+      padding: 14px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    }
+    .drawerTop h2{
+      margin:0;
+      font-size: 14px;
+      font-weight: 780;
+    }
+    .drawerTop p{
+      margin: 6px 0 0;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .drawerBody{
+      padding: 14px;
+      overflow:auto;
+    }
+    .twoCol{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 520px){
+      .twoCol{ grid-template-columns: 1fr; }
+    }
+
+    .listBox{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px;
+      background: rgba(255,255,255,0.04);
+      max-height: 220px;
+      overflow:auto;
+    }
+    .listItem{
+      width:100%;
+      text-align:left;
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 10px 10px;
+      border-radius: 14px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+    }
+    .listItem:hover{
+      border-color: var(--border);
+      background: rgba(255,255,255,0.05);
+    }
+    .listItem.active{
+      border-color: rgba(124,92,255,0.55);
+      background: rgba(124,92,255,0.12);
+    }
+    .listItem .name{
+      font-weight: 760;
+      font-size: 13px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .listItem .hint{
+      font-size: 12px;
+      color: var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .footerHelp{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.4;
+    }
+
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+
+    .pageContent{
+      margin: 10px 0 18px;
+      padding: 14px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .pageContent:empty{ display:none; }
+    .pageContent p{ margin:0; color: var(--muted); line-height: 1.55; }
+    .pageContent a{ text-decoration: underline; }
+
+    .pageFooter{
+      margin-top: 26px;
+      padding-top: 6px;
+      text-align:center;
+      color: var(--muted2);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .pageFooter:empty{ display:none; }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      margin: 2px 0 12px;
+      flex-wrap: wrap;
+    }
+    .tabBtn{
+      border: 1px solid var(--border2);
+      background: var(--panel);
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+    .tabBtn:hover{ transform: translateY(-1px); border-color: rgba(124,92,255,0.40); }
+    .tabBtn.active{
+      background: linear-gradient(180deg, rgba(124,92,255,0.25), rgba(51,214,197,0.12));
+      border-color: rgba(124,92,255,0.55);
+    }
+    .tabPanel.hidden{ display:none; }
+
+    .smallNote{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+
+    .smallNote.warn{
+      color: var(--warn);
+    }
+
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <h1 id="appTitle">Project Portfolio Browser</h1>
+        <p id="appSubtitle">
+          Browse a GitHub repo as a portfolio. Top level folders become projects when an HTML file exists anywhere inside that folder tree.
+          Open projects in an embedded viewer or pop them out to a new tab.
+        </p>
+      </div>
+      <div class="actions">
+        <span class="chip" title="Data Source">
+          <span>Source</span>
+          <strong id="sourceChip">Not Loaded</strong>
+        </span>
+        <button class="btn" id="btnRepoPanel" type="button">Repo Settings</button>
+        <button class="btn primary" id="btnReload" type="button">Reload</button>
+        <button class="btn" id="btnConfigEditor" type="button">Content Editor</button>
+      </div>
+    </div>
+
+    <div class="pageContent" id="pageContent"></div>
+
+    <div class="panel" id="repoPanel">
+      <div class="panelHeader">
+        <div>
+          <h2>Repo Settings</h2>
+          <p class="sub">Uses the GitHub API tree endpoint for fast indexing. Token is optional but helps with rate limits.</p>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" id="btnHideRepoPanel" type="button">Hide</button>
+          <button class="btn good" id="btnLoadRepo" type="button">Load Repo</button>
+        </div>
+      </div>
+      <div class="panelBody">
+        <div class="repoGrid">
+          <div class="field">
+            <label for="owner">Owner</label>
+            <input id="owner" placeholder="e.g. almokinsgov" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="repo">Repo</label>
+            <input id="repo" placeholder="e.g. testbed" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="branch">Branch</label>
+            <input id="branch" placeholder="main" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="token">Token (Optional)</label>
+            <input id="token" placeholder="ghp_... (stored locally)" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label for="contentMode">Project Viewer Source</label>
+            <select id="contentMode">
+              <option value="jsdelivr">jsDelivr CDN (Best For Public Repos)</option>
+              <option value="raw">raw.githubusercontent.com (Simple)</option>
+              <option value="api">GitHub Contents API (Helps With Private, Assets May Not Load)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="popoutMode">Pop Out Link</label>
+            <select id="popoutMode">
+              <option value="htmlpreview">htmlpreview.github.io (Renders GitHub Blob)</option>
+              <option value="githack">raw.githack.com (Renders Raw)</option>
+              <option value="github">GitHub File Page</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="showRootHtml">Include Root HTML Files</label>
+            <select id="showRootHtml">
+              <option value="false">No (Folders Only)</option>
+              <option value="true">Yes (Add "Root Files" Section)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pagesBase">GitHub Pages Base (Optional)</label>
+            <input id="pagesBase" placeholder="https://owner.github.io/repo" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="filtersRow">
+          <div class="field grow">
+            <label for="search">Search</label>
+            <input id="search" placeholder="Search by project name, tags, description" autocomplete="off" />
+          </div>
+          <div class="field" style="min-width:220px;">
+            <label for="sort">Sort</label>
+            <select id="sort">
+              <option value="featured">Featured Then Name</option>
+              <option value="order">Configured Order Then Name</option>
+              <option value="name">Name</option>
+              <option value="files">HTML File Count</option>
+            </select>
+          </div>
+          <button class="btn" id="btnClearFilters" type="button">Clear Filters</button>
+        </div>
+
+        <div class="tagBar" id="tagBar"></div>
+
+        <div class="statusRow">
+          <div id="statusText">Ready.</div>
+          <div class="chip" title="Matches">
+            <span>Showing</span>
+            <strong id="countText">0</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="pageFooter" id="pageFooter"></div>
+  </div>
+
+  <div class="modalOverlay" id="modalOverlay"></div>
+
+  <div class="modal" id="viewerModal" aria-hidden="true">
+    <div class="modalTop">
+      <div class="left">
+        <p class="title" id="viewerTitle">Viewer</p>
+        <p class="subtitle mono" id="viewerSub">Not Loaded</p>
+      </div>
+      <div class="right">
+        <button class="btnSmall" id="btnOpenNewTab" type="button">Pop Out</button>
+        <button class="btnSmall" id="btnOpenPages" type="button">Open Pages</button>
+        <button class="btnSmall" id="btnCloseViewer" type="button">Close</button>
+      </div>
+    </div>
+    <div class="viewer">
+      <iframe id="viewerFrame" title="Project Viewer"></iframe>
+    </div>
+  </div>
+  <div class="modal chooser" id="fileChooserModal" aria-hidden="true">
+    <div class="modalTop">
+      <div class="left">
+        <p class="title" id="chooserTitle">Files</p>
+        <p class="subtitle mono" id="chooserSub">Not Loaded</p>
+      </div>
+      <div class="right">
+        <button class="btnSmall" type="button" id="btnCloseChooser">Close</button>
+      </div>
+    </div>
+    <div class="modalBody">
+      <div class="chooserWrap">
+        <div class="chooserHint" id="chooserHint">Select an HTML file to open in the viewer.</div>
+        <div class="chooserList" id="chooserList"></div>
+        <div class="chooserActions">
+          <button class="btnSmall" type="button" id="btnChooserOpenPrimary">Open Primary</button>
+          <button class="btnSmall" type="button" id="btnChooserPopoutPrimary">Pop Out Primary</button>
+                  <button class="btnSmall" type="button" id="btnChooserDownloadMeta">Download metadata.json</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="drawer" id="configDrawer" aria-hidden="true">
+    <div class="drawerTop">
+      <div>
+        <h2>Content Editor</h2>
+        <p>
+          Edit page content and per-project metadata. Export the config JSON then paste it into the
+          <span class="mono">PORTFOLIO_CONFIG</span> block in this file.
+        </p>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btnCloseDrawer" type="button">Close</button>
+      </div>
+    </div>
+
+    <div class="drawerBody">
+      <div class="tabs">
+        <button class="tabBtn active" id="tabBtnProjects" type="button">Projects</button>
+        <button class="tabBtn" id="tabBtnPage" type="button">Page Content</button>
+      </div>
+
+      <div class="tabPanel" id="panelProjects">
+        <div class="twoCol">
+          <div>
+            <div class="field">
+              <label for="cfgKey">Project Folder Key</label>
+              <input id="cfgKey" placeholder="e.g. my-project-folder" />
+              <div class="smallNote">Keys are derived from top-level folders. Root HTML files appear under the key <span class="mono">root</span>.</div>
+                          <div class="smallNote" id="cfgMetaNote"></div>
+            </div>
+
+            <div class="field">
+              <label>Detected Projects</label>
+              <div class="projectList" id="projectList"></div>
+              <div class="smallNote">Click a project to edit its metadata.</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="field">
+              <label for="cfgTitle">Title</label>
+              <input id="cfgTitle" placeholder="Optional override title" />
+            </div>
+
+            <div class="field">
+              <label for="cfgDesc">Description</label>
+              <textarea id="cfgDesc" placeholder="Short description shown on the card"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="cfgTags">Tags</label>
+              <input id="cfgTags" placeholder="comma separated" />
+            </div>
+
+            <div class="field">
+              <label for="cfgThumb">Thumbnail (URL)</label>
+              <input id="cfgThumb" placeholder="https://..." />
+              <div class="smallNote">Tip: use a raw GitHub URL, a GitHub Pages URL or any public image.</div>
+            </div>
+
+            <div class="filtersRow">
+              <label class="pill" style="cursor:pointer;">
+                <input id="cfgFeatured" type="checkbox" style="margin-right:8px;" />
+                Featured
+              </label>
+              <label class="pill" style="cursor:pointer;">
+                <input id="cfgHidden" type="checkbox" style="margin-right:8px;" />
+                Hidden
+              </label>
+              <label class="pill" style="cursor:pointer;">
+                <span class="mono" style="margin-right:8px;">Order</span>
+                <input id="cfgOrder" type="number" style="width:86px;" />
+              </label>
+            </div>
+
+            <div class="field">
+              <label for="cfgExternal">External Link (optional)</label>
+              <input id="cfgExternal" placeholder="https://..." />
+            </div>
+
+            <div class="field">
+              <label for="cfgPrimaryPath">Primary File (View Button)</label>
+              <select id="cfgPrimaryPath"></select>
+              <div class="smallNote">Choose which HTML file opens when you click View or when the URL uses <span class="mono">?p=yourProjectKey</span>. Leave blank for auto.</div>
+            </div>
+
+            <div class="field">
+              <label for="cfgFileSort">File Link Sorting</label>
+              <select id="cfgFileSort">
+                <option value="scoreDesc">Smart Score (default)</option>
+                <option value="indexFirstThenName">Index First Then Name</option>
+                <option value="nameAsc">Name A-Z</option>
+                <option value="pathAsc">Path A-Z</option>
+                <option value="depthThenName">Shallow First Then Name</option>
+              </select>
+            </div>
+
+
+            <div class="filtersRow">
+              <button class="btn primary" id="btnSaveCfg" type="button">Save Project Metadata</button>
+                          <button class="btn" id="btnDownloadProjectMeta" type="button">Download metadata.json</button>
+            </div>
+
+            <div class="smallNote">
+              If you want to ship this page without the editor, set <span class="mono">ENABLE_CONFIG_EDITOR</span> to
+              <span class="mono">false</span> at the top of the script.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabPanel hidden" id="panelPage">
+        <div class="field">
+          <label for="pageTitle">Page Title</label>
+          <input id="pageTitle" placeholder="Portfolio title" />
+        </div>
+
+        <div class="field">
+          <label for="pageSubtitle">Page Subtitle</label>
+          <textarea id="pageSubtitle" placeholder="Subtitle shown under the title"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="pageContentHtml">Page Content (HTML)</label>
+          <textarea id="pageContentHtml" placeholder="Optional content block shown under the header"></textarea>
+          <div class="smallNote">You can use simple HTML like <span class="mono">&lt;p&gt;</span>, <span class="mono">&lt;strong&gt;</span> and links.</div>
+        </div>
+
+        <div class="field">
+          <label for="pageFooterHtml">Footer (HTML)</label>
+          <textarea id="pageFooterHtml" placeholder="Optional footer text"></textarea>
+        </div>
+
+        <div class="filtersRow">
+          <div class="field" style="flex:1; min-width: 160px;">
+            <label for="pageAccent">Accent</label>
+            <input id="pageAccent" placeholder="#7c5cff" />
+          </div>
+          <div class="field" style="flex:1; min-width: 160px;">
+            <label for="pageAccent2">Accent 2</label>
+            <input id="pageAccent2" placeholder="#33d6c5" />
+          </div>
+        </div>        <div class="filtersRow">
+          <label class="pill" title="Hide or show metadata.json download buttons in the project drawer and file chooser.">
+            <input id="featureShowMetaDownload" type="checkbox" />
+            Show Metadata Download Buttons
+          </label>
+        </div>
+
+
+
+        <div class="filtersRow">
+          <button class="btn primary" id="btnSavePage" type="button">Save Page Content</button>
+        </div>
+
+        <div class="smallNote">Accents update the CSS variables <span class="mono">--accent</span> and <span class="mono">--accent2</span>.</div>
+      </div>
+
+      <div class="field" style="margin-top: 14px;">
+        <label for="cfgJson">Config JSON</label>
+        <textarea id="cfgJson" spellcheck="false" placeholder="{ ... }"></textarea>
+      </div>
+
+      <div class="filtersRow">
+        <button class="btn" id="btnCopyCfg" type="button">Copy Config JSON</button>
+        <button class="btn" id="btnDownloadCfg" type="button">Download Config JSON</button>
+        <button class="btn ghost" id="btnImportCfg" type="button">Import JSON</button>
+        <button class="btn ghost" id="btnResetCfg" type="button">Reset To Default</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toastHost" id="toastHost"></div>
+
+  <script>
+    /**********************************************************************
+     * Simple Single File Portfolio Browser
+     * - Indexes a GitHub repo and treats top level folders as projects
+     * - Includes a metadata editor that outputs config JSON
+     * - Set ENABLE_CONFIG_EDITOR to false for a clean read-only portfolio
+     **********************************************************************/
+
+    // Toggle editor UI
+    const ENABLE_CONFIG_EDITOR = false;
+    const ENABLE_PAGE_CONTENT_EDITOR = false;
+    const ENABLE_PROJECT_METADATA_EDITOR = false;
+
+
+    // Optional external config file (place next to this HTML)
+    const EXTERNAL_CONFIG_URL = "portfolio_config.json";
+
+    // Feature defaults (merged into config)
+    const DEFAULT_FEATURES = {
+      showMetadataDownload: false,
+      showRepoSettings: true
+    };
+    // Embedded config (edit by pasting exported JSON here)
+    const PORTFOLIO_CONFIG = {
+  "version": 1,
+  "features": {
+    "showMetadataDownload": false,
+    "showRepoSettings": false
+  },
+  "page": {
+    "title": "Amorangi Mathews's development portfolio and projects.",
+    "subtitle": "Open projects in an embedded viewer or pop them out to a new tab.",
+    "contentHtml": "",
+    "footerHtml": "",
+    "accent": "#4c5cff",
+    "accent2": "#13d6c5"
+  },
+  "projects": {
+    "dmhg": {
+      "tags": [],
+      "featured": false,
+      "hidden": true
+    },
+    "capemailer": {
+      "tags": [],
+      "featured": false,
+      "hidden": true
+    },
+    "drought": {
+      "title": "Drought dashboard",
+      "description": "Geospatial, environmental, hydrological, and atmospheric analysis dashboard.",
+      "tags": [
+        "GIS",
+        "Map",
+        "Dashboard",
+        "Drought monitoring"
+      ],
+      "thumbnail": "https://images.nationalgeographic.org/image/upload/t_edhub_resource_key_image/v1691174996/EducationHub/photos/drought-encylopedic-entry.jpg",
+      "featured": true,
+      "hidden": false,
+      "order": 1
+    },
+    "fned": {
+      "title": "Far North Emergency Dashboard",
+      "description": "Situation dashboard for public and decision makers using public data",
+      "tags": [
+        "GIS",
+        "Map",
+        "Dashboard",
+        "CAP feeds",
+        "Emergency Management"
+      ],
+      "featured": true,
+      "hidden": false
+    },
+    "hs": {
+      "title": "Social media post scheduler",
+      "description": "Test project for hootsuite clone",
+      "tags": [
+        "Social media"
+      ],
+      "featured": false,
+      "hidden": false
+    },
+    "offline": {
+      "title": "Offline PWA service worker test 1",
+      "tags": [
+        "Offline",
+        "PWA"
+      ],
+      "featured": false,
+      "hidden": false
+    },
+    "ol": {
+      "title": "Offline PWA service worker test 2",
+      "tags": [
+        "PWA",
+        "offline",
+        "service workers"
+      ],
+      "featured": false,
+      "hidden": false
+    },
+    "OnlineEdit": {
+      "title": "Browser based file and WYSIWYG editor",
+      "tags": [
+        "Serverless",
+        "Google",
+        "DevOps"
+      ],
+      "featured": false,
+      "hidden": false
+    },
+    "topenergy": {
+      "title": "Top Energy History Viewer",
+      "description": "View past and live top energy outages, geospatially or as a timeline.",
+      "tags": [],
+      "featured": false,
+      "hidden": false
+    },
+    "subscriptionwithgpt5": {
+      "tags": [],
+      "featured": false,
+      "hidden": true
+    },
+    "votemap": {
+      "tags": [],
+      "featured": false,
+      "hidden": true
+    },
+    "MaraeExplorer": {
+      "title": "Marae explorer",
+      "description": "Explorer filter and export marae location around Aotearoa",
+      "tags": [],
+      "featured": false,
+      "hidden": false
+    },
+    "EmergencySocial": {
+      "tags": [],
+      "featured": false,
+      "hidden": true
+    },
+    "EOCsocial": {
+      "title": "EOC social",
+      "description": "Attempt at a COP platform for multi agency emergency management response. Built-in SSO",
+      "tags": [
+        "CD",
+        "Emergency Management"
+      ],
+      "featured": false,
+      "hidden": false
+    }
+  }
+};
+
+    // Defaults and local storage keys
+    const STORAGE_KEYS = {
+      repo: "ppb_repo_settings_v1",
+      cfg: "ppb_portfolio_config_v1"
+    };
+
+    const state = {
+      repo: {
+        owner: "almokinsgov",
+        repo: "testbed",
+        branch: "main",
+        token: "",
+        contentMode: "jsdelivr",
+        popoutMode: "htmlpreview",
+        showRootHtml: false,
+        pagesBase: ""
+      },
+      cfg: structuredClone(PORTFOLIO_CONFIG),
+      cfgDefault: structuredClone(PORTFOLIO_CONFIG),
+      externalCfg: null,
+      folderMeta: {},     // per-folder metadata.json overrides
+      folderMetaRaw: {},  // raw parsed metadata objects
+      loading: false,
+
+      tree: null,
+      projects: [],        // computed project objects
+      rootHtml: [],        // html files in repo root (optional)
+      selectedTags: new Set(),
+      search: "",
+      sort: "featured",
+      viewer: {
+        open: false,
+        projectKey: "",
+        path: "",
+        htmlUrl: "",
+        baseHref: "",
+        pagesUrl: ""
+      },
+
+      chooser: {
+        open: false,
+        projectKey: "",
+        displayTitle: ""
+      },
+
+      route: {
+        pending: null
+      },
+
+      editor: {
+        open: false,
+        selectedKey: "",
+        tab: "projects"
+      }
+    };
+
+    const el = (id) => document.getElementById(id);
+
+    const ui = {
+      appTitle: el("appTitle"),
+      appSubtitle: el("appSubtitle"),
+      pageContent: el("pageContent"),
+      pageFooter: el("pageFooter"),
+      sourceChip: el("sourceChip"),
+
+      repoPanel: el("repoPanel"),
+      btnRepoPanel: el("btnRepoPanel"),
+      btnHideRepoPanel: el("btnHideRepoPanel"),
+      btnLoadRepo: el("btnLoadRepo"),
+      btnReload: el("btnReload"),
+
+      owner: el("owner"),
+      repo: el("repo"),
+      branch: el("branch"),
+      token: el("token"),
+      contentMode: el("contentMode"),
+      popoutMode: el("popoutMode"),
+      showRootHtml: el("showRootHtml"),
+      pagesBase: el("pagesBase"),
+
+      search: el("search"),
+      sort: el("sort"),
+      btnClearFilters: el("btnClearFilters"),
+
+      tagBar: el("tagBar"),
+      statusText: el("statusText"),
+      countText: el("countText"),
+      grid: el("grid"),
+
+      modalOverlay: el("modalOverlay"),
+      viewerModal: el("viewerModal"),
+      viewerTitle: el("viewerTitle"),
+      viewerSub: el("viewerSub"),
+      viewerFrame: el("viewerFrame"),
+      btnCloseViewer: el("btnCloseViewer"),
+      btnOpenNewTab: el("btnOpenNewTab"),
+      btnOpenPages: el("btnOpenPages"),
+
+
+// File chooser modal
+fileChooserModal: el("fileChooserModal"),
+chooserTitle: el("chooserTitle"),
+chooserSub: el("chooserSub"),
+chooserHint: el("chooserHint"),
+chooserList: el("chooserList"),
+btnCloseChooser: el("btnCloseChooser"),
+btnChooserOpenPrimary: el("btnChooserOpenPrimary"),
+btnChooserPopoutPrimary: el("btnChooserPopoutPrimary"),
+      btnChooserDownloadMeta: el("btnChooserDownloadMeta"),
+      toastHost: el("toastHost"),
+
+      btnConfigEditor: el("btnConfigEditor"),
+      configDrawer: el("configDrawer"),
+      btnCloseDrawer: el("btnCloseDrawer"),
+      tabBtnProjects: el("tabBtnProjects"),
+      tabBtnPage: el("tabBtnPage"),
+      panelProjects: el("panelProjects"),
+      panelPage: el("panelPage"),
+      projectList: el("projectList"),
+      cfgKey: el("cfgKey"),
+      cfgMetaNote: el("cfgMetaNote"),
+      cfgTitle: el("cfgTitle"),
+      cfgDesc: el("cfgDesc"),
+      cfgTags: el("cfgTags"),
+      cfgThumb: el("cfgThumb"),
+      cfgFeatured: el("cfgFeatured"),
+      cfgHidden: el("cfgHidden"),
+      cfgOrder: el("cfgOrder"),
+      cfgExternal: el("cfgExternal"),
+      cfgPrimaryPath: el("cfgPrimaryPath"),
+      cfgFileSort: el("cfgFileSort"),
+      btnSaveCfg: el("btnSaveCfg"),
+      btnDownloadProjectMeta: el("btnDownloadProjectMeta"),
+      pageTitle: el("pageTitle"),
+      pageSubtitle: el("pageSubtitle"),
+      pageContentHtml: el("pageContentHtml"),
+      pageFooterHtml: el("pageFooterHtml"),
+      pageAccent: el("pageAccent"),
+      pageAccent2: el("pageAccent2"),
+      featureShowMetaDownload: el("featureShowMetaDownload"),
+      btnSavePage: el("btnSavePage"),
+      btnCopyCfg: el("btnCopyCfg"),
+      btnDownloadCfg: el("btnDownloadCfg"),
+      cfgJson: el("cfgJson"),
+      btnImportCfg: el("btnImportCfg"),
+      btnResetCfg: el("btnResetCfg")
+    };
+
+    function toast(kind, title, body, ms = 3400){
+      const wrap = document.createElement("div");
+      wrap.className = "toast";
+      const dot = document.createElement("div");
+      dot.className = "dot " + (kind || "");
+      const content = document.createElement("div");
+      const t = document.createElement("div");
+      t.className = "tTitle";
+      t.textContent = title || "Notice";
+      const b = document.createElement("div");
+      b.className = "tBody";
+      b.textContent = body || "";
+      content.appendChild(t);
+      content.appendChild(b);
+
+      const close = document.createElement("button");
+      close.className = "close";
+      close.type = "button";
+      close.textContent = "✕";
+      close.addEventListener("click", () => wrap.remove());
+
+      wrap.appendChild(dot);
+      wrap.appendChild(content);
+      wrap.appendChild(close);
+
+      ui.toastHost.appendChild(wrap);
+      setTimeout(() => wrap.remove(), ms);
+    }
+
+    function safeJsonParse(text){
+      try { return { ok:true, value: JSON.parse(text) }; }
+      catch (e) { return { ok:false, error: e?.message || String(e) }; }
+    }
+
+    function deepMerge(target, source){
+      // object merge only for plain objects
+      const isObj = (v) => v && typeof v === "object" && !Array.isArray(v);
+      const out = Array.isArray(target) ? [...target] : { ...target };
+      if (!isObj(source)) return out;
+
+      for (const [k, v] of Object.entries(source)){
+        if (isObj(v) && isObj(out[k])) out[k] = deepMerge(out[k], v);
+        else out[k] = structuredClone(v);
+      }
+      return out;
+    }
+
+    function getFeature(name){
+      const v = state.cfg?.features?.[name];
+      if (v !== undefined) return v;
+      const d = state.cfgDefault?.features?.[name];
+      if (d !== undefined) return d;
+      const e = PORTFOLIO_CONFIG?.features?.[name];
+      if (e !== undefined) return e;
+      return DEFAULT_FEATURES?.[name];
+    }
+
+    function applyFeaturesToUi(){
+      const showMeta = !!getFeature("showMetadataDownload");
+      const showRepoRaw = getFeature("showRepoSettings");
+      const showRepo = (showRepoRaw === undefined) ? true : !!showRepoRaw;
+
+      if (ui.repoPanel){
+        ui.repoPanel.classList.toggle("hidden", !showRepo);
+      }
+      if (ui.btnRepoPanel){
+        ui.btnRepoPanel.classList.toggle("hidden", !showRepo);
+        ui.btnRepoPanel.disabled = !showRepo;
+      }
+
+      if (ui.btnChooserDownloadMeta){
+        ui.btnChooserDownloadMeta.classList.toggle("hidden", !showMeta);
+        ui.btnChooserDownloadMeta.disabled = !showMeta;
+      }
+      if (ui.btnDownloadProjectMeta){
+        ui.btnDownloadProjectMeta.classList.toggle("hidden", !showMeta);
+        ui.btnDownloadProjectMeta.disabled = !showMeta;
+      }
+      if (ui.featureShowMetaDownload){
+        ui.featureShowMetaDownload.checked = showMeta;
+      }
+    }
+
+    async function tryLoadExternalPortfolioConfig(){
+      try{
+        const url = new URL(EXTERNAL_CONFIG_URL, window.location.href);
+        url.search = "";
+        url.hash = "";
+        const res = await fetch(url.toString(), { cache: "no-store" });
+        if (!res.ok) return null;
+        const txt = await res.text();
+        const parsed = safeJsonParse(txt);
+        if (!parsed.ok) return null;
+        if (!parsed.value || typeof parsed.value !== "object") return null;
+        return parsed.value;
+      } catch (e){
+        return null;
+      }
+    }
+
+    async function initConfig(){
+      state.cfgDefault = structuredClone(PORTFOLIO_CONFIG);
+      state.cfgDefault.features = deepMerge(DEFAULT_FEATURES, (state.cfgDefault.features || {}));
+
+      const external = await tryLoadExternalPortfolioConfig();
+      if (external){
+        state.externalCfg = external;
+        state.cfgDefault = deepMerge(state.cfgDefault, external);
+        state.cfgDefault.features = deepMerge(DEFAULT_FEATURES, (state.cfgDefault.features || {}));
+      } else {
+        state.externalCfg = null;
+      }
+
+      const raw = localStorage.getItem(STORAGE_KEYS.cfg);
+      if (raw){
+        const parsed = safeJsonParse(raw);
+        if (parsed.ok && parsed.value && typeof parsed.value === "object"){
+          state.cfg = deepMerge(structuredClone(state.cfgDefault), parsed.value);
+        } else {
+          state.cfg = structuredClone(state.cfgDefault);
+        }
+      } else {
+        state.cfg = structuredClone(state.cfgDefault);
+      }
+      state.cfg.features = deepMerge(DEFAULT_FEATURES, (state.cfg.features || {}));
+    }
+
+
+    function normalizeTags(tags){
+      if (!tags) return [];
+      if (Array.isArray(tags)) return tags.map(t => String(t).trim()).filter(Boolean);
+      return String(tags)
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+
+    function setStatus(msg){
+      ui.statusText.textContent = msg;
+    }
+
+    function setSourceChip(){
+      const { owner, repo, branch } = state.repo;
+      if (!owner || !repo) {
+        ui.sourceChip.textContent = "Not Loaded";
+        return;
+      }
+      ui.sourceChip.textContent = branch ? `${owner}/${repo}@${branch}` : `${owner}/${repo}`;
+    }
+
+    function saveRepoSettings(){
+      localStorage.setItem(STORAGE_KEYS.repo, JSON.stringify(state.repo));
+    }
+    function loadRepoSettings(){
+      const raw = localStorage.getItem(STORAGE_KEYS.repo);
+      if (!raw) return;
+      const parsed = safeJsonParse(raw);
+      if (!parsed.ok) return;
+      state.repo = deepMerge(state.repo, parsed.value);
+    }
+
+    function saveConfig(){
+      localStorage.setItem(STORAGE_KEYS.cfg, JSON.stringify(state.cfg));
+    }
+    function loadConfig(){
+      const raw = localStorage.getItem(STORAGE_KEYS.cfg);
+      if (!raw) return;
+      const parsed = safeJsonParse(raw);
+      if (!parsed.ok) return;
+      state.cfg = deepMerge(structuredClone(PORTFOLIO_CONFIG), parsed.value);
+    }
+
+
+    function applyPageFromCfg(){
+      const p = state.cfg?.page || structuredClone(PORTFOLIO_CONFIG.page);
+      // Title and subtitle
+      ui.appTitle.textContent = (p.title ?? PORTFOLIO_CONFIG.page.title) || PORTFOLIO_CONFIG.page.title;
+      ui.appSubtitle.textContent = (p.subtitle ?? PORTFOLIO_CONFIG.page.subtitle) || PORTFOLIO_CONFIG.page.subtitle;
+
+      // Optional content blocks
+      ui.pageContent.innerHTML = p.contentHtml || "";
+      ui.pageFooter.innerHTML = p.footerHtml || "";
+
+      // Theme accents
+      if (p.accent) document.documentElement.style.setProperty("--accent", p.accent);
+      if (p.accent2) document.documentElement.style.setProperty("--accent2", p.accent2);
+    }
+
+    function syncPageEditorFields(){
+      const p = state.cfg?.page || structuredClone(PORTFOLIO_CONFIG.page);
+      ui.pageTitle.value = p.title || "";
+      ui.pageSubtitle.value = p.subtitle || "";
+      ui.pageContentHtml.value = p.contentHtml || "";
+      ui.pageFooterHtml.value = p.footerHtml || "";
+      ui.pageAccent.value = p.accent || "";
+      ui.pageAccent2.value = p.accent2 || "";
+      if (ui.featureShowMetaDownload){
+        ui.featureShowMetaDownload.checked = !!getFeature("showMetadataDownload");
+      }
+    }
+
+    function savePageFromEditor(){
+      const page = {
+        title: ui.pageTitle.value.trim() || PORTFOLIO_CONFIG.page.title,
+        subtitle: ui.pageSubtitle.value.trim() || PORTFOLIO_CONFIG.page.subtitle,
+        contentHtml: ui.pageContentHtml.value,
+        footerHtml: ui.pageFooterHtml.value,
+        accent: (ui.pageAccent.value.trim() || PORTFOLIO_CONFIG.page.accent),
+        accent2: (ui.pageAccent2.value.trim() || PORTFOLIO_CONFIG.page.accent2)
+      };
+      state.cfg.page = page;
+      state.cfg.features = deepMerge(state.cfg.features || {}, { showMetadataDownload: !!(ui.featureShowMetaDownload ? ui.featureShowMetaDownload.checked : true) });
+      saveConfig();
+      applyPageFromCfg();
+      applyFeaturesToUi();
+      syncEditorJsonTextarea();
+      toast("good","Saved","Page content updated.");
+    }
+
+    function setEditorTab(tab){
+      const useProjects = ENABLE_PROJECT_METADATA_EDITOR;
+      const usePage = ENABLE_PAGE_CONTENT_EDITOR;
+
+      let next = tab;
+      if (next === "projects" && !useProjects) next = "page";
+      if (next === "page" && !usePage) next = "projects";
+
+      state.editor.tab = next;
+
+      ui.tabBtnProjects.classList.toggle("active", next === "projects");
+      ui.tabBtnPage.classList.toggle("active", next === "page");
+
+      ui.panelProjects.classList.toggle("hidden", next !== "projects");
+      ui.panelPage.classList.toggle("hidden", next !== "page");
+    }
+
+    function applyRepoSettingsToInputs(){
+      ui.owner.value = state.repo.owner || "";
+      ui.repo.value = state.repo.repo || "";
+      ui.branch.value = state.repo.branch || "";
+      ui.token.value = state.repo.token || "";
+      ui.contentMode.value = state.repo.contentMode || "jsdelivr";
+      ui.popoutMode.value = state.repo.popoutMode || "htmlpreview";
+      ui.showRootHtml.value = String(!!state.repo.showRootHtml);
+      ui.pagesBase.value = state.repo.pagesBase || "";
+      setSourceChip();
+    }
+
+    function pullRepoSettingsFromInputs(){
+      state.repo.owner = ui.owner.value.trim();
+      state.repo.repo = ui.repo.value.trim();
+      state.repo.branch = ui.branch.value.trim();
+      state.repo.token = ui.token.value.trim();
+      state.repo.contentMode = ui.contentMode.value;
+      state.repo.popoutMode = ui.popoutMode.value;
+      state.repo.showRootHtml = ui.showRootHtml.value === "true";
+      state.repo.pagesBase = ui.pagesBase.value.trim();
+      saveRepoSettings();
+      setSourceChip();
+    }
+
+    function cfgForKey(key){
+      if (!key) return null;
+      state.cfg.projects ||= {};
+      return state.cfg.projects[key] || null;
+    }
+
+
+    function folderMetaForKey(key){
+      state.folderMeta ||= {};
+      return state.folderMeta[key] || null;
+    }
+
+    function cfgForKeyEffective(key){
+      const base = cfgForKey(key) || {};
+      const meta = folderMetaForKey(key);
+      if (!meta) return base;
+      // metadata.json takes precedence but we fall back to main config for missing fields
+      return deepMerge(base, meta);
+    }
+
+    function hasFolderMetadata(key){
+      return !!folderMetaForKey(key);
+    }
+
+    function setCfgForKey(key, obj){
+      state.cfg.projects ||= {};
+      state.cfg.projects[key] = obj;
+      saveConfig();
+    }
+
+    function deleteCfgKey(key){
+      if (!key) return;
+      state.cfg.projects ||= {};
+      delete state.cfg.projects[key];
+      saveConfig();
+    }
+
+    function buildGitHubHeaders(){
+      const headers = { "Accept": "application/vnd.github+json" };
+      if (state.repo.token){
+        // Works for classic ghp_ and fine-grained github_pat_
+        headers["Authorization"] = "Bearer " + state.repo.token;
+      }
+      return headers;
+    }
+
+    async function githubFetchJson(url){
+      const res = await fetch(url, { headers: buildGitHubHeaders() });
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch {}
+      if (!res.ok){
+        const msg = data?.message || text || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    async function resolveDefaultBranchIfBlank(){
+      if (state.repo.branch) return;
+      const { owner, repo } = state.repo;
+      if (!owner || !repo) return;
+      const info = await githubFetchJson(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
+      state.repo.branch = info?.default_branch || "main";
+      ui.branch.value = state.repo.branch;
+      saveRepoSettings();
+      setSourceChip();
+    }
+
+    function isHtmlPath(path){
+      return /\.html?$/i.test(path || "");
+    }
+
+    function topFolder(path){
+      const parts = String(path || "").split("/").filter(Boolean);
+      return parts.length ? parts[0] : "";
+    }
+
+    function fileName(path){
+      const parts = String(path || "").split("/").filter(Boolean);
+      return parts[parts.length - 1] || path;
+    }
+
+    function depthFromKey(key, path){
+      // depth within the folder key, key is top folder
+      if (!key) return 0;
+      const rest = String(path).slice(key.length + 1);
+      if (!rest) return 0;
+      return rest.split("/").filter(Boolean).length - 1; // directory depth relative to key
+    }
+
+    function scoreHtmlCandidate(key, path){
+      // Higher score = better default file for project
+      const name = fileName(path).toLowerCase();
+      const rel = String(path).slice(key.length + 1);
+      const relParts = rel.split("/").filter(Boolean);
+      const isRoot = relParts.length === 1;
+      const isIndex = name === "index.html" || name === "index.htm";
+      const depth = Math.max(0, relParts.length - 1);
+      let score = 0;
+      if (isRoot) score += 40;
+      if (isIndex) score += 50;
+      score -= depth * 8;
+      // bonus for "demo" and "app"
+      if (name.includes("demo")) score += 6;
+      if (name.includes("app")) score += 4;
+      return score;
+    }
+
+
+    function sortFilesForProject(files, sortMode){
+      const mode = sortMode || "scoreDesc";
+      const arr = [...files];
+
+      const byName = (a,b) => (a.name || "").localeCompare(b.name || "");
+      const byPath = (a,b) => (a.path || "").localeCompare(b.path || "");
+      const byDepthThenName = (a,b) => (a.depth - b.depth) || byName(a,b) || byPath(a,b);
+      const byScoreDescThenName = (a,b) => (b.score - a.score) || byName(a,b) || byPath(a,b);
+      const byIndexFirstThenName = (a,b) => ((b.isIndex?1:0) - (a.isIndex?1:0)) || byName(a,b) || byPath(a,b);
+
+      switch(mode){
+        case "nameAsc": return arr.sort((a,b)=> byName(a,b) || byPath(a,b));
+        case "pathAsc": return arr.sort(byPath);
+        case "depthThenName": return arr.sort(byDepthThenName);
+        case "indexFirstThenName": return arr.sort(byIndexFirstThenName);
+        case "scoreDesc":
+        default: return arr.sort(byScoreDescThenName);
+      }
+    }
+
+    function applyFilePreferences(folderKey, candidates, cfg){
+      const sorted = sortFilesForProject(candidates, cfg?.fileSort);
+      let primary = null;
+
+      const prim = (cfg?.primaryPath || "").trim();
+      if (prim){
+        primary = sorted.find(f => f.path === prim) || sorted.find(f => f.name === prim);
+      }
+      if (!primary) primary = sorted[0] || candidates[0] || null;
+
+      let finalFiles = sorted;
+      if (primary){
+        finalFiles = [primary, ...sorted.filter(f => f.path !== primary.path)];
+      }
+      return { files: finalFiles, primary };
+    }
+
+
+    function buildCdnUrlForPath(path){
+      const { owner, repo, branch, contentMode } = state.repo;
+      const safePath = path.split("/").map(encodeURIComponent).join("/");
+      const safeBranch = encodeURIComponent(branch || "main");
+
+      if (contentMode === "raw"){
+        return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${safeBranch}/${safePath}`;
+      }
+      // jsdelivr is default for public and serves correct content types
+      return `https://cdn.jsdelivr.net/gh/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}@${safeBranch}/${safePath}`;
+    }
+
+
+    function decodeBase64Utf8(b64){
+      const clean = String(b64 || "").replace(/\s+/g, "");
+      const bin = atob(clean);
+      const bytes = new Uint8Array(bin.length);
+      for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+
+    async function fetchRepoFileText(path){
+      const { owner, repo, branch, token } = state.repo;
+      if (!owner || !repo || !path) throw new Error("Missing repo details or file path.");
+      const safeOwner = encodeURIComponent(owner);
+      const safeRepo = encodeURIComponent(repo);
+      const safeBranch = encodeURIComponent(branch || "main");
+      const normPath = String(path).replace(/^\/+/, "");
+      const safePath = normPath.split("/").map(encodeURIComponent).join("/");
+
+      // Prefer GitHub Contents API when a token is present (supports private repos)
+      if (token){
+        const url = `https://api.github.com/repos/${safeOwner}/${safeRepo}/contents/${safePath}?ref=${safeBranch}`;
+        const data = await githubFetchJson(url);
+        if (data?.content) return decodeBase64Utf8(data.content);
+        if (data?.download_url){
+          const res = await fetch(data.download_url, { headers: buildGitHubHeaders() });
+          if (!res.ok) throw new Error(`Failed to fetch file: HTTP ${res.status}`);
+          return res.text();
+        }
+      }
+
+      // Public fallback via CDN/RAW modes
+      const rawUrl = buildCdnUrlForPath(normPath);
+      const res = await fetch(rawUrl);
+      if (!res.ok) throw new Error(`Failed to fetch file: HTTP ${res.status}`);
+      return res.text();
+    }
+
+    function normalizeFolderMetadataObject(obj){
+      if (!obj || typeof obj !== "object") return null;
+      // Accept { project: {...} } or direct fields
+      const candidate = (obj.project && typeof obj.project === "object") ? obj.project : obj;
+      if (!candidate || typeof candidate !== "object") return null;
+      const out = structuredClone(candidate);
+      // Ignore a top-level version field if present; the app owns schema versioning
+      if (out.version !== undefined && typeof out.version !== "number") delete out.version;
+      return out;
+    }
+
+    async function loadFolderMetadata(folderKeys){
+      state.folderMeta ||= {};
+      state.folderMetaRaw ||= {};
+      state.folderMeta = {};
+      state.folderMetaRaw = {};
+
+      const list = (folderKeys || []).filter(Boolean).map(String);
+      for (const folder of list){
+        const path = `${folder}/metadata.json`;
+        try{
+          const text = await fetchRepoFileText(path);
+          let parsed = null;
+          try { parsed = JSON.parse(text); } catch {
+            throw new Error("Invalid JSON in " + path);
+          }
+          const normalized = normalizeFolderMetadataObject(parsed);
+          if (!normalized) continue;
+          state.folderMetaRaw[folder] = parsed;
+          state.folderMeta[folder] = normalized;
+        } catch (e){
+          // metadata.json is optional. Missing files or fetch errors are ignored.
+        }
+      }
+    }
+
+    function buildBaseHrefForPath(path){
+      // base href must point to directory containing the HTML file
+      const url = buildCdnUrlForPath(path);
+      const idx = url.lastIndexOf("/");
+      return idx > 8 ? url.slice(0, idx + 1) : url;
+    }
+
+    function buildGitHubBlobUrl(path){
+      const { owner, repo, branch } = state.repo;
+      const safePath = path.split("/").map(encodeURIComponent).join("/");
+      const safeBranch = encodeURIComponent(branch || "main");
+      return `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/blob/${safeBranch}/${safePath}`;
+    }
+
+    function buildPopoutUrl(path){
+      const blob = buildGitHubBlobUrl(path);
+      const raw = buildCdnUrlForPath(path);
+
+      if (state.repo.pagesBase){
+        const base = state.repo.pagesBase.replace(/\/+$/,"");
+        const safePath = path.split("/").map(encodeURIComponent).join("/");
+        return `${base}/${safePath}`;
+      }
+
+      if (state.repo.popoutMode === "github"){
+        return blob;
+      }
+      if (state.repo.popoutMode === "githack"){
+        // raw.githack expects owner/repo/branch/path
+        const { owner, repo, branch } = state.repo;
+        const safePath = path.split("/").map(encodeURIComponent).join("/");
+        const safeBranch = encodeURIComponent(branch || "main");
+        return `https://raw.githack.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${safeBranch}/${safePath}`;
+      }
+      // htmlpreview renders the GitHub blob URL
+      return `https://htmlpreview.github.io/?${blob}`;
+    }
+
+    function buildPagesUrl(path){
+      const base = (state.repo.pagesBase || "").replace(/\/+$/,"");
+      if (!base) return "";
+      const safePath = path.split("/").map(encodeURIComponent).join("/");
+      return `${base}/${safePath}`;
+    }
+
+    async function loadRepo(){
+      pullRepoSettingsFromInputs();
+      const { owner, repo } = state.repo;
+
+      if (!owner || !repo){
+        toast("warn","Missing Repo Details","Enter owner and repo then load.");
+        return;
+      }
+
+      state.loading = true;
+      setStatus("Loading repo index...");
+      ui.grid.innerHTML = "";
+
+      try{
+        await resolveDefaultBranchIfBlank();
+
+        const { branch } = state.repo;
+        const safeOwner = encodeURIComponent(owner);
+        const safeRepo = encodeURIComponent(repo);
+        const safeBranch = encodeURIComponent(branch || "main");
+
+        // Fast index: git trees with recursive=1
+        const treeUrl = `https://api.github.com/repos/${safeOwner}/${safeRepo}/git/trees/${safeBranch}?recursive=1`;
+        const data = await githubFetchJson(treeUrl);
+
+        state.tree = data?.tree || [];
+        const htmlPaths = state.tree
+          .filter(n => n?.type === "blob" && isHtmlPath(n?.path))
+          .map(n => n.path);
+
+        // Load per-folder metadata.json (optional override)
+        state.folderMeta = {};
+        state.folderMetaRaw = {};
+        const metaFolders = new Set();
+        for (const n of state.tree){
+          const pth = String(n?.path || "");
+          const m = pth.match(/^([^/]+)\/metadata\.json$/i);
+          if (n?.type === "blob" && m) metaFolders.add(m[1]);
+        }
+        if (metaFolders.size){
+          setStatus(`Loading folder metadata (${metaFolders.size})...`);
+          await loadFolderMetadata([...metaFolders]);
+        }
+
+        // Group by top level folder
+        const byFolder = new Map();
+        const rootHtml = [];
+
+        for (const p of htmlPaths){
+          const folder = topFolder(p);
+          const parts = p.split("/").filter(Boolean);
+          if (parts.length === 1){
+            // root html file
+            rootHtml.push({
+              key: "__root__",
+              path: p,
+              name: fileName(p),
+              score: 0
+            });
+            continue;
+          }
+          if (!byFolder.has(folder)) byFolder.set(folder, []);
+          byFolder.get(folder).push(p);
+        }
+
+        const projects = [];
+        for (const [folder, paths] of byFolder.entries()){
+          const rawCandidates = paths.map(path => ({
+            path,
+            name: fileName(path),
+            score: scoreHtmlCandidate(folder, path),
+            depth: depthFromKey(folder, path),
+            isIndex: /(^|\/)index\.html?$/i.test(path)
+          }));
+
+          const cfg = cfgForKeyEffective(folder);
+          const pref = applyFilePreferences(folder, rawCandidates, cfg);
+          const candidates = pref.files;
+          const chosen = pref.primary;
+
+const hidden = !!cfg?.hidden;
+
+          if (hidden) {
+            // keep but mark hidden for filtering
+          }
+
+          projects.push({
+            key: folder,
+            folder,
+            title: cfg?.title || folder,
+            description: cfg?.description || "",
+            tags: normalizeTags(cfg?.tags),
+            thumbnail: cfg?.thumbnail || "",
+            featured: !!cfg?.featured,
+            hidden,
+            order: (typeof cfg?.order === "number") ? cfg.order : (cfg?.order ? Number(cfg.order) : null),
+            externalUrl: cfg?.externalUrl || "",
+            files: candidates,
+            primary: chosen
+          });
+        }
+
+        // Root files as optional section
+        state.rootHtml = rootHtml.sort((a,b) => a.name.localeCompare(b.name));
+
+        // Ensure config keys exist for discovered projects (optional convenience)
+        state.projects = projects.sort((a,b) => a.key.localeCompare(b.key));
+
+        buildTagBar();
+        render();
+        setSourceChip();
+
+        const countProjects = state.projects.length;
+        const countHtml = htmlPaths.length;
+        setStatus(`Loaded ${countProjects} projects and ${countHtml} HTML files.`);
+
+        if (!state.repo.token) {
+          toast("warn","Token Optional","If you hit rate limits, add a GitHub token in Repo Settings.");
+        } else {
+          toast("good","Repo Loaded","Index built successfully.");
+        }
+
+        rebuildEditorProjectList();
+        syncEditorJsonTextarea();
+
+      } catch (err){
+        console.error(err);
+        toast("bad","Load Failed", String(err?.message || err));
+        setStatus("Load failed. Check owner/repo/branch and token.");
+      } finally{
+        state.loading = false;
+      }
+    }
+
+    function allTags(){
+      const set = new Set();
+      for (const p of state.projects){
+        for (const t of (p.tags || [])) set.add(t);
+      }
+      // also include tags present only in config but not yet discovered
+      for (const [k, v] of Object.entries(state.cfg.projects || {})){
+        for (const t of normalizeTags(v?.tags)) set.add(t);
+      }
+      return [...set].sort((a,b) => a.localeCompare(b));
+    }
+
+    function buildTagBar(){
+      const tags = allTags();
+      ui.tagBar.innerHTML = "";
+
+      const allBtn = document.createElement("button");
+      allBtn.className = "tagBtn " + (state.selectedTags.size === 0 ? "active" : "");
+      allBtn.type = "button";
+      allBtn.textContent = "All";
+      allBtn.addEventListener("click", () => {
+        state.selectedTags.clear();
+        buildTagBar();
+        render();
+      });
+      ui.tagBar.appendChild(allBtn);
+
+      for (const t of tags){
+        const btn = document.createElement("button");
+        btn.className = "tagBtn " + (state.selectedTags.has(t) ? "active" : "");
+        btn.type = "button";
+        btn.textContent = t;
+        btn.addEventListener("click", () => {
+          if (state.selectedTags.has(t)) state.selectedTags.delete(t);
+          else state.selectedTags.add(t);
+          buildTagBar();
+          render();
+        });
+        ui.tagBar.appendChild(btn);
+      }
+    }
+
+    function projectMatches(p){
+      if (p.hidden) return false;
+
+      const q = (state.search || "").trim().toLowerCase();
+      if (q){
+        const hay = [
+          p.key, p.folder, p.title, p.description,
+          ...(p.tags || []),
+          ...(p.files || []).map(f => f.name),
+          ...(p.files || []).map(f => f.path)
+        ].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+
+      if (state.selectedTags.size){
+        const pTags = new Set((p.tags || []).map(String));
+        let ok = false;
+        for (const t of state.selectedTags){
+          if (pTags.has(t)) { ok = true; break; }
+        }
+        if (!ok) return false;
+      }
+
+      return true;
+    }
+
+    function sortProjects(list){
+      const sort = state.sort || "featured";
+      const byName = (a,b) => a.title.localeCompare(b.title);
+
+      if (sort === "name") return [...list].sort(byName);
+
+      if (sort === "files"){
+        return [...list].sort((a,b) => (b.files.length - a.files.length) || byName(a,b));
+      }
+
+      if (sort === "order"){
+        return [...list].sort((a,b) => {
+          const ao = (a.order === null || Number.isNaN(a.order)) ? Infinity : a.order;
+          const bo = (b.order === null || Number.isNaN(b.order)) ? Infinity : b.order;
+          return (ao - bo) || byName(a,b);
+        });
+      }
+
+      // featured default
+      return [...list].sort((a,b) => {
+        const af = a.featured ? 0 : 1;
+        const bf = b.featured ? 0 : 1;
+        return (af - bf) || byName(a,b);
+      });
+    }
+
+    function render(){
+      const matches = sortProjects(state.projects.filter(projectMatches));
+      ui.countText.textContent = String(matches.length);
+      ui.grid.innerHTML = "";
+
+      if (!matches.length){
+        const empty = document.createElement("div");
+        empty.className = "panel";
+        empty.style.padding = "14px";
+        empty.innerHTML = `
+          <div class="panelHeader" style="border-bottom:0;">
+            <div>
+              <h2>No Projects Found</h2>
+              <p class="sub">Try loading a different repo or clearing filters.</p>
+            </div>
+          </div>
+        `;
+        ui.grid.appendChild(empty);
+        return;
+      }
+
+      for (const p of matches){
+        ui.grid.appendChild(renderCard(p));
+      }
+
+      if (state.repo.showRootHtml && state.rootHtml.length){
+        const section = document.createElement("div");
+        section.className = "panel";
+        section.style.gridColumn = "1 / -1";
+        section.innerHTML = `
+          <div class="panelHeader">
+            <div>
+              <h2>Root Files</h2>
+              <p class="sub">Standalone HTML files in the repo root.</p>
+            </div>
+          </div>
+          <div class="panelBody" id="rootFilesBody"></div>
+        `;
+        ui.grid.appendChild(section);
+
+        const body = section.querySelector("#rootFilesBody");
+        const wrap = document.createElement("div");
+        wrap.style.display = "flex";
+        wrap.style.flexWrap = "wrap";
+        wrap.style.gap = "8px";
+
+        for (const f of state.rootHtml){
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btnSmall";
+          btn.innerHTML = `<span class="mono">${escapeHtml(f.name)}</span>`;
+          btn.addEventListener("click", () => openViewer("__root__", f.path, f.name));
+          wrap.appendChild(btn);
+        }
+        body.appendChild(wrap);
+      }
+    }
+
+    function escapeHtml(s){
+      return String(s || "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function renderCard(p){
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const cfg = cfgForKeyEffective(p.key);
+      const title = cfg?.title || p.title || p.key;
+      const desc = cfg?.description || p.description || "";
+      const tags = normalizeTags(cfg?.tags || p.tags);
+      const featured = !!(cfg?.featured ?? p.featured);
+      const externalUrl = cfg?.externalUrl || p.externalUrl || "";
+      const thumb = cfg?.thumbnail || p.thumbnail || "";
+
+      const badge = featured ? `<span class="badge featured">Featured</span>` : `<span class="badge">Project</span>`;
+
+      const tagHtml = tags.slice(0, 5).map(t => `<span class="miniTag">${escapeHtml(t)}</span>`).join("");
+
+      const thumbHtml = thumb
+        ? `<img alt="" src="${escapeHtml(thumb)}" onerror="this.remove()" />`
+        : `<span>${escapeHtml((title || "P").slice(0,1).toUpperCase())}</span>`;
+
+      card.innerHTML = `
+        <div class="cardTop">
+          <div class="thumb">${thumbHtml}</div>
+          <div class="cardMeta">
+            <div class="cardTitleRow">
+              <h3 title="${escapeHtml(title)}">${escapeHtml(title)}</h3>
+              ${badge}
+            </div>
+            <p class="desc">${escapeHtml(desc || "No description yet. Add one in Metadata Editor.")}</p>
+            <div class="miniRow">${tagHtml}</div>
+          </div>
+        </div>
+        <div class="cardBottom">
+          <div class="path mono" title="${escapeHtml(p.primary?.path || "")}">${escapeHtml(p.primary?.path || "")}</div>
+          <div class="btnRow">
+            <button class="btnSmall primary" type="button" data-action="view">View</button>
+            <button class="btnSmall" type="button" data-action="files">Files</button>
+            ${externalUrl ? `<a class="btnSmall" href="${escapeHtml(externalUrl)}" target="_blank" rel="noopener">Link</a>` : ``}
+            <a class="btnSmall" href="${escapeHtml(buildGitHubBlobUrl(p.primary.path))}" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      `;
+
+      const btnView = card.querySelector('[data-action="view"]');
+      btnView.addEventListener("click", () => openViewer(p.key, p.primary.path, title));
+
+      const btnFiles = card.querySelector('[data-action="files"]');
+
+      btnFiles.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openFileChooser(p.key, title);
+      });
+
+      card.addEventListener("click", (e) => {
+        const t = e.target;
+        if (t && (t.closest(".btnSmall") || t.closest(".menu"))) return;
+        openViewer(p.key, p.primary.path, title);
+      });
+
+      return card;
+    }
+
+    function closeAllMenus(){
+      document.querySelectorAll(".menu.open").forEach(m => m.classList.remove("open"));
+      document.querySelectorAll(".menuWrap.up").forEach(w => w.classList.remove("up"));
+    }
+
+    
+    function projectByKey(key){
+      if (key === "__root__") return null;
+      return state.projects.find(p => p.key === key) || null;
+    }
+
+    function syncOverlay(){
+      const anyOpen = !!(state.viewer.open || state.editor.open || state.chooser.open);
+      ui.modalOverlay.classList.toggle("open", anyOpen);
+    }
+
+    // URL routing helpers
+    function readRouteFromUrl(){
+      const u = new URL(window.location.href);
+      const p = u.searchParams.get("p") || "";
+      const mode = u.searchParams.get("mode") || "";
+      const file = u.searchParams.get("file") || "";
+      return { p, mode, file };
+    }
+
+    function setRoute(next, { push = false } = {}){
+      const u = new URL(window.location.href);
+      const hasProject = !!(next && next.p);
+      if (!hasProject){
+        u.searchParams.delete("p");
+        u.searchParams.delete("mode");
+        u.searchParams.delete("file");
+      } else {
+        u.searchParams.set("p", next.p);
+        if (next.mode) u.searchParams.set("mode", next.mode); else u.searchParams.delete("mode");
+        if (next.file) u.searchParams.set("file", next.file); else u.searchParams.delete("file");
+      }
+      if (push) history.pushState({}, "", u.toString());
+      else history.replaceState({}, "", u.toString());
+    }
+
+    function applyRouteFromUrl(){
+      const r = readRouteFromUrl();
+      if (!r.p) return;
+
+      // If repo isn't loaded yet, defer
+      if (!state.projects.length && !(state.repo.showRootHtml && state.rootHtml.length)){
+        state.route.pending = r;
+        return;
+      }
+
+      if (r.mode === "files"){
+        openFileChooser(r.p, null, { fromRoute: true });
+        return;
+      }
+
+      if (r.file){
+        const proj = projectByKey(r.p);
+        const title = proj ? (proj.title + " - " + fileName(r.file)) : fileName(r.file);
+        openViewer(r.p, r.file, title, { fromRoute: true });
+        return;
+      }
+
+      // p only -> open primary file (or root file chooser fallback)
+      if (r.p === "__root__"){
+        // root needs a file, so do nothing
+        return;
+      }
+      const proj = projectByKey(r.p);
+      if (!proj) return;
+      openViewer(proj.key, proj.primary.path, proj.title, { fromRoute: true });
+    }
+
+    window.addEventListener("popstate", () => {
+      // Close current overlays and re-apply from URL
+      state.viewer.open = false;
+      state.chooser.open = false;
+      state.editor.open = false;
+      ui.configDrawer.classList.remove("open");
+      ui.configDrawer.setAttribute("aria-hidden","true");
+      ui.viewerModal.classList.remove("open");
+      ui.viewerModal.setAttribute("aria-hidden","true");
+      ui.viewerFrame.removeAttribute("srcdoc");
+      ui.viewerFrame.src = "about:blank";
+      ui.fileChooserModal.classList.remove("open");
+      ui.fileChooserModal.setAttribute("aria-hidden","true");
+      syncOverlay();
+      applyRouteFromUrl();
+    });
+
+    function openFileChooser(projectKey, displayTitle, opts = {}){
+      const proj = projectByKey(projectKey);
+      if (!proj){
+        toast("warn","Project Not Found", "No project found for key: " + projectKey);
+        return;
+      }
+      state.chooser.open = true;
+      state.chooser.projectKey = projectKey;
+      state.chooser.displayTitle = displayTitle || proj.title;
+
+      ui.chooserTitle.textContent = proj.title + " Files";
+      ui.chooserSub.textContent = proj.folder || proj.key;
+      ui.chooserHint.textContent = `Select an HTML file to open. (${proj.files.length} found)`;
+
+      buildChooserList(proj);
+
+      ui.fileChooserModal.classList.add("open");
+      ui.fileChooserModal.setAttribute("aria-hidden","false");
+      syncOverlay();
+
+      if (!opts.fromRoute){
+        setRoute({ p: projectKey, mode: "files" }, { push: true });
+      }
+    }
+
+    function buildChooserList(proj){
+      ui.chooserList.innerHTML = "";
+      for (const f of proj.files){
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "chooserRow";
+        btn.innerHTML = `
+          <span class="name">${escapeHtml(f.name)}</span>
+          <span class="path mono">${escapeHtml(f.path)}</span>
+        `;
+        btn.addEventListener("click", () => {
+          closeFileChooser({ keepRoute: true });
+          openViewer(proj.key, f.path, proj.title + " - " + f.name, { pushRoute: true });
+        });
+        ui.chooserList.appendChild(btn);
+      }
+
+      ui.btnChooserOpenPrimary.onclick = () => {
+        closeFileChooser({ keepRoute: true });
+        openViewer(proj.key, proj.primary.path, proj.title, { pushRoute: true });
+      };
+
+      ui.btnChooserPopoutPrimary.onclick = () => {
+        window.open(buildPopoutUrl(proj.primary.path), "_blank", "noopener");
+      };
+
+      ui.btnChooserDownloadMeta.onclick = () => {
+        downloadProjectMetadataJson(proj.key);
+      };
+      applyFeaturesToUi();
+    }
+
+    function closeFileChooser(opts = {}){
+      state.chooser.open = false;
+      ui.fileChooserModal.classList.remove("open");
+      ui.fileChooserModal.setAttribute("aria-hidden","true");
+      syncOverlay();
+
+      if (opts.keepRoute) return;
+
+      // If viewer is open, let viewer control the route. Otherwise clear.
+      if (!state.viewer.open){
+        setRoute(null, { push: true });
+      }
+    }
+function buildFilesMenu(menu, project, displayTitle){
+      menu.innerHTML = "";
+
+      const header = document.createElement("div");
+      header.style.padding = "6px 10px 8px";
+      header.style.color = "var(--muted)";
+      header.style.fontSize = "12px";
+      header.textContent = `HTML Files (${project.files.length})`;
+      menu.appendChild(header);
+
+      for (const f of project.files){
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.innerHTML = `
+          <span>${escapeHtml(f.name)}</span>
+          <span class="subline mono">${escapeHtml(f.path)}</span>
+        `;
+        btn.addEventListener("click", () => {
+          menu.classList.remove("open");
+          openViewer(project.key, f.path, displayTitle + " - " + f.name);
+        });
+        menu.appendChild(btn);
+      }
+
+      const pop = document.createElement("a");
+      pop.href = buildPopoutUrl(project.primary.path);
+      pop.target = "_blank";
+      pop.rel = "noopener";
+      pop.innerHTML = `<span>Pop Out Primary</span><span class="subline">New Tab</span>`;
+      menu.appendChild(pop);
+    }
+
+    async function fetchHtmlText(path){
+      const { owner, repo, branch, contentMode } = state.repo;
+
+      if (contentMode === "api"){
+        // Contents API returns base64. Useful when you need auth.
+        const safeOwner = encodeURIComponent(owner);
+        const safeRepo = encodeURIComponent(repo);
+        const safeBranch = encodeURIComponent(branch || "main");
+        const safePath = path.split("/").map(encodeURIComponent).join("/");
+        const url = `https://api.github.com/repos/${safeOwner}/${safeRepo}/contents/${safePath}?ref=${safeBranch}`;
+        const data = await githubFetchJson(url);
+        if (!data?.content) throw new Error("Contents API returned no content for " + path);
+        const base64 = data.content.replace(/\n/g, "");
+        const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+        return new TextDecoder("utf-8").decode(bytes);
+      }
+
+      // jsdelivr or raw
+      const url = buildCdnUrlForPath(path);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch HTML (${res.status}): ${path}`);
+      return await res.text();
+    }
+
+    function injectBaseHref(html, baseHref){
+      // Insert <base href="..."> in <head> if missing
+      const hasBase = /<base\s/i.test(html);
+      if (hasBase) return html;
+
+      if (/<head\b[^>]*>/i.test(html)){
+        return html.replace(/<head\b[^>]*>/i, (m) => `${m}\n<base href="${baseHref}">`);
+      }
+      // No head found, prepend a minimal one
+      return `<!doctype html><html><head><meta charset="utf-8"><base href="${baseHref}"></head><body>${html}</body></html>`;
+    }
+
+    function openViewer(projectKey, path, title, opts = {}){
+      state.viewer.open = true;
+      state.viewer.projectKey = projectKey;
+      state.viewer.path = path;
+      state.viewer.pagesUrl = buildPagesUrl(path);
+
+      ui.viewerTitle.textContent = title || "Viewer";
+      ui.viewerSub.textContent = path || "";
+      syncOverlay();
+
+      if (!opts.fromRoute){
+        // p only for primary view, include file for non-primary or root
+        const proj = projectByKey(projectKey);
+        const isPrimary = !!(proj && proj.primary && proj.primary.path === path);
+        const fileParam = (!isPrimary || projectKey === "__root__") ? path : "";
+        setRoute({ p: projectKey, file: fileParam || "" }, { push: true });
+      }
+      ui.btnOpenPages.classList.toggle("hidden", !state.viewer.pagesUrl);
+
+      ui.viewerModal.classList.add("open");
+      ui.viewerModal.setAttribute("aria-hidden","false");
+
+      // safer default sandbox would restrict too much for many apps
+      ui.viewerFrame.removeAttribute("sandbox");
+
+      setStatus("Loading viewer content...");
+      loadViewerContent(path).catch(err => {
+        console.error(err);
+        toast("bad","Viewer Failed", String(err?.message || err));
+        setStatus("Viewer failed. Try Pop Out or switch viewer source mode.");
+      });
+    }
+
+    async function loadViewerContent(path){
+      const baseHref = buildBaseHrefForPath(path);
+      state.viewer.baseHref = baseHref;
+
+      const html = await fetchHtmlText(path);
+      const patched = injectBaseHref(html, baseHref);
+
+      // srcdoc avoids raw HTML downloading issues and keeps everything inside the app.
+      ui.viewerFrame.srcdoc = patched;
+
+      setStatus("Viewer loaded.");
+    }
+
+    function closeViewer(opts = {}){
+      state.viewer.open = false;
+      ui.viewerModal.classList.remove("open");
+      ui.viewerModal.setAttribute("aria-hidden","true");
+      ui.viewerFrame.removeAttribute("srcdoc");
+      ui.viewerFrame.src = "about:blank";
+      syncOverlay();
+
+      if (opts.keepRoute) return;
+
+      if (state.chooser.open){
+        // chooser controls route
+        setRoute({ p: state.chooser.projectKey, mode: "files" }, { push: true });
+      } else {
+        setRoute(null, { push: true });
+      }
+    }
+
+    function openConfigEditor(){
+      if (!ENABLE_CONFIG_EDITOR){
+        toast("warn","Editor Disabled","ENABLE_CONFIG_EDITOR is set to false.");
+        return;
+      }
+      state.editor.open = true;
+      syncOverlay();
+      ui.configDrawer.classList.add("open");
+      ui.configDrawer.setAttribute("aria-hidden","false");
+
+      // Tab visibility
+      ui.tabBtnProjects.classList.toggle("hidden", !ENABLE_PROJECT_METADATA_EDITOR);
+      ui.tabBtnPage.classList.toggle("hidden", !ENABLE_PAGE_CONTENT_EDITOR);
+
+      rebuildEditorProjectList();
+      syncEditorSelection(state.editor.selectedKey || pickFirstKeyForEditor());
+      syncPageEditorFields();
+      setEditorTab(state.editor.tab || (ENABLE_PROJECT_METADATA_EDITOR ? "projects" : "page"));
+      syncEditorJsonTextarea();
+    }
+
+    function closeConfigEditor(){
+      state.editor.open = false;
+      ui.configDrawer.classList.remove("open");
+      ui.configDrawer.setAttribute("aria-hidden","true");
+      syncOverlay();
+    }
+
+    function pickFirstKeyForEditor(){
+      const keys = Object.keys(state.cfg.projects || {});
+      if (keys.length) return keys[0];
+      if (state.projects.length) return state.projects[0].key;
+      return "";
+    }
+
+    function rebuildEditorProjectList(){
+      ui.projectList.innerHTML = "";
+
+      const keys = new Set();
+      for (const p of state.projects) keys.add(p.key);
+      for (const k of Object.keys(state.cfg.projects || {})) keys.add(k);
+
+      const list = [...keys].sort((a,b) => a.localeCompare(b));
+      if (!list.length){
+        const note = document.createElement("div");
+        note.className = "smallNote";
+        note.textContent = "No projects loaded yet. Load a repo to populate the list or paste JSON in the editor.";
+        ui.projectList.appendChild(note);
+        return;
+      }
+
+      for (const k of list){
+        const cfg = cfgForKeyEffective(k);
+        const p = state.projects.find(x => x.key === k);
+        const title = cfg?.title || p?.title || k;
+        const hint = p?.primary?.path || "Config Only";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "listItem " + (k === state.editor.selectedKey ? "active" : "");
+        btn.innerHTML = `
+          <div class="name">${escapeHtml(title)}</div>
+          <div class="hint mono">${escapeHtml(hint)}</div>
+        `;
+        btn.addEventListener("click", () => {
+          syncEditorSelection(k);
+          rebuildEditorProjectList();
+        });
+        ui.projectList.appendChild(btn);
+      }
+    }
+
+    function syncEditorSelection(key){
+      state.editor.selectedKey = key || "";
+      ui.cfgKey.value = key || "";
+
+      const cfg = cfgForKeyEffective(key) || {};
+
+      const meta = folderMetaForKey(key);
+      if (ui.cfgMetaNote){
+        if (meta){
+          ui.cfgMetaNote.innerHTML = `This folder contains <span class="mono">metadata.json</span> in the repo. It overrides the main config for this project.`;
+          ui.cfgMetaNote.classList.add("warn");
+        } else {
+          ui.cfgMetaNote.textContent = "No metadata.json was detected for this folder. Main config applies.";
+          ui.cfgMetaNote.classList.remove("warn");
+        }
+      }
+      ui.cfgTitle.value = cfg.title || "";
+      ui.cfgDesc.value = cfg.description || "";
+      ui.cfgTags.value = normalizeTags(cfg.tags).join(", ");
+      ui.cfgThumb.value = cfg.thumbnail || "";
+      ui.cfgFeatured.checked = !!cfg.featured;
+      ui.cfgHidden.checked = !!cfg.hidden;
+      ui.cfgOrder.value = (cfg.order === 0 || cfg.order) ? String(cfg.order) : "";
+      ui.cfgExternal.value = cfg.externalUrl || "";
+      populateEditorFileFields(key, cfg);
+    }
+
+    function populateEditorFileFields(key, cfg = null){
+      cfg = cfg || (cfgForKeyEffective(key) || {});
+      const proj = state.projects.find(p => p.key === key);
+
+      ui.cfgPrimaryPath.innerHTML = "";
+      const optAuto = document.createElement("option");
+      optAuto.value = "";
+      optAuto.textContent = "(Auto)";
+      ui.cfgPrimaryPath.appendChild(optAuto);
+
+      if (proj && Array.isArray(proj.files)){
+        for (const f of proj.files){
+          const opt = document.createElement("option");
+          opt.value = f.path;
+          opt.textContent = f.path;
+          ui.cfgPrimaryPath.appendChild(opt);
+        }
+      }
+
+      ui.cfgPrimaryPath.value = (cfg.primaryPath || "").trim();
+
+      const sortMode = (cfg.fileSort || "scoreDesc");
+      ui.cfgFileSort.value = sortMode;
+    }
+
+
+
+    function saveEditorFields(){
+      const key = ui.cfgKey.value.trim();
+      if (!key){
+        toast("warn","Missing Key","Set a project key (usually the folder name).");
+        return;
+      }
+
+      const obj = {
+        title: ui.cfgTitle.value.trim() || undefined,
+        description: ui.cfgDesc.value.trim() || undefined,
+        tags: normalizeTags(ui.cfgTags.value),
+        thumbnail: ui.cfgThumb.value.trim() || undefined,
+        featured: !!ui.cfgFeatured.checked,
+        hidden: !!ui.cfgHidden.checked,
+        externalUrl: ui.cfgExternal.value.trim() || undefined,
+        primaryPath: ui.cfgPrimaryPath.value.trim() || undefined,
+        fileSort: (ui.cfgFileSort.value && ui.cfgFileSort.value !== "scoreDesc") ? ui.cfgFileSort.value : undefined
+      };
+
+      const orderRaw = ui.cfgOrder.value.trim();
+      if (orderRaw !== ""){
+        const n = Number(orderRaw);
+        if (!Number.isFinite(n)){
+          toast("warn","Invalid Order","Sort order must be a number.");
+          return;
+        }
+        obj.order = n;
+      }
+
+      // Remove undefined keys for cleaner JSON
+      for (const k of Object.keys(obj)){
+        if (obj[k] === undefined) delete obj[k];
+      }
+
+      // Empty config means delete entry
+      const hasAny = Object.keys(obj).length > 0;
+      if (!hasAny){
+        deleteCfgKey(key);
+      } else {
+        setCfgForKey(key, obj);
+      }
+
+      // Update computed projects view
+      // Refresh metadata fields on projects list
+      for (const p of state.projects){
+        if (p.key !== key) continue;
+        const cfg = cfgForKeyEffective(key);
+        p.title = cfg?.title || p.folder;
+        p.description = cfg?.description || p.description || "";
+        p.tags = normalizeTags(cfg?.tags || p.tags);
+        p.thumbnail = cfg?.thumbnail || p.thumbnail || "";
+        p.featured = !!cfg?.featured;
+        p.hidden = !!cfg?.hidden;
+        p.order = (typeof cfg?.order === "number") ? cfg.order : (cfg?.order ? Number(cfg.order) : null);
+        p.externalUrl = cfg?.externalUrl || "";
+        // apply file preferences (primary + sorting)
+        const pref = applyFilePreferences(p.key, p.files || [], cfg);
+        p.files = pref.files;
+        p.primary = pref.primary || p.primary;
+      }
+
+      saveConfig();
+      buildTagBar();
+      render();
+      rebuildEditorProjectList();
+      syncEditorJsonTextarea();
+      toast("good","Saved","Metadata updated.");
+    }
+
+    function exportConfigJson(){
+      // Export only the config object, not repo settings
+      return JSON.stringify(state.cfg, null, 2);
+    }
+
+    function syncEditorJsonTextarea(){
+      ui.cfgJson.value = exportConfigJson();
+    }
+
+    async function copyConfigJson(){
+      const text = exportConfigJson();
+      try{
+        await navigator.clipboard.writeText(text);
+        toast("good","Copied","Config JSON copied to clipboard.");
+      } catch {
+        // fallback
+        ui.cfgJson.focus();
+        ui.cfgJson.select();
+        toast("warn","Clipboard Blocked","Select and copy from the text area.");
+      }
+    }
+
+    function downloadText(filename, text){
+      const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1200);
+    }
+
+
+    function buildMetadataJsonForProject(projectKey){
+      const key = String(projectKey || "").trim();
+      const proj = projectByKey(key);
+      const cfg = cfgForKeyEffective(key) || {};
+      const merged = deepMerge({}, cfg);
+
+      // Fill sensible defaults from discovered project info
+      if (proj){
+        if (!merged.title) merged.title = proj.title || proj.folder || key;
+        if (!merged.description && proj.description) merged.description = proj.description;
+        if (!merged.tags && proj.tags?.length) merged.tags = proj.tags;
+        if (!merged.thumbnail && proj.thumbnail) merged.thumbnail = proj.thumbnail;
+        if (merged.featured === undefined) merged.featured = !!proj.featured;
+        if (merged.hidden === undefined) merged.hidden = !!proj.hidden;
+        if (!merged.externalUrl && proj.externalUrl) merged.externalUrl = proj.externalUrl;
+        if (!merged.primaryPath && proj.primary?.path) merged.primaryPath = proj.primary.path;
+      }
+
+      merged.version = 1;
+
+      // Clean undefined and normalize tags
+      if (Array.isArray(merged.tags)) merged.tags = merged.tags.filter(Boolean);
+      if (typeof merged.tags === "string") merged.tags = normalizeTags(merged.tags);
+
+      for (const k of Object.keys(merged)){
+        if (merged[k] === undefined) delete merged[k];
+      }
+      return JSON.stringify(merged, null, 2);
+    }
+
+    function downloadProjectMetadataJson(projectKey){
+      const key = String(projectKey || "").trim();
+      if (!key){
+        toast("warn","Missing Project Key","Pick a project first.");
+        return;
+      }
+      const text = buildMetadataJsonForProject(key);
+      downloadText(`metadata-${key}.json`, text);
+      toast("good","Downloaded", "Created a metadata.json for " + key + ".");
+    }
+
+    function importConfigJson(){
+      const raw = ui.cfgJson.value.trim();
+      if (!raw){
+        toast("warn","No JSON","Paste config JSON first.");
+        return;
+      }
+      const parsed = safeJsonParse(raw);
+      if (!parsed.ok){
+        toast("bad","Invalid JSON", parsed.error);
+        return;
+      }
+      state.cfg = deepMerge(structuredClone(PORTFOLIO_CONFIG), parsed.value);
+      saveConfig();
+      applyPageFromCfg();
+      rebuildEditorProjectList();
+      syncPageEditorFields();
+      buildTagBar();
+      render();
+      syncEditorJsonTextarea();
+      toast("good","Imported","Config loaded.");
+    }
+
+    function resetConfigToEmbedded(){
+      localStorage.removeItem(STORAGE_KEYS.cfg);
+      state.cfg = structuredClone(state.cfgDefault || PORTFOLIO_CONFIG);
+      state.cfg.features = deepMerge(DEFAULT_FEATURES, (state.cfg.features || {}));
+      applyPageFromCfg();
+      applyFeaturesToUi();
+      rebuildEditorProjectList();
+      syncPageEditorFields();
+      buildTagBar();
+      render();
+      syncEditorJsonTextarea();
+      toast("good","Reset","Config reset to embedded default.");
+    }
+
+    function clearFilters(){
+      state.search = "";
+      state.selectedTags.clear();
+      state.sort = "featured";
+      ui.search.value = "";
+      ui.sort.value = "featured";
+      buildTagBar();
+      render();
+    }
+
+    function setupUi(){
+      ui.btnRepoPanel.addEventListener("click", () => {
+        ui.repoPanel.classList.remove("hidden");
+        ui.repoPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        setTimeout(() => { try { ui.owner.focus(); } catch {} }, 250);
+      });
+ui.btnHideRepoPanel.addEventListener("click", () => ui.repoPanel.classList.toggle("hidden"));
+
+      ui.btnLoadRepo.addEventListener("click", loadRepo);
+      ui.btnReload.addEventListener("click", loadRepo);
+
+      ui.search.addEventListener("input", () => {
+        state.search = ui.search.value;
+        render();
+      });
+
+      ui.sort.addEventListener("change", () => {
+        state.sort = ui.sort.value;
+        render();
+      });
+
+      ui.btnClearFilters.addEventListener("click", clearFilters);
+
+      ui.modalOverlay.addEventListener("click", () => {
+        // clicking backdrop closes the top-most open surface
+        if (state.chooser.open) { closeFileChooser(); return; }
+        if (state.viewer.open) { closeViewer(); return; }
+        if (state.editor.open) { closeConfigEditor(); return; }
+        closeAllMenus();
+      });
+
+      ui.btnCloseViewer.addEventListener("click", closeViewer);
+      ui.btnCloseChooser.addEventListener("click", () => closeFileChooser());
+
+      ui.btnOpenNewTab.addEventListener("click", () => {
+        if (!state.viewer.path) return;
+        window.open(buildPopoutUrl(state.viewer.path), "_blank", "noopener");
+      });
+
+      ui.btnOpenPages.addEventListener("click", () => {
+        if (!state.viewer.pagesUrl) return;
+        window.open(state.viewer.pagesUrl, "_blank", "noopener");
+      });
+
+      document.addEventListener("click", () => closeAllMenus());
+
+      ui.btnConfigEditor.addEventListener("click", openConfigEditor);
+      ui.btnCloseDrawer.addEventListener("click", closeConfigEditor);
+
+      ui.btnSaveCfg.addEventListener("click", saveEditorFields);
+      ui.btnDownloadProjectMeta.addEventListener("click", () => downloadProjectMetadataJson(ui.cfgKey.value));
+      ui.btnCopyCfg.addEventListener("click", copyConfigJson);
+      ui.btnDownloadCfg.addEventListener("click", () => downloadText("portfolio_config.json", exportConfigJson()));
+      ui.btnImportCfg.addEventListener("click", importConfigJson);
+      ui.btnResetCfg.addEventListener("click", resetConfigToEmbedded);
+
+
+      applyFeaturesToUi();
+      ui.btnSavePage.addEventListener("click", savePageFromEditor);
+
+      if (ui.featureShowMetaDownload){
+        ui.featureShowMetaDownload.addEventListener("change", () => {
+          state.cfg.features = deepMerge(state.cfg.features || {}, { showMetadataDownload: !!ui.featureShowMetaDownload.checked });
+          saveConfig();
+          applyFeaturesToUi();
+          syncEditorJsonTextarea();
+        });
+      }
+      ui.tabBtnProjects.addEventListener("click", () => {
+        setEditorTab("projects");
+        if (state.editor.selectedKey) syncEditorSelection(state.editor.selectedKey);
+      });
+      ui.tabBtnPage.addEventListener("click", () => {
+        syncPageEditorFields();
+        setEditorTab("page");
+      });
+
+      // Disable editor UI if configured off
+      if (!ENABLE_CONFIG_EDITOR){
+        ui.btnConfigEditor.classList.add("hidden");
+      }
+
+      // Input changes should persist
+      for (const input of [ui.owner, ui.repo, ui.branch, ui.token, ui.contentMode, ui.popoutMode, ui.showRootHtml, ui.pagesBase]){
+        input.addEventListener("change", () => {
+          pullRepoSettingsFromInputs();
+          render();
+        });
+      }
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (state.chooser.open) { closeFileChooser(); return; }
+        if (state.viewer.open) { closeViewer(); return; }
+        if (state.editor.open) { closeConfigEditor(); return; }
+      });
+
+      // Keep editor key in sync
+      ui.cfgKey.addEventListener("change", () => {
+        const k = ui.cfgKey.value.trim();
+        syncEditorSelection(k);
+        rebuildEditorProjectList();
+      });
+    }
+
+    // Boot
+    (async function init(){
+      loadRepoSettings();
+      await initConfig();
+      applyRepoSettingsToInputs();
+      state.sort = ui.sort.value;
+
+      setSourceChip();
+      setupUi();
+
+      applyPageFromCfg();
+      applyFeaturesToUi();
+
+      // Set initial editor visibility state
+      if (!ENABLE_CONFIG_EDITOR){
+        ui.configDrawer.classList.remove("open");
+      }
+
+      // Capture any URL route (open project/file)
+      const initialRoute = readRouteFromUrl();
+      if (initialRoute && initialRoute.p) state.route.pending = initialRoute;
+
+      // First render (empty)
+      buildTagBar();
+      render();
+
+      // Auto load if repo details exist
+      if (state.repo.owner && state.repo.repo){
+        loadRepo().catch(() => {});
+      } else {
+        setStatus("Enter a repo then click Load Repo.");
+      }
+    })();
+  </script>
+</body>
+</html>
