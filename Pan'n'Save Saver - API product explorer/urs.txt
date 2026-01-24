@@ -1,0 +1,13 @@
+https://api-prod.paknsave.co.nz/v1/edge/search/paginated/products
+https://api-prod.paknsave.co.nz/v1/edge/store/3c5e3145-0767-4066-9349-6c0a1313acc5/categories
+https://api-prod.paknsave.co.nz/v1/edge/store
+
+https://api-prod.paknsave.co.nz/v1/edge/search/paginated/products
+
+https://www.paknsave.co.nz/shop/search?pg=1
+
+
+
+Request initiator chain
+https://www.paknsave.co.nz/shop/search?pg=1
+https://www.paknsave.co.nz/_next/static/chunks/pages/_app-318db6b721f861c0.js
