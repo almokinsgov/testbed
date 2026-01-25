@@ -1,0 +1,1802 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MetService Alerts History Viewer</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <style>
+    :root{
+      --bg: #0b0f14;
+      --panel: #0f141c;
+      --card: #111826;
+      --muted: #9aa6bd;
+      --text: #e7edf9;
+      --line: rgba(154,166,189,0.18);
+      --line2: rgba(154,166,189,0.10);
+      --good: #2dd4bf;
+      --warn: #f59e0b;
+      --bad: #fb7185;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(11,15,20,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+    }
+
+    .row{ display:flex; gap: 10px; align-items:center; flex-wrap: wrap; }
+    .row + .row{ margin-top: 10px; }
+
+    .title{
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      font-size: 16px;
+    }
+
+    .pill{
+      display:inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(17,24,38,0.6);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .btn{
+      appearance:none;
+      border: 1px solid var(--line);
+      background: rgba(17,24,38,0.8);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn:hover{ border-color: rgba(154,166,189,0.35); }
+    .btn:disabled{ opacity:0.55; cursor:not-allowed; }
+
+    select, input{
+      border: 1px solid var(--line);
+      background: rgba(17,24,38,0.8);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    input::placeholder{ color: rgba(154,166,189,0.70); }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 12px;
+      padding: 12px;
+      height: calc(100vh - 118px);
+    }
+
+    .card{
+      background: rgba(17,24,38,0.75);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      display:flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .cardheader{
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line2);
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15,20,28,0.7);
+    }
+
+    .subtitle{
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .cardbody{
+      padding: 10px 12px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    #map{
+      height: 100%;
+      width: 100%;
+    }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td{
+      padding: 8px 8px;
+      border-bottom: 1px solid var(--line2);
+      vertical-align: top;
+    }
+
+    th{ text-align:left; color: var(--muted); font-weight: 600; }
+
+    tr:hover td{ background: rgba(255,255,255,0.03); }
+
+    .mono{ font-family: var(--mono); }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(11,15,20,0.35);
+      white-space: nowrap;
+    }
+
+    .dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      display:inline-block;
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .kv{
+      border: 1px solid var(--line2);
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(11,15,20,0.25);
+    }
+
+    .k{ color: var(--muted); font-size: 11px; }
+    .v{ margin-top: 4px; font-size: 13px; }
+
+    details summary{ cursor:pointer; color: var(--muted); }
+
+    .err{
+      display:none;
+      margin-left: 6px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(251,113,133,0.35);
+      background: rgba(251,113,133,0.10);
+      color: #fecdd3;
+      font-size: 12px;
+    }
+
+    .ok{
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(45,212,191,0.25);
+      background: rgba(45,212,191,0.08);
+      color: #99f6e4;
+      font-size: 12px;
+    }
+
+    /* Timeline */
+    .timelineWrap{ height: calc(100vh - 118px); padding: 12px; display:none; }
+    .ganttWrap { display:flex; height: 100%; border: 1px solid var(--line); border-radius: 18px; overflow:hidden; background: rgba(15,20,28,0.6); }
+    .ganttYAxis { width: 320px; background: rgba(11,15,20,0.55); border-right: 1px solid var(--line); overflow:auto; padding: 8px; }
+    .ganttRowLabel { display:flex; gap:8px; align-items:center; padding: 6px 6px; border-bottom: 1px solid rgba(154,166,189,0.10); font-size: 12px; }
+    .ganttRowLabel .id { font-family: var(--mono); }
+    .ganttRowLabel .sub { color: var(--muted); font-size: 11px; }
+    .ganttScroll { flex:1; overflow:auto; position: relative; background: rgba(11,15,20,0.25); }
+    #tlCanvas { display:block; }
+
+    .tooltip{
+      position: fixed;
+      z-index: 50;
+      max-width: 520px;
+      border: 1px solid var(--line);
+      background: rgba(11,15,20,0.92);
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .muted{ color: var(--muted); }
+
+    @media (max-width: 1150px){
+      .layout{ grid-template-columns: 1fr; height: auto; }
+      .timelineWrap{ height: auto; }
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="row">
+      <span class="title">MetService Alerts History Viewer</span>
+      <span class="pill" id="pillMode">Mode: Live</span>
+      <span class="pill" id="pillSnapshot">Snapshot: Latest</span>
+      <span class="pill" id="pillCounts">0 alerts</span>
+      <span class="err" id="err"></span>
+    </div>
+
+    <div class="row">
+      <label class="subtitle">Mode</label>
+      <select id="modeSelect">
+        <option value="live">Live</option>
+        <option value="snapshot">Snapshot</option>
+        <option value="timeline">Timeline</option>
+      </select>
+
+      <span class="subtitle" style="margin-left: 8px;">Snapshot</span>
+      <select id="yearSelect" disabled><option value="">Year</option></select>
+      <select id="monthSelect" disabled><option value="">Month</option></select>
+      <select id="daySelect" disabled><option value="">Day</option></select>
+      <select id="snapSelect" disabled><option value="">Snapshot File</option></select>
+      <button class="btn" id="refreshBtn">Refresh</button>
+
+      <span class="subtitle" style="margin-left: 8px;">Filters</span>
+      <input id="searchInput" placeholder="Search ids, headlines, areas" style="min-width: 260px;" />
+      <select id="eventFilter"><option value="">Event</option></select>
+      <select id="severityFilter"><option value="">Severity</option></select>
+      <select id="colourFilter"><option value="">Colour</option></select>
+
+      <span class="subtitle" style="margin-left: 8px;">Map</span>
+      <label class="subtitle"><input type="checkbox" id="showPolys" checked /> Polygons</label>
+      <label class="subtitle"><input type="checkbox" id="showCentroids" checked /> Markers</label>
+      <label class="subtitle"><input type="checkbox" id="useCorsProxy" /> CORS Proxy</label>
+    </div>
+
+    <div class="row" id="timelineControls" style="display:none;">
+      <span class="subtitle">Timeline Range</span>
+      <select id="tlPreset">
+        <option value="7d">Last 7 Days</option>
+        <option value="30d">Last 30 Days</option>
+        <option value="90d">Last 90 Days</option>
+        <option value="custom">Custom</option>
+      </select>
+      <input id="tlStart" type="date" />
+      <input id="tlEnd" type="date" />
+      <select id="tlZoom">
+        <option value="10">Zoom 10 px hr</option>
+        <option value="16" selected>Zoom 16 px hr</option>
+        <option value="24">Zoom 24 px hr</option>
+        <option value="36">Zoom 36 px hr</option>
+      </select>
+      <button class="btn" id="tlLoadBtn">Load Timeline</button>
+      <span class="ok" id="tlStatus">Ready</span>
+    </div>
+  </div>
+
+  <div class="layout" id="mainLayout">
+    <div class="card">
+      <div class="cardheader">
+        <div>
+          <div style="font-weight:700;">Map</div>
+          <div class="subtitle" id="mapHint">Click a table row to focus an alert</div>
+        </div>
+        <div class="subtitle" id="sourceHint"></div>
+      </div>
+      <div class="cardbody" style="padding:0;">
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cardheader">
+        <div>
+          <div style="font-weight:700;">Alerts</div>
+          <div class="subtitle">Active alerts for the selected feed snapshot</div>
+        </div>
+        <div class="pill" id="selectedPill">Selected: None</div>
+      </div>
+      <div class="cardbody" style="padding:0;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 180px;">Id</th>
+              <th style="width: 160px;">Headline</th>
+              <th style="width: 90px;">Event</th>
+              <th style="width: 90px;">Severity</th>
+              <th style="width: 90px;">Colour</th>
+              <th style="width: 170px;">Onset</th>
+              <th style="width: 170px;">Expires</th>
+            </tr>
+          </thead>
+          <tbody id="alertBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="grid-column: 1 / span 2;">
+      <div class="cardheader">
+        <div>
+          <div style="font-weight:700;">Alert Details</div>
+          <div class="subtitle" id="detailHint">Details for the selected alert</div>
+        </div>
+        <div class="subtitle" id="detailSource"></div>
+      </div>
+      <div class="cardbody">
+        <div class="grid2" id="detailGrid"></div>
+        <details style="margin-top: 10px;" open>
+          <summary>Raw CAP XML</summary>
+          <pre class="mono" id="rawCap" style="white-space: pre-wrap;">Select an alert to load CAP XML</pre>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <div class="timelineWrap" id="timelineWrap">
+    <div class="card" style="height: 100%;">
+      <div class="cardheader">
+        <div>
+          <div style="font-weight:700;">Timeline</div>
+          <div class="subtitle">Alert presence and changes across feed snapshots</div>
+        </div>
+        <div class="pill" id="tlSummaryPill">0 alerts</div>
+      </div>
+      <div class="cardbody" style="padding: 10px;">
+        <div class="ganttWrap">
+          <div class="ganttYAxis" id="tlYAxis"></div>
+          <div class="ganttScroll" id="tlScroll">
+            <canvas id="tlCanvas" width="1400" height="500"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tlTooltip" class="tooltip" style="display:none;"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script>
+
+  /* ============================
+     Configuration
+     ============================ */
+
+  const APP = {
+    github: {
+      owner: "almokinsgov",
+      repo: "NZSHAPE",
+      branch: "main"
+    },
+    paths: {
+      latestFeed: "alerts/latest.xml",
+      archiveDir: "alerts/archive"
+    },
+    network: {
+      corsProxyPrefix: "https://corsproxy.io/?url=",
+      useCorsProxyDefault: true
+    },
+    metservice: {
+      capBase: "https://alerts.metservice.com/cap/alert?id="
+    },
+    map: { lat: -41.20, lng: 174.75, zoom: 5 }
+  };
+
+  function rawBase(){
+    const { owner, repo, branch } = APP.github;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/`;
+  }
+
+  function apiBase(){
+    const { owner, repo } = APP.github;
+    return `https://api.github.com/repos/${owner}/${repo}/contents/`;
+  }
+
+  function rawUrl(path){ return rawBase() + path; }
+
+  /* ============================
+     Elements
+     ============================ */
+
+  const el = {
+    modeSelect: document.getElementById("modeSelect"),
+    yearSelect: document.getElementById("yearSelect"),
+    monthSelect: document.getElementById("monthSelect"),
+    daySelect: document.getElementById("daySelect"),
+    snapSelect: document.getElementById("snapSelect"),
+    refreshBtn: document.getElementById("refreshBtn"),
+
+    pillMode: document.getElementById("pillMode"),
+    pillSnapshot: document.getElementById("pillSnapshot"),
+    pillCounts: document.getElementById("pillCounts"),
+
+    err: document.getElementById("err"),
+
+    searchInput: document.getElementById("searchInput"),
+    eventFilter: document.getElementById("eventFilter"),
+    severityFilter: document.getElementById("severityFilter"),
+    colourFilter: document.getElementById("colourFilter"),
+
+    showPolys: document.getElementById("showPolys"),
+    showCentroids: document.getElementById("showCentroids"),
+
+    useCorsProxy: document.getElementById("useCorsProxy"),
+
+    sourceHint: document.getElementById("sourceHint"),
+    alertBody: document.getElementById("alertBody"),
+    selectedPill: document.getElementById("selectedPill"),
+
+    detailGrid: document.getElementById("detailGrid"),
+    rawCap: document.getElementById("rawCap"),
+    detailHint: document.getElementById("detailHint"),
+    detailSource: document.getElementById("detailSource"),
+
+    mainLayout: document.getElementById("mainLayout"),
+    timelineWrap: document.getElementById("timelineWrap"),
+    timelineControls: document.getElementById("timelineControls"),
+
+    tlPreset: document.getElementById("tlPreset"),
+    tlStart: document.getElementById("tlStart"),
+    tlEnd: document.getElementById("tlEnd"),
+    tlZoom: document.getElementById("tlZoom"),
+    tlLoadBtn: document.getElementById("tlLoadBtn"),
+    tlStatus: document.getElementById("tlStatus"),
+
+    tlYAxis: document.getElementById("tlYAxis"),
+    tlScroll: document.getElementById("tlScroll"),
+    tlCanvas: document.getElementById("tlCanvas"),
+    tlTooltip: document.getElementById("tlTooltip"),
+    tlSummaryPill: document.getElementById("tlSummaryPill")
+  };
+
+  /* ============================
+     State
+     ============================ */
+
+  const state = {
+    mode: "live",
+
+    useCorsProxy: true,
+
+    // Snapshot selectors
+    archiveIndex: null, // { files: [ {name, iso, ms, y, ym, ymd} ], byYearMonthDay: Map }
+    selectedArchiveFile: "",
+
+    // Feed and CAP data
+    feed: null, // { source, updated, entries:[...] }
+    alerts: [], // [{entry, cap, capXml, capSource }]
+    selectedAlertId: "",
+
+    // Caches
+    capCache: new Map(), // key -> { xml, cap, source }
+    githubDirCache: new Map(), // path -> { atMs, items }
+
+    // Map
+    map: null,
+    layers: {
+      polys: L.layerGroup(),
+      markers: L.layerGroup()
+    },
+    polyById: new Map(),
+    markerById: new Map(),
+
+    // Timeline
+    timeline: {
+      startMs: 0,
+      endMs: 0,
+      pxPerHour: 16,
+      snapshots: [],
+      baseSegments: new Map(),
+      hitRects: [],
+      rows: []
+    }
+  };
+
+  /* ============================
+     Helpers
+     ============================ */
+
+  function showError(msg){
+    el.err.style.display = "inline-flex";
+    el.err.textContent = String(msg || "Error");
+  }
+  function clearError(){
+    el.err.style.display = "none";
+    el.err.textContent = "";
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function sanitizeFileName(s){
+    return String(s).replace(/[^\w.\-]+/g, "_");
+  }
+
+  function parseArchiveFileName(name){
+    // latest_2025-07-27T03-47-47-934Z.xml
+    const m = String(name).match(/latest_(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z\.xml$/i);
+    if (!m) return null;
+    const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.${m[7]}Z`;
+    const ms = Date.parse(iso);
+    if (!isFinite(ms)) return null;
+    const y = m[1];
+    const ym = `${m[1]}-${m[2]}`;
+    const ymd = `${m[1]}-${m[2]}-${m[3]}`;
+    return { name, iso, ms, y, ym, ymd };
+  }
+
+  function toLocal(dt){
+    if (!dt) return "";
+    const ms = Date.parse(dt);
+    if (!isFinite(ms)) return dt;
+    return new Date(ms).toLocaleString();
+  }
+
+  function baseAlertIdFromIdentifier(identifier){
+    // Groups versions together by stripping the last dot segment
+    const s = String(identifier || "");
+    const idx = s.lastIndexOf(".");
+    return idx > 0 ? s.slice(0, idx) : s;
+  }
+
+
+  function loadBool_(key, fallback){
+    try{
+      const v = localStorage.getItem(key);
+      if (v === null || v === undefined) return !!fallback;
+      return v === "1" || v === "true";
+    } catch (_){
+      return !!fallback;
+    }
+  }
+
+  function saveBool_(key, val){
+    try{ localStorage.setItem(key, val ? "1" : "0"); } catch (_){ }
+  }
+
+  function proxifyUrl(url){
+    const u = String(url || "");
+    if (!state.useCorsProxy) return u;
+    const p = (APP.network && APP.network.corsProxyPrefix) ? APP.network.corsProxyPrefix : "https://corsproxy.io/?url=";
+    if (!/^https?:\/\//i.test(u)) return u;
+    if (u.startsWith(p)) return u;
+    return p + encodeURIComponent(u);
+  }
+
+  async function fetchText(url, opts){
+    const finalUrl = proxifyUrl(url);
+    const res = await fetch(finalUrl, opts || {});
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} for ${url} ${t ? `body=${t.slice(0,200)}` : ""}`);
+    }
+    return await res.text();
+  }
+
+  async function fetchTextSoft(url, opts){
+    const finalUrl = proxifyUrl(url);
+    const res = await fetch(finalUrl, opts || {});
+    if (!res.ok) return { ok:false, status: res.status, text: "" };
+    const t = await res.text().catch(() => "");
+    return { ok:true, status: res.status, text: t };
+  }
+
+  async function listGitHubDir(path){
+    // Cache for 10 minutes
+    const key = String(path);
+    const now = Date.now();
+    const hit = state.githubDirCache.get(key);
+    if (hit && (now - hit.atMs) < 10*60*1000) return hit.items;
+
+    const url = apiBase() + encodeURIComponent(path).replace(/%2F/g, "/") + `?ref=${encodeURIComponent(APP.github.branch)}`;
+    const res = await fetch(proxifyUrl(url), { headers: { "Accept": "application/vnd.github+json" } });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(`GitHub API HTTP ${res.status} listing ${path} ${t ? `body=${t.slice(0,200)}` : ""}`);
+    }
+    const json = await res.json();
+    const items = Array.isArray(json) ? json : [];
+    state.githubDirCache.set(key, { atMs: now, items });
+    return items;
+  }
+
+  function parseXml(xmlText){
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, "application/xml");
+    const err = doc.querySelector("parsererror");
+    if (err) throw new Error("XML parse error");
+    return doc;
+  }
+
+  function textByLocalName(parent, localName){
+    if (!parent) return "";
+    const els = parent.getElementsByTagNameNS("*", localName);
+    if (!els || !els.length) return "";
+    return (els[0].textContent || "").trim();
+  }
+
+  function allByLocalName(parent, localName){
+    if (!parent) return [];
+    return Array.from(parent.getElementsByTagNameNS("*", localName) || []);
+  }
+
+  function parseAtomFeed(xmlText){
+    const doc = parseXml(xmlText);
+    const root = doc.documentElement;
+    const updated = textByLocalName(root, "updated");
+    const entries = allByLocalName(root, "entry").map(en => {
+      const id = textByLocalName(en, "id");
+      const title = textByLocalName(en, "title");
+      const summary = textByLocalName(en, "summary");
+      const published = textByLocalName(en, "published");
+      const updated = textByLocalName(en, "updated");
+
+      let capUrl = "";
+      for (const link of allByLocalName(en, "link")) {
+        const rel = link.getAttribute("rel");
+        const type = link.getAttribute("type");
+        const href = link.getAttribute("href");
+        if (rel === "related" && type === "application/cap+xml" && href) capUrl = href;
+      }
+
+      return { id, title, summary, published, updated, capUrl };
+    }).filter(e => e.id && e.capUrl);
+
+    return { updated, entries };
+  }
+
+  function parseCap(xmlText){
+    const doc = parseXml(xmlText);
+    const alertEl = doc.documentElement;
+
+    const identifier = textByLocalName(alertEl, "identifier");
+    const sender = textByLocalName(alertEl, "sender");
+    const sent = textByLocalName(alertEl, "sent");
+    const status = textByLocalName(alertEl, "status");
+    const msgType = textByLocalName(alertEl, "msgType");
+    const scope = textByLocalName(alertEl, "scope");
+
+    const infoEl = allByLocalName(alertEl, "info")[0] || null;
+    const category = textByLocalName(infoEl, "category");
+    const event = textByLocalName(infoEl, "event");
+    const urgency = textByLocalName(infoEl, "urgency");
+    const severity = textByLocalName(infoEl, "severity");
+    const certainty = textByLocalName(infoEl, "certainty");
+    const onset = textByLocalName(infoEl, "onset");
+    const expires = textByLocalName(infoEl, "expires");
+    const headline = textByLocalName(infoEl, "headline");
+    const description = textByLocalName(infoEl, "description");
+    const instruction = textByLocalName(infoEl, "instruction");
+    const web = textByLocalName(infoEl, "web");
+
+    const params = {};
+    for (const p of allByLocalName(infoEl, "parameter")) {
+      const vn = textByLocalName(p, "valueName");
+      const vv = textByLocalName(p, "value");
+      if (vn) params[vn] = vv;
+    }
+
+    const areas = [];
+    for (const a of allByLocalName(infoEl, "area")) {
+      const areaDesc = textByLocalName(a, "areaDesc");
+      const polygonStr = textByLocalName(a, "polygon");
+      const polys = [];
+      if (polygonStr) {
+        const pts = polygonStr.trim().split(/\s+/).map(tok => {
+          const [latS, lonS] = tok.split(",");
+          const lat = parseFloat(latS);
+          const lon = parseFloat(lonS);
+          if (!isFinite(lat) || !isFinite(lon)) return null;
+          return [lat, lon];
+        }).filter(Boolean);
+        if (pts.length) polys.push(pts);
+      }
+      areas.push({ areaDesc, polygons: polys });
+    }
+
+    return {
+      identifier, sender, sent, status, msgType, scope,
+      category, event, urgency, severity, certainty,
+      onset, expires, headline, description, instruction, web,
+      params, areas
+    };
+  }
+
+  function buildCapUrlFromId(id){
+    return APP.metservice.capBase + encodeURIComponent(id);
+  }
+
+  /* ============================
+     Map
+     ============================ */
+
+  function initMap(){
+    state.map = L.map("map", { preferCanvas: true }).setView([APP.map.lat, APP.map.lng], APP.map.zoom);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(state.map);
+
+    state.layers.polys.addTo(state.map);
+    state.layers.markers.addTo(state.map);
+  }
+
+  function clearMap(){
+    state.layers.polys.clearLayers();
+    state.layers.markers.clearLayers();
+    state.polyById.clear();
+    state.markerById.clear();
+  }
+
+  function centroidOfLatLngs(latlngs){
+    if (!latlngs || !latlngs.length) return null;
+    let lat = 0, lon = 0;
+    for (const p of latlngs){ lat += p[0]; lon += p[1]; }
+    lat /= latlngs.length;
+    lon /= latlngs.length;
+    return [lat, lon];
+  }
+
+  function renderAlertsOnMap(alerts){
+    clearMap();
+
+    const showPolys = !!el.showPolys.checked;
+    const showMarkers = !!el.showCentroids.checked;
+
+    for (const a of alerts){
+      const cap = a.cap;
+      if (!cap) continue;
+
+      const hex = cap.params?.ColourCodeHex || "#9aa6bd";
+      const label = cap.headline || a.entry?.title || cap.identifier;
+
+      const polyGroup = L.layerGroup();
+      const markerGroup = L.layerGroup();
+
+      for (const area of cap.areas || []){
+        for (const poly of area.polygons || []){
+          if (showPolys){
+            const pl = L.polygon(poly, { color: hex, weight: 2, fillColor: hex, fillOpacity: 0.20 });
+            pl.bindPopup(`<div style=\"font-weight:700;\">${escapeHtml(label)}</div><div class=\"muted\">${escapeHtml(area.areaDesc||"")}</div>`);
+            polyGroup.addLayer(pl);
+          }
+          if (showMarkers){
+            const c = centroidOfLatLngs(poly);
+            if (c){
+              const mk = L.circleMarker(c, { radius: 6, color: hex, weight: 2, fillColor: hex, fillOpacity: 0.85 });
+              mk.bindPopup(`<div style=\"font-weight:700;\">${escapeHtml(label)}</div><div class=\"muted\">${escapeHtml(area.areaDesc||"")}</div>`);
+              markerGroup.addLayer(mk);
+            }
+          }
+        }
+      }
+
+      if (polyGroup.getLayers().length) {
+        polyGroup.addTo(state.layers.polys);
+        state.polyById.set(cap.identifier, polyGroup);
+      }
+      if (markerGroup.getLayers().length) {
+        markerGroup.addTo(state.layers.markers);
+        state.markerById.set(cap.identifier, markerGroup);
+      }
+    }
+
+    // Fit bounds for all if not huge
+    const all = [];
+    state.layers.polys.eachLayer(l => { if (l.getBounds) all.push(l.getBounds()); });
+    state.layers.markers.eachLayer(l => { if (l.getBounds) all.push(l.getBounds()); });
+    if (all.length){
+      let b = all[0];
+      for (let i=1;i<all.length;i++) b = b.extend(all[i]);
+      try { state.map.fitBounds(b.pad(0.08)); } catch (e) {}
+    }
+  }
+
+  function focusAlertOnMap(identifier){
+    const poly = state.polyById.get(identifier);
+    const mk = state.markerById.get(identifier);
+
+    let bounds = null;
+    if (poly && poly.getBounds) bounds = poly.getBounds();
+    else if (mk && mk.getBounds) bounds = mk.getBounds();
+
+    if (bounds){
+      try { state.map.fitBounds(bounds.pad(0.15)); } catch (e) {}
+    }
+  }
+
+  /* ============================
+     Rendering
+     ============================ */
+
+  function filteredAlerts(){
+    const q = (el.searchInput.value || "").trim().toLowerCase();
+    const event = el.eventFilter.value;
+    const severity = el.severityFilter.value;
+    const colour = el.colourFilter.value;
+
+    return state.alerts.filter(a => {
+      const cap = a.cap || {};
+
+      if (event && (cap.event || "") !== event) return false;
+      if (severity && (cap.severity || "") !== severity) return false;
+      if (colour && (cap.params?.ColourCode || "") !== colour) return false;
+
+      if (!q) return true;
+      const areas = (cap.areas || []).map(x => x.areaDesc || "").join(" ");
+      const blob = `${a.entry?.id||""} ${cap.identifier||""} ${cap.headline||""} ${cap.description||""} ${areas}`.toLowerCase();
+      return blob.includes(q);
+    });
+  }
+
+  function setFilterOptionsFromAlerts(alerts){
+    const ev = new Set();
+    const sev = new Set();
+    const col = new Set();
+
+    alerts.forEach(a => {
+      const cap = a.cap || {};
+      if (cap.event) ev.add(cap.event);
+      if (cap.severity) sev.add(cap.severity);
+      const c = cap.params?.ColourCode;
+      if (c) col.add(c);
+    });
+
+    function fillSelect(sel, values, placeholder){
+      const prev = sel.value;
+      sel.innerHTML = `<option value=\"\">${escapeHtml(placeholder)}</option>`;
+      Array.from(values).sort().forEach(v => {
+        sel.innerHTML += `<option value=\"${escapeHtml(v)}\">${escapeHtml(v)}</option>`;
+      });
+      if (Array.from(values).includes(prev)) sel.value = prev;
+    }
+
+    fillSelect(el.eventFilter, ev, "Event");
+    fillSelect(el.severityFilter, sev, "Severity");
+    fillSelect(el.colourFilter, col, "Colour");
+  }
+
+  function renderTable(){
+    const rows = filteredAlerts();
+    el.alertBody.innerHTML = "";
+
+    rows.forEach(a => {
+      const cap = a.cap || {};
+      const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+      tr.dataset.id = cap.identifier || a.entry?.id || "";
+
+      const colour = cap.params?.ColourCode || "";
+      const hex = cap.params?.ColourCodeHex || "";
+
+      tr.innerHTML = `
+        <td class=\"mono\">${escapeHtml(String(cap.identifier || a.entry?.id || ""))}</td>
+        <td>${escapeHtml(String(cap.headline || a.entry?.title || ""))}</td>
+        <td>${escapeHtml(String(cap.event || ""))}</td>
+        <td>${escapeHtml(String(cap.severity || ""))}</td>
+        <td><span class=\"badge\"><span class=\"dot\" style=\"background:${escapeHtml(hex || "#9aa6bd")};\"></span>${escapeHtml(String(colour))}</span></td>
+        <td>${escapeHtml(toLocal(cap.onset))}</td>
+        <td>${escapeHtml(toLocal(cap.expires))}</td>
+      `;
+
+      tr.addEventListener("click", () => selectAlert(tr.dataset.id));
+      el.alertBody.appendChild(tr);
+    });
+
+    el.pillCounts.textContent = `${rows.length} alerts`;
+    renderAlertsOnMap(rows);
+  }
+
+  function renderDetails(alertObj){
+    if (!alertObj || !alertObj.cap){
+      el.selectedPill.textContent = "Selected: None";
+      el.detailGrid.innerHTML = "";
+      el.rawCap.textContent = "Select an alert to load CAP XML";
+      el.detailSource.textContent = "";
+      return;
+    }
+
+    const cap = alertObj.cap;
+    el.selectedPill.textContent = `Selected: ${cap.identifier}`;
+    el.detailSource.textContent = alertObj.capSource ? `CAP source: ${alertObj.capSource}` : "";
+
+    const areas = (cap.areas || []).map(a => a.areaDesc).filter(Boolean);
+
+    const kv = (k, v) => `
+      <div class=\"kv\">
+        <div class=\"k\">${escapeHtml(k)}</div>
+        <div class=\"v\">${escapeHtml(v || "")}</div>
+      </div>
+    `;
+
+    el.detailGrid.innerHTML = [
+      kv("Identifier", cap.identifier),
+      kv("Headline", cap.headline || ""),
+      kv("Event", cap.event || ""),
+      kv("Severity", cap.severity || ""),
+      kv("Urgency", cap.urgency || ""),
+      kv("Certainty", cap.certainty || ""),
+      kv("Sent", toLocal(cap.sent)),
+      kv("Onset", toLocal(cap.onset)),
+      kv("Expires", toLocal(cap.expires)),
+      kv("Colour", cap.params?.ColourCode || ""),
+      kv("Next Update", cap.params?.NextUpdate ? toLocal(cap.params.NextUpdate) : ""),
+      kv("Areas", areas.length ? areas.join("\n") : "")
+    ].join("");
+
+    el.rawCap.textContent = alertObj.capXml || "";
+  }
+
+  function selectAlert(identifier){
+    state.selectedAlertId = identifier;
+    const a = state.alerts.find(x => (x.cap?.identifier || x.entry?.id) === identifier);
+    renderDetails(a);
+    focusAlertOnMap(identifier);
+  }
+
+  /* ============================
+     Snapshot Index
+     ============================ */
+
+  async function loadArchiveIndex(){
+    const items = await listGitHubDir(APP.paths.archiveDir);
+    const files = items
+      .filter(x => x.type === "file")
+      .map(x => parseArchiveFileName(x.name))
+      .filter(Boolean)
+      .sort((a,b) => a.ms - b.ms);
+
+    const by = new Map();
+    for (const f of files){
+      if (!by.has(f.y)) by.set(f.y, new Map());
+      const byMonth = by.get(f.y);
+      if (!byMonth.has(f.ym)) byMonth.set(f.ym, new Map());
+      const byDay = byMonth.get(f.ym);
+      if (!byDay.has(f.ymd)) byDay.set(f.ymd, []);
+      byDay.get(f.ymd).push(f);
+    }
+
+    state.archiveIndex = { files, byYearMonthDay: by };
+  }
+
+  function populateYearMonthDaySelectors(){
+    const idx = state.archiveIndex;
+    if (!idx) return;
+
+    const years = Array.from(idx.byYearMonthDay.keys()).sort();
+    el.yearSelect.innerHTML = `<option value=\"\">Year</option>` + years.map(y => `<option value=\"${y}\">${y}</option>`).join("");
+
+    // Keep existing selection if possible
+    if (years.includes(el.yearSelect.value)) {
+      // keep
+    } else {
+      el.yearSelect.value = years[years.length - 1] || "";
+    }
+
+    populateMonthSelector();
+    populateDaySelector();
+    populateSnapSelector();
+  }
+
+  function populateMonthSelector(){
+    const idx = state.archiveIndex;
+    const y = el.yearSelect.value;
+    const byMonth = idx?.byYearMonthDay?.get(y);
+    const months = byMonth ? Array.from(byMonth.keys()).sort() : [];
+
+    el.monthSelect.innerHTML = `<option value=\"\">Month</option>` + months.map(m => `<option value=\"${m}\">${m}</option>`).join("");
+
+    if (months.includes(el.monthSelect.value)) {
+      // keep
+    } else {
+      el.monthSelect.value = months[months.length - 1] || "";
+    }
+  }
+
+  function populateDaySelector(){
+    const idx = state.archiveIndex;
+    const y = el.yearSelect.value;
+    const m = el.monthSelect.value;
+    const byMonth = idx?.byYearMonthDay?.get(y);
+    const byDay = byMonth?.get(m);
+    const days = byDay ? Array.from(byDay.keys()).sort() : [];
+
+    el.daySelect.innerHTML = `<option value=\"\">Day</option>` + days.map(d => `<option value=\"${d}\">${d}</option>`).join("");
+
+    if (days.includes(el.daySelect.value)) {
+      // keep
+    } else {
+      el.daySelect.value = days[days.length - 1] || "";
+    }
+  }
+
+  function populateSnapSelector(){
+    const idx = state.archiveIndex;
+    const y = el.yearSelect.value;
+    const m = el.monthSelect.value;
+    const d = el.daySelect.value;
+    const byMonth = idx?.byYearMonthDay?.get(y);
+    const byDay = byMonth?.get(m);
+    const snaps = byDay?.get(d) || [];
+
+    el.snapSelect.innerHTML = `<option value=\"\">Snapshot File</option>` + snaps
+      .slice()
+      .sort((a,b) => a.ms - b.ms)
+      .map(s => {
+        const t = new Date(s.ms).toISOString().replace("T", " ").replace("Z", " UTC");
+        return `<option value=\"${escapeHtml(s.name)}\">${escapeHtml(t)}  (${escapeHtml(s.name)})</option>`;
+      }).join("");
+
+    if (snaps.some(x => x.name === el.snapSelect.value)) {
+      // keep
+    } else {
+      el.snapSelect.value = snaps.length ? snaps[snaps.length - 1].name : "";
+    }
+  }
+
+  function enableSnapshotControls(enabled){
+    el.yearSelect.disabled = !enabled;
+    el.monthSelect.disabled = !enabled;
+    el.daySelect.disabled = !enabled;
+    el.snapSelect.disabled = !enabled;
+  }
+
+  /* ============================
+     Loading Feeds And CAP Items
+     ============================ */
+
+  async function loadLive(){
+    clearError();
+    state.selectedArchiveFile = "";
+
+    el.pillMode.textContent = "Mode: Live";
+    el.pillSnapshot.textContent = "Snapshot: Latest";
+
+    el.sourceHint.textContent = "Feed: GitHub latest.xml  CAP: MetService";
+
+    const xml = await fetchText(rawUrl(APP.paths.latestFeed));
+    const feed = parseAtomFeed(xml);
+
+    state.feed = { source: "live", updated: feed.updated, entries: feed.entries };
+
+    await hydrateAlertsFromEntries(feed.entries, { archiveFile: "" });
+  }
+
+  async function loadSnapshot(archiveFile){
+    clearError();
+    if (!archiveFile) throw new Error("No snapshot file selected");
+
+    state.selectedArchiveFile = archiveFile;
+    el.pillMode.textContent = "Mode: Snapshot";
+    el.pillSnapshot.textContent = `Snapshot: ${archiveFile}`;
+
+    el.sourceHint.textContent = "Feed: GitHub archive XML  CAP: GitHub folder if present else MetService";
+
+    const xml = await fetchText(rawUrl(`${APP.paths.archiveDir}/${archiveFile}`));
+    const feed = parseAtomFeed(xml);
+    state.feed = { source: "snapshot", archiveFile, updated: feed.updated, entries: feed.entries };
+
+    await hydrateAlertsFromEntries(feed.entries, { archiveFile });
+  }
+
+  async function hydrateAlertsFromEntries(entries, opts){
+    // Fetch CAP for each entry, prefer cache, prefer GitHub folder when in snapshot mode
+    const archiveFile = opts?.archiveFile || "";
+
+    const out = [];
+    const tasks = entries.map(e => async () => {
+      const capRes = await getCapForEntry(e, archiveFile);
+      out.push({ entry: e, cap: capRes.cap, capXml: capRes.xml, capSource: capRes.source });
+    });
+
+    await promisePool(tasks, 6);
+
+    // Sort by onset then id for readability
+    out.sort((a,b) => {
+      const aMs = Date.parse(a.cap?.onset || a.cap?.sent || "") || 0;
+      const bMs = Date.parse(b.cap?.onset || b.cap?.sent || "") || 0;
+      return aMs - bMs || String(a.cap?.identifier||"").localeCompare(String(b.cap?.identifier||""));
+    });
+
+    state.alerts = out;
+    state.selectedAlertId = "";
+
+    setFilterOptionsFromAlerts(out);
+    renderTable();
+    renderDetails(null);
+  }
+
+  async function getCapForEntry(entry, archiveFile){
+    const id = entry.id;
+    const cacheKey = `${archiveFile || "live"}::${id}`;
+    const cached = state.capCache.get(cacheKey);
+    if (cached) return cached;
+
+    const capUrl = entry.capUrl || buildCapUrlFromId(id);
+
+    // Snapshot mode: try GitHub folder first
+    if (archiveFile) {
+      const folderName = String(archiveFile).replace(/\.xml$/i, "");
+      const capPath = `${APP.paths.archiveDir}/${folderName}/${sanitizeFileName(id)}.xml`;
+      const gh = await fetchTextSoft(rawUrl(capPath));
+      if (gh.ok && gh.text && gh.text.trim().length > 10) {
+        const cap = parseCap(gh.text);
+        const val = { ok:true, xml: gh.text, cap, source: `GitHub:${capPath}` };
+        state.capCache.set(cacheKey, val);
+        return val;
+      }
+
+      // Fall back to MetService
+      const liveXml = await fetchText(capUrl);
+      const cap = parseCap(liveXml);
+      const val = { ok:true, xml: liveXml, cap, source: `MetService:${capUrl}` };
+      state.capCache.set(cacheKey, val);
+      return val;
+    }
+
+    // Live mode: MetService
+    const xml = await fetchText(capUrl);
+    const cap = parseCap(xml);
+    const val = { ok:true, xml, cap, source: `MetService:${capUrl}` };
+    state.capCache.set(cacheKey, val);
+    return val;
+  }
+
+  async function promisePool(taskFns, limit){
+    const tasks = taskFns.slice();
+    let i = 0;
+
+    const workers = new Array(Math.max(1, limit)).fill(0).map(async () => {
+      while (true){
+        const idx = i++;
+        if (idx >= tasks.length) return;
+        await tasks[idx]();
+      }
+    });
+    await Promise.all(workers);
+  }
+
+  /* ============================
+     Timeline
+     ============================ */
+
+  function msToX(ms){
+    const hrs = (ms - state.timeline.startMs) / (60*60*1000);
+    return Math.round(hrs * state.timeline.pxPerHour);
+  }
+  function xToMs(x){
+    const hrs = x / state.timeline.pxPerHour;
+    return state.timeline.startMs + hrs * 60*60*1000;
+  }
+
+  function colourForCap(cap){
+    return cap?.params?.ColourCodeHex || "#9aa6bd";
+  }
+
+  function renderTimelineYAxis(rows){
+    el.tlYAxis.innerHTML = "";
+    rows.forEach(r => {
+      const div = document.createElement("div");
+      div.className = "ganttRowLabel";
+      div.innerHTML = `
+        <span class=\"badge\"><span class=\"dot\" style=\"background:${escapeHtml(r.hex || "#9aa6bd")};\"></span>${escapeHtml(r.event || "")}</span>
+        <div>
+          <div class=\"id\">${escapeHtml(r.baseId)}</div>
+          <div class=\"sub\">${escapeHtml(r.headline || "")}</div>
+        </div>
+      `;
+      el.tlYAxis.appendChild(div);
+    });
+  }
+
+  function renderTimelineChart(segmentsByBase){
+    // Apply filters to timeline
+    const q = (el.searchInput.value || "").trim().toLowerCase();
+    const eventF = el.eventFilter.value;
+    const severityF = el.severityFilter.value;
+    const colourF = el.colourFilter.value;
+
+    const filtered = new Map();
+    for (const [baseId, segs] of segmentsByBase.entries()){
+      const anyMeta = segs.find(s => s.cap) || segs[0];
+      const cap = anyMeta.cap || {};
+
+      if (eventF && (cap.event || "") !== eventF) continue;
+      if (severityF && (cap.severity || "") !== severityF) continue;
+      if (colourF && (cap.params?.ColourCode || "") !== colourF) continue;
+
+      if (q){
+        const blob = `${baseId} ${cap.headline||""} ${(cap.areas||[]).map(a=>a.areaDesc||"").join(" ")}`.toLowerCase();
+        if (!blob.includes(q)) continue;
+      }
+
+      filtered.set(baseId, segs);
+    }
+
+    // Build rows sorted by first appearance
+    const rows = [];
+    for (const [baseId, segs] of filtered.entries()){
+      const firstMs = Math.min(...segs.map(s => s.startMs));
+      const metaSeg = segs.find(s => s.cap) || segs[0];
+      const cap = metaSeg.cap || {};
+      rows.push({
+        baseId,
+        firstMs,
+        event: cap.event || "",
+        headline: cap.headline || "",
+        hex: colourForCap(cap)
+      });
+    }
+
+    rows.sort((a,b) => a.firstMs - b.firstMs || a.baseId.localeCompare(b.baseId));
+    state.timeline.rows = rows;
+
+    renderTimelineYAxis(rows);
+
+    // Canvas size
+    const canvas = el.tlCanvas;
+    const ctx = canvas.getContext("2d");
+    const rowH = 28;
+    const topPad = 34;
+    const width = Math.max(900, msToX(state.timeline.endMs) + 60);
+    const height = Math.max(220, topPad + rows.length * rowH + 30);
+
+    canvas.width = width;
+    canvas.height = height;
+
+    state.timeline.hitRects = [];
+
+    // Background
+    ctx.clearRect(0,0,width,height);
+    ctx.fillStyle = "rgba(11,15,20,0.55)";
+    ctx.fillRect(0,0,width,height);
+
+    // Day grid
+    const dayMs = 24*60*60*1000;
+    const startDay = new Date(state.timeline.startMs);
+    startDay.setHours(0,0,0,0);
+    for (let t = startDay.getTime(); t <= state.timeline.endMs; t += dayMs){
+      const x = msToX(t);
+      ctx.strokeStyle = "rgba(154,166,189,0.18)";
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(231,237,249,0.70)";
+      ctx.font = `12px ${getComputedStyle(document.documentElement).getPropertyValue('--mono')}`;
+      const d = new Date(t);
+      const label = d.toISOString().slice(0,10);
+      ctx.fillText(label, x + 6, 18);
+    }
+
+    // Row separators
+    ctx.strokeStyle = "rgba(154,166,189,0.10)";
+    for (let i=0;i<=rows.length;i++){
+      const y = topPad + i*rowH;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    // Bars
+    rows.forEach((r, idx) => {
+      const segs = filtered.get(r.baseId) || [];
+      const y = topPad + idx*rowH + 6;
+      const barH = rowH - 12;
+
+      segs.forEach(seg => {
+        const x1 = msToX(seg.startMs);
+        const x2 = Math.max(x1 + 2, msToX(seg.endMs));
+        const cap = seg.cap || {};
+        const hex = colourForCap(cap);
+
+        ctx.fillStyle = hex;
+        ctx.globalAlpha = 0.35;
+        ctx.fillRect(x1, y, x2 - x1, barH);
+        ctx.globalAlpha = 1;
+
+        ctx.strokeStyle = "rgba(11,15,20,0.8)";
+        ctx.strokeRect(x1, y, x2 - x1, barH);
+
+        state.timeline.hitRects.push({ x1, x2, y1: y, y2: y + barH, seg, baseId: r.baseId });
+      });
+    });
+
+    el.tlSummaryPill.textContent = `${rows.length} alert series`;
+  }
+
+  function hitTestTimeline(x, y){
+    for (let i = state.timeline.hitRects.length - 1; i >= 0; i--){
+      const h = state.timeline.hitRects[i];
+      if (x >= h.x1 && x <= h.x2 && y >= h.y1 && y <= h.y2) return h;
+    }
+    return null;
+  }
+
+  function showTimelineTooltip(xClient, yClient, hit){
+    const seg = hit.seg;
+    const cap = seg.cap || {};
+    const start = new Date(seg.startMs);
+    const end = new Date(seg.endMs);
+
+    el.tlTooltip.style.display = "block";
+    el.tlTooltip.style.left = (xClient + 14) + "px";
+    el.tlTooltip.style.top = (yClient + 14) + "px";
+
+    const areas = (cap.areas || []).map(a => a.areaDesc).filter(Boolean).slice(0,4);
+
+    el.tlTooltip.innerHTML = `
+      <div><strong class=\"mono\">${escapeHtml(hit.baseId)}</strong></div>
+      <div class=\"muted\">${escapeHtml(cap.headline || "")}</div>
+      <div class=\"muted\">${escapeHtml(start.toLocaleString())} → ${escapeHtml(end.toLocaleString())}</div>
+      <div style=\"margin-top:6px;\">
+        <div><span class=\"muted\">Version:</span> <span class=\"mono\">${escapeHtml(seg.versionId || "")}</span></div>
+        <div><span class=\"muted\">Event:</span> ${escapeHtml(cap.event || "")}</div>
+        <div><span class=\"muted\">Severity:</span> ${escapeHtml(cap.severity || "")}</div>
+        ${areas.length ? `<div><span class=\"muted\">Areas:</span> ${escapeHtml(areas.join(" | "))}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function hideTimelineTooltip(){ el.tlTooltip.style.display = "none"; }
+
+  async function buildTimeline(){
+    clearError();
+
+    const startMs = Date.parse(el.tlStart.value);
+    const endMs = Date.parse(el.tlEnd.value);
+    if (!isFinite(startMs) || !isFinite(endMs) || endMs < startMs) throw new Error("Timeline range invalid");
+
+    state.timeline.startMs = startMs;
+    state.timeline.endMs = endMs + (24*60*60*1000 - 1); // include full end day
+    state.timeline.pxPerHour = parseInt(el.tlZoom.value || "16", 10) || 16;
+
+    el.tlStatus.textContent = "Listing archive snapshots";
+
+    if (!state.archiveIndex) {
+      await loadArchiveIndex();
+    }
+
+    const snaps = state.archiveIndex.files
+      .filter(f => f.ms >= state.timeline.startMs && f.ms <= state.timeline.endMs)
+      .map(f => ({ ms: f.ms, archiveFile: f.name, folderName: f.name.replace(/\.xml$/i, "") }))
+      .sort((a,b) => a.ms - b.ms);
+
+    state.timeline.snapshots = snaps;
+
+    if (!snaps.length){
+      state.timeline.baseSegments = new Map();
+      renderTimelineChart(state.timeline.baseSegments);
+      el.tlStatus.textContent = "No snapshots in range";
+      return;
+    }
+
+    // For each snapshot file, parse the feed and build base -> version mapping
+    const snapStates = [];
+    for (let i=0;i<snaps.length;i++){
+      const s = snaps[i];
+      try{
+        const xml = await fetchText(rawUrl(`${APP.paths.archiveDir}/${s.archiveFile}`));
+        const feed = parseAtomFeed(xml);
+        const map = new Map();
+        for (const e of feed.entries){
+          const versionId = e.id;
+          const baseId = baseAlertIdFromIdentifier(versionId);
+          map.set(baseId, { versionId, entry: e, folderName: s.folderName, archiveFile: s.archiveFile });
+        }
+        snapStates.push(map);
+      } catch (err){
+        snapStates.push(new Map());
+      }
+      if (i % 10 === 0) el.tlStatus.textContent = `Parsing snapshots ${i+1}/${snaps.length}`;
+    }
+
+    el.tlStatus.textContent = "Building segments";
+
+    const segmentsByBase = new Map();
+
+    // Union of all base ids
+    const allBase = new Set();
+    snapStates.forEach(m => { for (const k of m.keys()) allBase.add(k); });
+
+    // Record which folder we first saw each version in
+    const versionSource = new Map();
+
+    // Build segments across snapshots
+    const snapTimes = snaps.map(s => s.ms);
+
+    for (const baseId of allBase){
+      let current = null; // {versionId, meta}
+      let segStart = null;
+      const segs = [];
+
+      for (let i=0;i<snaps.length;i++){
+        const t = snapTimes[i];
+        const s = snapStates[i].get(baseId) || null;
+        const versionId = s ? s.versionId : null;
+
+        if (s && !versionSource.has(versionId)) versionSource.set(versionId, s);
+
+        if (!current && versionId){
+          current = versionId;
+          segStart = t;
+        } else if (current && versionId && versionId !== current){
+          segs.push({ startMs: segStart, endMs: t, versionId: current });
+          current = versionId;
+          segStart = t;
+        } else if (current && !versionId){
+          segs.push({ startMs: segStart, endMs: t, versionId: current });
+          current = null;
+          segStart = null;
+        }
+      }
+
+      if (current && segStart != null){
+        segs.push({ startMs: segStart, endMs: state.timeline.endMs, versionId: current });
+      }
+
+      if (segs.length) segmentsByBase.set(baseId, segs);
+    }
+
+    // Hydrate CAP metadata for each unique versionId in segments
+    const versionIds = new Set();
+    for (const segs of segmentsByBase.values()){
+      segs.forEach(s => versionIds.add(s.versionId));
+    }
+
+    el.tlStatus.textContent = `Loading CAP for ${versionIds.size} versions`;
+
+    const versionCap = new Map();
+    const tasks = Array.from(versionIds).map(vid => async () => {
+      const meta = versionSource.get(vid);
+      const cacheKey = `timeline::${vid}`;
+      const cached = state.capCache.get(cacheKey);
+      if (cached){
+        versionCap.set(vid, cached.cap);
+        return;
+      }
+
+      let xml = "";
+      let cap = null;
+      let source = "";
+
+      if (meta){
+        const capPath = `${APP.paths.archiveDir}/${meta.folderName}/${sanitizeFileName(vid)}.xml`;
+        const gh = await fetchTextSoft(rawUrl(capPath));
+        if (gh.ok && gh.text && gh.text.trim().length > 10){
+          xml = gh.text;
+          cap = parseCap(xml);
+          source = `GitHub:${capPath}`;
+        }
+      }
+
+      if (!cap){
+        const capUrl = buildCapUrlFromId(vid);
+        xml = await fetchText(capUrl);
+        cap = parseCap(xml);
+        source = `MetService:${capUrl}`;
+      }
+
+      state.capCache.set(cacheKey, { ok:true, xml, cap, source });
+      versionCap.set(vid, cap);
+    });
+
+    await promisePool(tasks, 6);
+
+    // Attach caps to segments
+    for (const segs of segmentsByBase.values()){
+      segs.forEach(s => { s.cap = versionCap.get(s.versionId) || null; });
+    }
+
+    state.timeline.baseSegments = segmentsByBase;
+
+    // Reuse table filters for timeline
+    const allCaps = Array.from(versionCap.values()).map(cap => ({ cap }));
+    setFilterOptionsFromAlerts(allCaps.map(x => ({ cap: x.cap, entry: { id: x.cap?.identifier||"" } })));
+
+    renderTimelineChart(segmentsByBase);
+    el.tlStatus.textContent = `${snaps.length} snapshots, ${segmentsByBase.size} series`;
+  }
+
+  function initTimelineDefaults(){
+    const now = new Date();
+    const end = new Date(now);
+    const start = new Date(now);
+    start.setDate(start.getDate() - 7);
+
+    el.tlEnd.value = end.toISOString().slice(0,10);
+    el.tlStart.value = start.toISOString().slice(0,10);
+    el.tlZoom.value = "16";
+    el.tlPreset.value = "7d";
+  }
+
+  function applyPreset(){
+    const val = el.tlPreset.value;
+    const now = new Date();
+    const end = new Date(now);
+    const start = new Date(now);
+
+    if (val === "7d") start.setDate(start.getDate() - 7);
+    else if (val === "30d") start.setDate(start.getDate() - 30);
+    else if (val === "90d") start.setDate(start.getDate() - 90);
+    else return;
+
+    el.tlEnd.value = end.toISOString().slice(0,10);
+    el.tlStart.value = start.toISOString().slice(0,10);
+  }
+
+  /* ============================
+     Mode Switching
+     ============================ */
+
+  function applyModeUI(){
+    const isLive = state.mode === "live";
+    const isSnap = state.mode === "snapshot";
+    const isTl = state.mode === "timeline";
+
+    enableSnapshotControls(isSnap);
+
+    el.mainLayout.style.display = isTl ? "none" : "grid";
+    el.timelineWrap.style.display = isTl ? "block" : "none";
+    el.timelineControls.style.display = isTl ? "flex" : "none";
+
+    if (isLive){
+      el.pillMode.textContent = "Mode: Live";
+      el.pillSnapshot.textContent = "Snapshot: Latest";
+    }
+
+    if (isSnap){
+      el.pillMode.textContent = "Mode: Snapshot";
+      el.pillSnapshot.textContent = `Snapshot: ${state.selectedArchiveFile || "None"}`;
+    }
+
+    if (isTl){
+      el.pillMode.textContent = "Mode: Timeline";
+      el.pillSnapshot.textContent = `Range: ${el.tlStart.value || ""} to ${el.tlEnd.value || ""}`;
+    }
+
+    setTimeout(() => { try { state.map.invalidateSize(); } catch (e) {} }, 0);
+  }
+
+  /* ============================
+     Wiring
+     ============================ */
+
+  el.refreshBtn.addEventListener("click", async () => {
+    try{
+      clearError();
+      if (state.mode === "live") await loadLive();
+      else if (state.mode === "snapshot") await loadSnapshot(el.snapSelect.value);
+      else if (state.mode === "timeline") await buildTimeline();
+    } catch (e){
+      showError(String(e));
+    }
+  });
+
+  el.modeSelect.addEventListener("change", async () => {
+    try{
+      clearError();
+      state.mode = el.modeSelect.value;
+      applyModeUI();
+
+      if (state.mode === "live"){
+        await loadLive();
+      }
+
+      if (state.mode === "snapshot"){
+        if (!state.archiveIndex){
+          await loadArchiveIndex();
+          populateYearMonthDaySelectors();
+        }
+        const f = el.snapSelect.value;
+        if (f) await loadSnapshot(f);
+      }
+
+      if (state.mode === "timeline"){
+        if (!state.archiveIndex){
+          await loadArchiveIndex();
+          populateYearMonthDaySelectors();
+        }
+        initTimelineDefaults();
+        applyModeUI();
+        await buildTimeline();
+      }
+    } catch (e){
+      showError(String(e));
+    }
+  });
+
+  el.yearSelect.addEventListener("change", () => { populateMonthSelector(); populateDaySelector(); populateSnapSelector(); });
+  el.monthSelect.addEventListener("change", () => { populateDaySelector(); populateSnapSelector(); });
+  el.daySelect.addEventListener("change", () => { populateSnapSelector(); });
+
+  el.snapSelect.addEventListener("change", async () => {
+    if (state.mode !== "snapshot") return;
+    try{
+      clearError();
+      await loadSnapshot(el.snapSelect.value);
+    } catch (e){
+      showError(String(e));
+    }
+  });
+
+  [el.searchInput, el.eventFilter, el.severityFilter, el.colourFilter].forEach(x => {
+    x.addEventListener("input", () => {
+      if (state.mode === "timeline") renderTimelineChart(state.timeline.baseSegments);
+      else renderTable();
+    });
+    x.addEventListener("change", () => {
+      if (state.mode === "timeline") renderTimelineChart(state.timeline.baseSegments);
+      else renderTable();
+    });
+  });
+
+  [el.showPolys, el.showCentroids].forEach(x => {
+    x.addEventListener("change", () => {
+      if (state.mode !== "timeline") renderTable();
+    });
+  });
+
+  el.useCorsProxy.addEventListener("change", () => {
+    state.useCorsProxy = !!el.useCorsProxy.checked;
+    saveBool_("met_alerts_useCorsProxy", state.useCorsProxy);
+  });
+
+  // Timeline controls
+  el.tlPreset.addEventListener("change", () => {
+    if (el.tlPreset.value !== "custom") applyPreset();
+    applyModeUI();
+  });
+
+  el.tlStart.addEventListener("change", () => {
+    el.tlPreset.value = "custom";
+    applyModeUI();
+  });
+
+  el.tlEnd.addEventListener("change", () => {
+    el.tlPreset.value = "custom";
+    applyModeUI();
+  });
+
+  el.tlZoom.addEventListener("change", () => {
+    state.timeline.pxPerHour = parseInt(el.tlZoom.value || "16", 10) || 16;
+    if (state.mode === "timeline") renderTimelineChart(state.timeline.baseSegments);
+  });
+
+  el.tlLoadBtn.addEventListener("click", async () => {
+    if (state.mode !== "timeline") return;
+    try{
+      clearError();
+      applyModeUI();
+      await buildTimeline();
+    } catch (e){
+      showError(String(e));
+    }
+  });
+
+  // Timeline scroll sync and tooltip
+  el.tlScroll.addEventListener("scroll", () => {
+    el.tlYAxis.scrollTop = el.tlScroll.scrollTop;
+    hideTimelineTooltip();
+  });
+
+  el.tlCanvas.addEventListener("mousemove", (ev) => {
+    if (state.mode !== "timeline") return;
+    const rect = el.tlCanvas.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    const hit = hitTestTimeline(x, y);
+    if (hit) showTimelineTooltip(ev.clientX, ev.clientY, hit);
+    else hideTimelineTooltip();
+  });
+
+  el.tlCanvas.addEventListener("mouseleave", () => hideTimelineTooltip());
+
+  el.tlCanvas.addEventListener("click", async (ev) => {
+    if (state.mode !== "timeline") return;
+    const rect = el.tlCanvas.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    const hit = hitTestTimeline(x, y);
+    if (!hit) return;
+
+    // Switch to snapshot mode near click time if possible
+    const clickMs = xToMs(x);
+    const snaps = state.timeline.snapshots || [];
+    let best = null;
+    for (const s of snaps){
+      if (s.ms <= clickMs) best = s;
+      else break;
+    }
+    if (!best) best = snaps[0];
+    if (!best) return;
+
+    state.mode = "snapshot";
+    el.modeSelect.value = "snapshot";
+    applyModeUI();
+
+    if (!state.archiveIndex){
+      await loadArchiveIndex();
+      populateYearMonthDaySelectors();
+    }
+
+    // Set selectors to match
+    const parsed = parseArchiveFileName(best.archiveFile);
+    if (parsed){
+      el.yearSelect.value = parsed.y;
+      populateMonthSelector();
+      el.monthSelect.value = parsed.ym;
+      populateDaySelector();
+      el.daySelect.value = parsed.ymd;
+      populateSnapSelector();
+      el.snapSelect.value = parsed.name;
+    }
+
+    await loadSnapshot(best.archiveFile);
+  });
+
+  /* ============================
+     Init
+     ============================ */
+
+  (async function init(){
+    try{
+      state.useCorsProxy = loadBool_("met_alerts_useCorsProxy", APP.network && APP.network.useCorsProxyDefault !== undefined ? APP.network.useCorsProxyDefault : true);
+      if (el.useCorsProxy) el.useCorsProxy.checked = state.useCorsProxy;
+
+      initMap();
+      state.mode = "live";
+      el.modeSelect.value = "live";
+      applyModeUI();
+      await loadLive();
+
+      // Preload archive index in background to make snapshot and timeline instant
+      loadArchiveIndex().then(() => {
+        populateYearMonthDaySelectors();
+      }).catch(() => {});
+
+    } catch (e){
+      showError(String(e));
+    }
+  })();
+
+  </script>
+</body>
+</html>
