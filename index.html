@@ -41,7 +41,9 @@
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
-    body{
+        html{ overflow-x: clip; }
+    @supports not (overflow-x: clip){ html{ overflow-x: hidden; } }
+body{
       margin:0;
       font-family:var(--font);
       background:
@@ -60,7 +62,7 @@
     }
 
     .app{
-      max-width: 1200px;
+      /*max-width: 1200px;*/
       margin: 0 auto;
       padding: 22px 18px 60px;
     }
@@ -726,18 +728,24 @@
       background: rgba(18,22,30,0.98);
       border-left: 1px solid var(--border);
       box-shadow: var(--shadow);
-      transform: translateX(105%);
-      transition: transform .18s ease;
       z-index: 95;
-      display:flex;
+      display:none;
       flex-direction:column;
       overflow:hidden;
+      contain: layout paint;
     }
     @media (prefers-color-scheme: light){
       .drawer{ background: rgba(255,255,255,0.99); }
     }
-    .drawer.open{ transform: translateX(0); }
-    .drawerTop{
+    .drawer.open{ 
+      display:flex;
+      animation: drawerIn .18s ease;
+    }
+    @keyframes drawerIn{
+      from{ opacity: 0; transform: translateX(14px); }
+      to{ opacity: 1; transform: translateX(0); }
+    }
+.drawerTop{
       padding: 14px;
       border-bottom:1px solid var(--border);
       display:flex;
@@ -940,6 +948,7 @@
           <div class="field">
             <label for="contentMode">Project Viewer Source</label>
             <select id="contentMode">
+              <option value="pages">GitHub Pages (Domain)</option>
               <option value="jsdelivr">jsDelivr CDN (Best For Public Repos)</option>
               <option value="raw">raw.githubusercontent.com (Simple)</option>
               <option value="api">GitHub Contents API (Helps With Private, Assets May Not Load)</option>
@@ -948,6 +957,7 @@
           <div class="field">
             <label for="popoutMode">Pop Out Link</label>
             <select id="popoutMode">
+              <option value="pages">GitHub Pages URL</option>
               <option value="htmlpreview">htmlpreview.github.io (Renders GitHub Blob)</option>
               <option value="githack">raw.githack.com (Renders Raw)</option>
               <option value="github">GitHub File Page</option>
@@ -1235,14 +1245,14 @@
     // Feature defaults (merged into config)
     const DEFAULT_FEATURES = {
       showMetadataDownload: false,
-      showRepoSettings: true
+      showRepoSettings: false
     };
     // Embedded config (edit by pasting exported JSON here)
     const PORTFOLIO_CONFIG = {
   "version": 1,
   "features": {
-    "showMetadataDownload": false,
-    "showRepoSettings": false
+    "showMetadataDownload": true,
+    "showRepoSettings": true
   },
   "page": {
     "title": "Amorangi Mathews's development portfolio and projects.",
@@ -1382,8 +1392,8 @@
         repo: "testbed",
         branch: "main",
         token: "",
-        contentMode: "jsdelivr",
-        popoutMode: "htmlpreview",
+        contentMode: "pages",
+        popoutMode: "pages",
         showRootHtml: false,
         pagesBase: ""
       },
@@ -2029,18 +2039,15 @@ btnChooserPopoutPrimary: el("btnChooserPopoutPrimary"),
     function buildPopoutUrl(path){
       const blob = buildGitHubBlobUrl(path);
       const raw = buildCdnUrlForPath(path);
+      const pages = buildPagesUrl(path);
 
-      if (state.repo.pagesBase){
-        const base = state.repo.pagesBase.replace(/\/+$/,"");
-        const safePath = path.split("/").map(encodeURIComponent).join("/");
-        return `${base}/${safePath}`;
+      if (state.repo.popoutMode === "pages"){
+        return pages || raw;
       }
-
       if (state.repo.popoutMode === "github"){
         return blob;
       }
       if (state.repo.popoutMode === "githack"){
-        // raw.githack expects owner/repo/branch/path
         const { owner, repo, branch } = state.repo;
         const safePath = path.split("/").map(encodeURIComponent).join("/");
         const safeBranch = encodeURIComponent(branch || "main");
@@ -2050,8 +2057,11 @@ btnChooserPopoutPrimary: el("btnChooserPopoutPrimary"),
       return `https://htmlpreview.github.io/?${blob}`;
     }
 
+
     function buildPagesUrl(path){
-      const base = (state.repo.pagesBase || "").replace(/\/+$/,"");
+      const { owner, repo } = state.repo;
+      const auto = (owner && repo) ? `https://${String(owner).trim()}.github.io/${String(repo).trim()}` : "";
+      const base = (String(state.repo.pagesBase || "").trim() || auto).replace(/\/+$/,"");
       if (!base) return "";
       const safePath = path.split("/").map(encodeURIComponent).join("/");
       return `${base}/${safePath}`;
@@ -2676,8 +2686,19 @@ function buildFilesMenu(menu, project, displayTitle){
     }
 
     async function loadViewerContent(path){
+      if (state.repo.contentMode === "pages"){
+        const url = buildPagesUrl(path);
+        if (!url) throw new Error("Pages URL is not available. Set pagesBase or owner and repo.");
+        state.viewer.baseHref = "";
+        ui.viewerFrame.removeAttribute("srcdoc");
+        ui.viewerFrame.src = url;
+        setStatus("Viewer loaded via GitHub Pages.");
+        return;
+      }
+
       const baseHref = buildBaseHrefForPath(path);
       state.viewer.baseHref = baseHref;
+
 
       const html = await fetchHtmlText(path);
       const patched = injectBaseHref(html, baseHref);
