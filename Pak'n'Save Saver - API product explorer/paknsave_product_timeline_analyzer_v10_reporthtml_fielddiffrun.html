@@ -1,0 +1,3178 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pak'nSave Product Timeline Analyzer</title>
+  <style>
+    :root{
+      color-scheme: dark;
+      --bg:#0b0f14;
+      --panel:#0f1620;
+      --panel2:#0c121a;
+      --text:#e7eef8;
+      --muted:rgba(231,238,248,0.72);
+      --line:rgba(255,255,255,0.12);
+      --accent:rgba(64,142,255,0.30);
+      --good:rgba(53,208,127,0.22);
+      --bad:rgba(255,92,92,0.22);
+      --warn:rgba(255,193,7,0.22);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:var(--sans);
+      overflow:hidden;
+    }
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.00));
+    }
+    header h1{
+      margin:0;
+      font-size:14px;
+      letter-spacing:0.2px;
+      font-weight:800;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    header .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.03);
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    header .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    button, .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.06);
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+    }
+    button:hover{ background:rgba(255,255,255,0.09); }
+    button.primary{
+      border-color:rgba(64,142,255,0.45);
+      background:rgba(64,142,255,0.15);
+    }
+    button.good{
+      border-color:rgba(53,208,127,0.45);
+      background:rgba(53,208,127,0.12);
+    }
+    button.danger{
+      border-color:rgba(255,92,92,0.45);
+      background:rgba(255,92,92,0.12);
+    }
+    .layout{
+      display:grid;
+      grid-template-columns: 330px 1fr 420px;
+      gap:12px;
+      padding:12px;
+      height: calc(100vh - 54px);
+    }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .panel .head{
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:rgba(255,255,255,0.03);
+    }
+    .panel .head h2{
+      margin:0;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:0.2px;
+    }
+    .panel .body{
+      padding:12px;
+      overflow:auto;
+      min-height:0;
+    }
+    .muted{ color:var(--muted); font-size:12px; line-height:1.35; }
+    .tiny{ color:var(--muted); font-size:11px; }
+    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+    input, select, textarea{
+      width:100%;
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:9px 10px;
+      color:var(--text);
+      outline:none;
+      font-size:12px;
+    }
+    textarea{ min-height:110px; resize:vertical; font-family:var(--mono); }
+    label{ display:block; font-size:11px; color:var(--muted); margin:8px 0 6px; font-weight:800; letter-spacing:0.15px; }
+    .tabs{
+      display:flex;
+      gap:8px;
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      background:rgba(255,255,255,0.02);
+    }
+    .tab{
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.03);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tab.active{
+      border-color:rgba(64,142,255,0.50);
+      background:rgba(64,142,255,0.18);
+      color:var(--text);
+    }
+    .snap{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(255,255,255,0.03);
+      padding:10px;
+      margin-top:10px;
+      display:grid;
+      gap:8px;
+    }
+    .snap .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .snap .title{
+      font-weight:900;
+      font-size:12px;
+      line-height:1.25;
+    }
+    .snap .meta{
+      font-size:11px;
+      color:var(--muted);
+      font-family:var(--mono);
+      line-height:1.25;
+    }
+    .snap .btns{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .drop{
+      border:1px dashed rgba(255,255,255,0.22);
+      border-radius:14px;
+      padding:14px;
+      background:rgba(255,255,255,0.02);
+      text-align:center;
+    }
+    .kpi{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+    }
+    .card{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.03);
+      border-radius:14px;
+      padding:10px;
+    }
+    .card .k{ font-size:11px; color:var(--muted); font-weight:900; letter-spacing:0.15px; }
+    .card .v{ font-size:16px; font-weight:1000; margin-top:6px; }
+    .card.good{ background:var(--good); }
+    .card.bad{ background:var(--bad); }
+    .card.warn{ background:var(--warn); }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:12px;
+    }
+    thead th{
+      position:sticky;
+      top:0;
+      background:rgba(15,22,32,0.98);
+      backdrop-filter: blur(6px);
+      border-bottom:1px solid var(--line);
+      padding:10px 10px;
+      text-align:left;
+      font-weight:1000;
+      z-index:2;
+      white-space:nowrap;
+    }
+    tbody td{
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      padding:9px 10px;
+      vertical-align:top;
+    }
+    tbody tr:hover td{ background:rgba(255,255,255,0.04); }
+    .mono{ font-family:var(--mono); }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.03);
+      color:var(--muted);
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .badge.good{ background:rgba(53,208,127,0.12); border-color:rgba(53,208,127,0.38); color:rgba(231,238,248,0.92); }
+    .badge.bad{ background:rgba(255,92,92,0.12); border-color:rgba(255,92,92,0.38); color:rgba(231,238,248,0.92); }
+    .badge.warn{ background:rgba(255,193,7,0.12); border-color:rgba(255,193,7,0.38); color:rgba(231,238,248,0.92); }
+    .btnlink{
+      border:1px solid rgba(64,142,255,0.40);
+      background:rgba(64,142,255,0.14);
+      padding:6px 10px;
+      border-radius:10px;
+      font-weight:1000;
+      font-size:11px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .filters{
+      display:grid;
+      gap:8px;
+      margin-top:10px;
+    }
+    .filterRow{
+      display:grid;
+      grid-template-columns: 1.2fr 1fr 1fr auto;
+      gap:8px;
+      align-items:center;
+    }
+    .filterRow button{
+      padding:9px 10px;
+      border-radius:12px;
+    }
+    .smallBtn{
+      padding:7px 10px;
+      border-radius:10px;
+      font-size:11px;
+    }
+    .rightJson{
+      white-space:pre-wrap;
+      font-family:var(--mono);
+      font-size:11px;
+      color:rgba(231,238,248,0.92);
+      background:rgba(0,0,0,0.22);
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:14px;
+      padding:10px;
+    }
+    .hint{
+      margin-top:10px;
+      border:1px solid rgba(64,142,255,0.30);
+      background:rgba(64,142,255,0.10);
+      border-radius:14px;
+      padding:10px;
+      color:rgba(231,238,248,0.92);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .nowrap{ white-space:nowrap; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>
+    Pak'nSave Product Timeline Analyzer
+    <span class="pill" id="appStatus">Ready</span>
+  </h1>
+  <div class="actions">
+    <button class="primary" id="btnOpenNewTab">Open In New Tab</button>
+    <button id="btnExportCurrentJson">Export Current JSON</button>
+    <button id="btnExportCurrentCsv">Export Current CSV</button>
+    <button class="danger" id="btnClearAll">Clear All</button>
+  </div>
+</header>
+
+<div class="layout">
+  <section class="panel" id="leftPanel">
+    <div class="head">
+      <h2>Snapshots</h2>
+      <div class="row">
+        <button class="smallBtn" id="btnAddSnapshot">Add Files</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="drop" id="dropZone">
+        <div style="font-weight:1000;">Drop JSON Files Here</div>
+        <div class="muted" style="margin-top:6px;">
+          Add multiple exports over time, then compare prices and changes.
+        </div>
+        <div class="muted" style="margin-top:6px;">
+          Accepted formats: { results: [...] }, { hits: [...] }, or a raw array of products.
+        </div>
+      </div>
+
+      <div class="hint">
+        Tip: If your export contains <span class="mono">exportedAt</span> it will be used as the snapshot time.
+        Otherwise the import time will be used.
+      </div>
+
+      <div id="snapshotsList"></div>
+    </div>
+    <input id="fileInput" type="file" accept=".json,application/json,.txt" multiple style="display:none;" />
+  </section>
+
+  <section class="panel" id="mainPanel">
+    <div class="head">
+      <h2 id="mainTitle">Viewer</h2>
+      <div class="row">
+        <span class="badge" id="countBadge">0 products</span>
+        <span class="badge" id="filteredBadge">0 shown</span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="viewer">Products Viewer</div>
+      <div class="tab" data-tab="analysis">Analysis Mode</div>
+    </div>
+
+    <div class="body" id="tab_viewer">
+      <div class="grid3">
+        <div>
+          <label>Snapshot</label>
+          <select id="viewerSnapshot"></select>
+        </div>
+        <div>
+          <label>Search</label>
+          <input id="viewerSearch" placeholder="Search productId, name, brand, categories" />
+        </div>
+        <div>
+          <label>Sort</label>
+          <select id="viewerSort">
+            <option value="name_asc">Name (A to Z)</option>
+            <option value="name_desc">Name (Z to A)</option>
+            <option value="price_asc">Price (Low to High)</option>
+            <option value="price_desc">Price (High to Low)</option>
+            <option value="id_asc">Product Id</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid3" style="margin-top:10px;">
+        <div>
+          <label>Row Limit</label>
+          <select id="viewerLimit">
+            <option value="250">250</option>
+            <option value="500" selected>500</option>
+            <option value="1000">1000</option>
+            <option value="2500">2500</option>
+            <option value="999999">All</option>
+          </select>
+        </div>
+        <div>
+          <label>Primary Price Field</label>
+          <select id="priceMode">
+            <option value="auto" selected>Auto</option>
+            <option value="singlePrice.price">singlePrice.price</option>
+            <option value="price">price</option>
+            <option value="currentPrice">currentPrice</option>
+            <option value="pricing.price">pricing.price</option>
+          </select>
+        </div>
+        <div class="row" style="align-items:flex-end;">
+          <button class="good" id="btnApplyViewer">Apply</button>
+          <button id="btnResetViewer">Reset</button>
+          <button id="btnLoadMore">Load More</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label>Column Value Filters</label>
+        <div class="filters" id="viewerFilters"></div>
+        <div class="row" style="margin-top:10px;">
+          <button class="smallBtn" id="btnAddViewerFilter">Add Filter</button>
+          <button class="smallBtn" id="btnClearViewerFilters">Clear Filters</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <table id="viewerTable">
+          <thead>
+            <tr>
+              <th class="nowrap">Open</th>
+              <th class="nowrap">Product Id</th>
+              <th>Name</th>
+              <th class="nowrap">Price</th>
+              <th class="nowrap">Unit Price</th>
+              <th>Categories</th>
+              <th class="nowrap">Promo</th>
+              <th class="nowrap">Availability</th>
+            </tr>
+          </thead>
+          <tbody id="viewerTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="body" id="tab_analysis" style="display:none;">
+      <div class="grid3">
+        <div>
+          <label>Base Snapshot</label>
+          <select id="baseSnapshot"></select>
+        </div>
+        <div>
+          <label>Compare Snapshot</label>
+          <select id="compareSnapshot"></select>
+        </div>
+        <div class="row" style="align-items:flex-end;">
+          <button class="primary" id="btnRunAnalysis">Run Analysis</button>
+          <button id="btnExportAnalysisJson">Export Analysis JSON</button>
+          <button id="btnExportAnalysisCsv">Export Analysis CSV</button>
+        </div>
+      </div>
+
+      <div class="kpi" style="margin-top:12px;">
+        <div class="card">
+          <div class="k">Base Count</div>
+          <div class="v" id="kpiBase">0</div>
+        </div>
+        <div class="card">
+          <div class="k">Compare Count</div>
+          <div class="v" id="kpiCompare">0</div>
+        </div>
+        <div class="card warn">
+          <div class="k">Added</div>
+          <div class="v" id="kpiAdded">0</div>
+        </div>
+        <div class="card bad">
+          <div class="k">Removed</div>
+          <div class="v" id="kpiRemoved">0</div>
+        </div>
+      </div>
+
+      <div class="kpi" style="margin-top:10px;">
+        <div class="card good">
+          <div class="k">Price Up</div>
+          <div class="v" id="kpiUp">0</div>
+        </div>
+        <div class="card bad">
+          <div class="k">Price Down</div>
+          <div class="v" id="kpiDown">0</div>
+        </div>
+        <div class="card">
+          <div class="k">Price Changed</div>
+          <div class="v" id="kpiChanged">0</div>
+        </div>
+        <div class="card">
+          <div class="k">Unchanged</div>
+          <div class="v" id="kpiSame">0</div>
+        </div>
+      </div>
+
+      <div class="tabs" style="margin-top:12px;">
+        <div class="tab active" data-atab="report">Report</div>
+        <div class="tab" data-atab="price">Price Changes</div>
+        <div class="tab" data-atab="missing">Missing and Added</div>
+        <div class="tab" data-atab="fields">Field Changes</div>
+      </div>
+
+      
+      <div id="analysis_report">
+        <div class="hint" id="reportEmptyHint" style="display:none;">
+          Run analysis to generate a report, then view summary, price changes, and catalogue differences here.
+        </div>
+
+        <div class="card" id="textAnalysisCard" style="margin-top:12px; display:none;">
+          <div class="k">Text Summary</div>
+          <div id="textAnalysisSummary" style="margin-top:8px; font-size:12px; line-height:1.45;"></div>
+        </div>
+
+        <div class="grid3" style="margin-top:12px;">
+          <div>
+            <label>Report Row Limit (Per Table)</label>
+            <select id="reportLimit">
+              <option value="250">250</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+              <option value="2500">2500</option>
+              <option value="5000" selected>5000</option>
+              <option value="999999">All</option>
+            </select>
+          </div>
+          <div>
+            <label>Minimum Percent Change (Absolute)</label>
+            <input id="reportMinPct" type="number" value="0" step="0.01" />
+          </div>
+          <div class="row" style="align-items:flex-end;">
+            <button class="good" id="btnRefreshReport">Refresh Report</button>
+            <button id="btnExportReportHtml">Export Report HTML</button>
+            <button id="btnExportReportPdf">Export Report PDF</button>
+          </div>
+        </div>
+
+        <div id="reportPriceUpWrap" style="margin-top:14px; display:none;">
+          <h3 style="margin:0 0 8px 0; font-size:12px; font-weight:1000;">Price Increases</h3>
+          <div class="tiny" id="priceUpMeta"></div>
+          <div style="margin-top:8px;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="nowrap">Open</th>
+                  <th>Item</th>
+                  <th class="nowrap">Level 2 Cat</th>
+                  <th class="nowrap">Price</th>
+                  <th class="nowrap">Unit</th>
+                  <th class="nowrap">Original Price</th>
+                  <th class="nowrap">New Price</th>
+                  <th class="nowrap">Change %</th>
+                  <th class="nowrap">Change</th>
+                  <th class="nowrap">Link</th>
+                </tr>
+              </thead>
+              <tbody id="priceUpTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="reportPriceDownWrap" style="margin-top:14px; display:none;">
+          <h3 style="margin:0 0 8px 0; font-size:12px; font-weight:1000;">Price Decreases</h3>
+          <div class="tiny" id="priceDownMeta"></div>
+          <div style="margin-top:8px;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="nowrap">Open</th>
+                  <th>Item</th>
+                  <th class="nowrap">Level 2 Cat</th>
+                  <th class="nowrap">Price</th>
+                  <th class="nowrap">Unit</th>
+                  <th class="nowrap">Original Price</th>
+                  <th class="nowrap">New Price</th>
+                  <th class="nowrap">Change %</th>
+                  <th class="nowrap">Change</th>
+                  <th class="nowrap">Link</th>
+                </tr>
+              </thead>
+              <tbody id="priceDownTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="reportAddedWrap" style="margin-top:14px; display:none;">
+          <h3 style="margin:0 0 8px 0; font-size:12px; font-weight:1000;">Items Added</h3>
+          <div class="tiny" id="addedMetaReport"></div>
+          <div style="margin-top:8px;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="nowrap">Open</th>
+                  <th>Item</th>
+                  <th class="nowrap">Level 2 Cat</th>
+                  <th class="nowrap">Price</th>
+                  <th class="nowrap">Unit</th>
+                  <th class="nowrap">Link</th>
+                </tr>
+              </thead>
+              <tbody id="addedReportTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="reportRemovedWrap" style="margin-top:14px; display:none;">
+          <h3 style="margin:0 0 8px 0; font-size:12px; font-weight:1000;">Items Removed</h3>
+          <div class="tiny" id="removedMetaReport"></div>
+          <div style="margin-top:8px;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="nowrap">Open</th>
+                  <th>Item</th>
+                  <th class="nowrap">Level 2 Cat</th>
+                  <th class="nowrap">Price</th>
+                  <th class="nowrap">Unit</th>
+                  <th class="nowrap">Link</th>
+                </tr>
+              </thead>
+              <tbody id="removedReportTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="reportCategoryWrap" style="margin-top:14px; display:none;">
+          <h3 style="margin:0 0 8px 0; font-size:12px; font-weight:1000;">Categories</h3>
+          <div class="tiny" id="catMeta"></div>
+          <div style="margin-top:8px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Level 2</th>
+                  <th class="nowrap">Added</th>
+                  <th class="nowrap">Removed</th>
+                  <th class="nowrap">Price Up</th>
+                  <th class="nowrap">Avg Up %</th>
+                  <th class="nowrap">Price Down</th>
+                  <th class="nowrap">Avg Down %</th>
+                </tr>
+              </thead>
+              <tbody id="catTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="reportNotesWrap" style="margin-top:14px; display:none;">
+          <h3 style="margin:0 0 8px 0; font-size:12px; font-weight:1000;">Extra Insights</h3>
+          <div id="extraInsights" class="muted"></div>
+        </div>
+      </div>
+
+      <div id="analysis_price">
+
+        <div class="grid3" style="margin-top:10px;">
+          <div>
+            <label>Min Absolute Change (cents)</label>
+            <input id="minDelta" type="number" value="1" />
+          </div>
+          <div>
+            <label>Only Show</label>
+            <select id="deltaDirection">
+              <option value="any" selected>Any</option>
+              <option value="up">Price Up</option>
+              <option value="down">Price Down</option>
+            </select>
+          </div>
+          <div>
+            <label>Search</label>
+            <input id="analysisSearch" placeholder="Filter results" />
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th class="nowrap">Open</th>
+                <th class="nowrap">Product Id</th>
+                <th>Name</th>
+                <th class="nowrap">Base</th>
+                <th class="nowrap">Compare</th>
+                <th class="nowrap">Delta</th>
+                <th>Categories</th>
+              </tr>
+            </thead>
+            <tbody id="priceTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="analysis_missing" style="display:none; margin-top:10px;">
+        <div class="split">
+          <div>
+            <div class="row" style="justify-content:space-between;">
+              <div class="badge warn">Added</div>
+              <div class="muted" id="addedMeta"></div>
+            </div>
+            <div style="margin-top:10px;">
+              <table>
+                <thead><tr><th class="nowrap">Open</th><th class="nowrap">Product Id</th><th>Name</th><th>Categories</th></tr></thead>
+                <tbody id="addedTbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="row" style="justify-content:space-between;">
+              <div class="badge bad">Removed</div>
+              <div class="muted" id="removedMeta"></div>
+            </div>
+            <div style="margin-top:10px;">
+              <table>
+                <thead><tr><th class="nowrap">Open</th><th class="nowrap">Product Id</th><th>Name</th><th>Categories</th></tr></thead>
+                <tbody id="removedTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="analysis_fields" style="display:none; margin-top:10px;">
+        <div class="grid2">
+          <div>
+            <label>Keys To Compare</label>
+            <textarea id="fieldKeys" spellcheck="false">name
+displayName
+saleType
+availability
+singlePrice.price
+singlePrice.promoId
+singlePrice.comparativePrice.pricePerUnit</textarea>
+            <div class="muted" style="margin-top:8px;">One key per line. Use dotted paths for nested values.</div>
+            <div class="row" style="margin-top:10px;">
+              <button class="primary" id="btnRunFieldDiff">Compute Field Changes</button>
+            </div>
+          </div>
+          <div>
+            <label>Output</label>
+            <div class="rightJson" id="fieldDiffSummary">No results yet.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th class="nowrap">Open</th>
+                <th class="nowrap">Product Id</th>
+                <th>Name</th>
+                <th>Changed Keys</th>
+              </tr>
+            </thead>
+            <tbody id="fieldTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="rightPanel">
+    <div class="head">
+      <h2>Product Detail</h2>
+      <div class="row">
+        <span class="badge" id="detailId">No Selection</span>
+        <span class="badge" id="detailPrice">Price</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="muted" id="detailHint">
+        Select a product in the viewer or analysis tables to see raw JSON and price history.
+        Use Open to view in a separate tab.
+      </div>
+
+      <div style="margin-top:12px;">
+        <label>Price History</label>
+        <div class="rightJson" id="priceHistoryBox">No product selected.</div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <label>Raw JSON</label>
+        <div class="rightJson" id="detailJson">No product selected.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------------------
+  // Utilities
+  // ---------------------------
+  const $ = (id) => document.getElementById(id);
+
+  const state = {
+    snapshots: [], // { id, label, takenAtISO, takenAtMs, products: Map, list: [], rawMeta: {} }
+    activeTab: "viewer",
+    activeAnalysisTab: "report",
+    viewer: {
+      snapshotId: null,
+      search: "",
+      sort: "name_asc",
+      limit: 500,
+      renderLimit: 500,
+      filters: []
+    },
+    analysis: {
+      baseId: null,
+      compareId: null,
+      results: {
+        added: [],
+        removed: [],
+        priceChanges: [],
+        fieldChanges: []
+      },
+      fieldDiffInfo: { ran:false, ranAtISO:null, keys:[], changedProducts:0 },
+      lastExportRows: []
+    },
+    currentExportRows: [],
+    selectedProductId: null,
+    priceMode: "auto"
+  };
+
+  const APP_CHANNEL = "pns_product_timeline_analyzer_v1";
+  let bc = null;
+  try { bc = new BroadcastChannel(APP_CHANNEL); } catch(_e) { bc = null; }
+
+  function setStatus(text) {
+    $("appStatus").textContent = text;
+  }
+
+  function fmtInt(n) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return "0";
+    return x.toLocaleString("en-NZ");
+  }
+
+  function fmtMoneyFromCents(cents) {
+    if (cents === null || cents === undefined || cents === "" || !Number.isFinite(Number(cents))) return "";
+    const v = Number(cents) / 100;
+    return v.toLocaleString("en-NZ", { style:"currency", currency:"NZD" });
+  }
+
+  function escHtml(v) {
+    const s = String(v ?? "");
+    return s.replace(/[&<>"']/g, (c) => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      "\"":"&quot;",
+      "'":"&#39;"
+    }[c]));
+  }
+
+  function safeString(v) {
+    if (v === null || v === undefined) return "";
+    if (typeof v === "string") return v;
+    if (typeof v === "number" || typeof v === "boolean") return String(v);
+    try {
+      return JSON.stringify(v);
+    } catch (e) {
+      return String(v);
+    }
+  }
+
+
+  function renderNameCell(td, row) {
+    const name = (row && row.name) ? String(row.name) : "";
+    const pack = (row && row.pack) ? String(row.pack) : "";
+    if (pack) {
+      td.innerHTML =
+        '<div style="font-weight:1000; line-height:1.15;">' + escHtml(name) + '</div>' +
+        '<div class="tiny mono">' + escHtml(pack) + '</div>';
+    } else {
+      td.textContent = name;
+    }
+  }
+
+  function debounce(fn, ms) {
+    let t = null;
+    return (...args) => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => fn(...args), ms);
+    };
+  }
+
+  function slugId() {
+    return "snap_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+  }
+
+  function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result || ""));
+      fr.onerror = () => reject(fr.error || new Error("Failed to read file"));
+      fr.readAsText(file);
+    });
+  }
+
+  function tryParseJSON(text) {
+    // Some exports might be JSON text within a .txt file
+    const trimmed = text.trim();
+    if (!trimmed) throw new Error("Empty file");
+    return JSON.parse(trimmed);
+  }
+
+  function getPath(obj, path) {
+    if (!path) return undefined;
+    const parts = path.split(".");
+    let cur = obj;
+    for (const p of parts) {
+      if (cur === null || cur === undefined) return undefined;
+      if (typeof cur !== "object") return undefined;
+      cur = cur[p];
+    }
+    return cur;
+  }
+
+  function pickProductId(p) {
+    return p?.productId || p?.productID || p?.ProductId || p?.ProductID || p?.objectID || p?.objectId || p?.id || p?.sku || null;
+  }
+
+  function pickName(p) {
+    // In Pak'nSave exports, "displayName" is often the pack/unit (eg "ea", "0.5l"),
+    // while "name" is typically the human product name.
+    return p?.name || p?.productName || p?.title || p?.displayName || "";
+  }
+
+  function pickPack(p, nameStr) {
+    const pack = p?.displayName || p?.packSize || p?.size || p?.uom || "";
+    const s = String(pack || "").trim();
+    const n = String(nameStr || "").trim();
+    if (!s) return "";
+    if (n && s.toLowerCase() === n.toLowerCase()) return "";
+    return s;
+  }
+
+  function pickCategories(p) {
+    const trees = p?.categoryTrees;
+    if (Array.isArray(trees) && trees.length) {
+      // Choose the first tree that has level0 and level1
+      const t = trees.find(x => x && (x.level0 || x.level1 || x.level2)) || trees[0];
+      const parts = [];
+      if (t.level0) parts.push(t.level0);
+      if (t.level1) parts.push(t.level1);
+      if (t.level2) parts.push(t.level2);
+      if (t.level3) parts.push(t.level3);
+      if (t.level4) parts.push(t.level4);
+      return parts.join(" > ");
+    }
+    const c0 = p?.category0NI || p?.category0;
+    const c1 = p?.category1NI || p?.category1;
+    const c2 = p?.category2NI || p?.category2;
+    const parts = [];
+    if (c0) parts.push(c0);
+    if (c1) parts.push(c1);
+    if (c2) parts.push(c2);
+    return parts.join(" > ");
+  }
+
+  function detectPriceCents(p) {
+    // Respect explicit mode if set
+    const mode = $("priceMode")?.value || state.priceMode || "auto";
+    if (mode && mode !== "auto") {
+      const v = getPath(p, mode);
+      const n = Number(v);
+      if (Number.isFinite(n)) return n;
+    }
+
+    const candidates = [
+      getPath(p, "singlePrice.price"),
+      getPath(p, "price"),
+      getPath(p, "currentPrice"),
+      getPath(p, "pricing.price"),
+      getPath(p, "singlePrice.amount"),
+      getPath(p, "pricing.currentPrice"),
+    ];
+
+    for (const v of candidates) {
+      const n = Number(v);
+      if (Number.isFinite(n)) return n;
+    }
+
+    // Sometimes price might be nested in arrays
+    if (Array.isArray(p?.prices) && p.prices.length) {
+      for (const x of p.prices) {
+        const n = Number(x?.price ?? x?.amount);
+        if (Number.isFinite(n)) return n;
+      }
+    }
+
+    return null;
+  }
+
+  function detectUnitPriceCents(p) {
+    const v = getPath(p, "singlePrice.comparativePrice.pricePerUnit")
+      ?? getPath(p, "comparativePrice.pricePerUnit")
+      ?? getPath(p, "unitPrice.pricePerUnit")
+      ?? getPath(p, "unitPrice")
+      ?? null;
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+    return null;
+  }
+
+  function detectPromoId(p) {
+    return getPath(p, "singlePrice.promoId") || p?.promoId || p?.promotionId || "";
+  }
+
+  function detectAvailability(p) {
+    const a = p?.availability;
+    if (Array.isArray(a)) return a.join(", ");
+    if (typeof a === "string") return a;
+    return "";
+  }
+
+  function normalizeProduct(p) {
+    const id = pickProductId(p);
+    const name = pickName(p);
+    const pack = pickPack(p, name);
+    const categories = pickCategories(p);
+    const priceCents = detectPriceCents(p);
+    const unitCents = detectUnitPriceCents(p);
+    const promoId = detectPromoId(p);
+    const availability = detectAvailability(p);
+    const brand = p?.brand || getPath(p, "facets.brand") || p?.manufacturer || "";
+
+    return {
+      id: id ? String(id) : "",
+      name: String(name || ""),
+      pack: String(pack || ""),
+      categories: String(categories || ""),
+      priceCents,
+      unitCents,
+      promoId: String(promoId || ""),
+      availability: String(availability || ""),
+      brand: String(brand || ""),
+      raw: p
+    };
+  }
+
+  function extractResults(jsonObj) {
+    if (Array.isArray(jsonObj)) return jsonObj;
+    if (jsonObj && typeof jsonObj === "object") {
+      if (Array.isArray(jsonObj.results)) return jsonObj.results;
+      if (Array.isArray(jsonObj.hits)) return jsonObj.hits;
+      if (Array.isArray(jsonObj.products)) return jsonObj.products;
+      if (jsonObj.data && Array.isArray(jsonObj.data)) return jsonObj.data;
+      // Some exports store under "items"
+      if (Array.isArray(jsonObj.items)) return jsonObj.items;
+    }
+    return [];
+  }
+
+  function extractTakenAtISO(jsonObj, fallbackISO) {
+    const candidates = [
+      jsonObj?.exportedAt,
+      jsonObj?.takenAt,
+      jsonObj?.timestamp,
+      jsonObj?.createdAt,
+      jsonObj?.generatedAt
+    ].filter(Boolean);
+    if (candidates.length) {
+      const s = String(candidates[0]);
+      const ms = Date.parse(s);
+      if (Number.isFinite(ms)) return new Date(ms).toISOString();
+    }
+    return fallbackISO;
+  }
+
+  function promptLabel(defaultLabel) {
+    const v = prompt("Snapshot label", defaultLabel || "");
+    if (v === null) return null;
+    const t = v.trim();
+    return t || defaultLabel || "Snapshot";
+  }
+
+  // ---------------------------
+  // Filters
+  // ---------------------------
+  const OPERATORS = [
+    { id:"contains", name:"contains" },
+    { id:"not_contains", name:"not contains" },
+    { id:"eq", name:"equals" },
+    { id:"starts", name:"starts with" },
+    { id:"ends", name:"ends with" },
+    { id:"gt", name:">" },
+    { id:"gte", name:">=" },
+    { id:"lt", name:"<" },
+    { id:"lte", name:"<=" },
+    { id:"exists", name:"exists" },
+    { id:"empty", name:"is empty" },
+    { id:"in", name:"in list" },
+    { id:"regex", name:"regex" },
+  ];
+
+  function buildKeyCatalogFromSnapshot(snap) {
+    const keys = new Set(["id","name","pack","brand","categories","priceCents","unitCents","promoId","availability"]);
+    // Also capture shallow raw keys for convenience
+    for (let i = 0; i < Math.min(400, snap.list.length); i++) {
+      const r = snap.list[i].raw;
+      if (r && typeof r === "object") {
+        Object.keys(r).forEach(k => keys.add(k));
+      }
+    }
+    return Array.from(keys).sort((a,b) => a.localeCompare(b));
+  }
+
+  function getValueForFilter(row, key) {
+    if (key in row) return row[key];
+    // dotted path support against raw
+    const v = getPath(row.raw, key);
+    return v;
+  }
+
+  function rowPassesFilter(row, f) {
+    const key = f.key || "";
+    const op = f.op || "contains";
+    const val = f.val ?? "";
+    const v = getValueForFilter(row, key);
+    const s = safeString(v).toLowerCase();
+    const needle = String(val || "").toLowerCase();
+
+    if (op === "exists") return v !== undefined && v !== null && safeString(v) !== "";
+    if (op === "empty") return v === undefined || v === null || safeString(v).trim() === "";
+
+    if (op === "regex") {
+      try {
+        const re = new RegExp(String(val || ""), "i");
+        return re.test(safeString(v));
+      } catch(_e) {
+        return true;
+      }
+    }
+
+    if (op === "in") {
+      const items = String(val || "").split(/[\n,]/).map(x => x.trim().toLowerCase()).filter(Boolean);
+      if (!items.length) return true;
+      return items.includes(s);
+    }
+
+    if (op === "contains") return s.includes(needle);
+    if (op === "not_contains") return !s.includes(needle);
+    if (op === "starts") return s.startsWith(needle);
+    if (op === "ends") return s.endsWith(needle);
+
+    // Numeric comparisons
+    const nv = Number(v);
+    const nneedle = Number(val);
+    if (!Number.isFinite(nv) || !Number.isFinite(nneedle)) {
+      if (op === "eq") return s === needle;
+      return true;
+    }
+
+    if (op === "eq") return nv === nneedle;
+    if (op === "gt") return nv > nneedle;
+    if (op === "gte") return nv >= nneedle;
+    if (op === "lt") return nv < nneedle;
+    if (op === "lte") return nv <= nneedle;
+    return true;
+  }
+
+  function applyFilters(rows, filters) {
+    if (!filters || !filters.length) return rows;
+    return rows.filter(r => filters.every(f => rowPassesFilter(r, f)));
+  }
+
+  function makeFilterRow(container, keyOptions, initial) {
+    const row = document.createElement("div");
+    row.className = "filterRow";
+
+    const selKey = document.createElement("select");
+    for (const k of keyOptions) {
+      const opt = document.createElement("option");
+      opt.value = k;
+      opt.textContent = k;
+      selKey.appendChild(opt);
+    }
+
+    const selOp = document.createElement("select");
+    for (const o of OPERATORS) {
+      const opt = document.createElement("option");
+      opt.value = o.id;
+      opt.textContent = o.name;
+      selOp.appendChild(opt);
+    }
+
+    const inpVal = document.createElement("input");
+    inpVal.placeholder = "value";
+
+    const btnDel = document.createElement("button");
+    btnDel.textContent = "Remove";
+    btnDel.className = "smallBtn danger";
+
+    if (initial?.key) selKey.value = initial.key;
+    if (initial?.op) selOp.value = initial.op;
+    if (initial?.val !== undefined) inpVal.value = initial.val;
+
+    btnDel.addEventListener("click", () => {
+      row.remove();
+      state.viewer.filters = readViewerFiltersFromUI();
+      renderViewer();
+    });
+
+    selKey.addEventListener("change", () => { state.viewer.filters = readViewerFiltersFromUI(); renderViewer(); });
+    selOp.addEventListener("change", () => { state.viewer.filters = readViewerFiltersFromUI(); renderViewer(); });
+    inpVal.addEventListener("input", debounce(() => { state.viewer.filters = readViewerFiltersFromUI(); renderViewer(); }, 120));
+
+    row.appendChild(selKey);
+    row.appendChild(selOp);
+    row.appendChild(inpVal);
+    row.appendChild(btnDel);
+
+    container.appendChild(row);
+  }
+
+  function readViewerFiltersFromUI() {
+    const wrap = $("viewerFilters");
+    const rows = Array.from(wrap.querySelectorAll(".filterRow"));
+    return rows.map(r => {
+      const sels = r.querySelectorAll("select");
+      const key = sels[0]?.value || "";
+      const op = sels[1]?.value || "contains";
+      const val = r.querySelector("input")?.value ?? "";
+      return { key, op, val };
+    }).filter(f => f.key);
+  }
+
+  // ---------------------------
+  // Rendering
+  // ---------------------------
+  function refreshSnapshotSelectors() {
+    const options = state.snapshots.map(s => ({ id:s.id, label:s.label, meta:`${fmtInt(s.list.length)} products` }));
+
+    const selViewer = $("viewerSnapshot");
+    const selBase = $("baseSnapshot");
+    const selCompare = $("compareSnapshot");
+
+    function fill(sel, selectedId) {
+      sel.innerHTML = "";
+      for (const o of options) {
+        const opt = document.createElement("option");
+        opt.value = o.id;
+        opt.textContent = `${o.label} (${o.meta})`;
+        sel.appendChild(opt);
+      }
+      if (selectedId && options.some(x => x.id === selectedId)) sel.value = selectedId;
+    }
+
+    fill(selViewer, state.viewer.snapshotId || (options[0]?.id || ""));
+    fill(selBase, state.analysis.baseId || (options[0]?.id || ""));
+    fill(selCompare, state.analysis.compareId || (options[1]?.id || options[0]?.id || ""));
+
+    state.viewer.snapshotId = selViewer.value || null;
+    state.analysis.baseId = selBase.value || null;
+    state.analysis.compareId = selCompare.value || null;
+
+    $("countBadge").textContent = `${fmtInt(getActiveSnapshot()?.list.length || 0)} products`;
+  }
+
+  function renderSnapshotsList() {
+    const wrap = $("snapshotsList");
+    wrap.innerHTML = "";
+
+    if (!state.snapshots.length) {
+      const d = document.createElement("div");
+      d.className = "muted";
+      d.style.marginTop = "12px";
+      d.textContent = "No snapshots loaded yet.";
+      wrap.appendChild(d);
+      return;
+    }
+
+    for (const s of state.snapshots) {
+      const box = document.createElement("div");
+      box.className = "snap";
+
+      const top = document.createElement("div");
+      top.className = "top";
+
+      const left = document.createElement("div");
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = s.label;
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = `${new Date(s.takenAtMs).toISOString()}  |  ${fmtInt(s.list.length)} products`;
+      left.appendChild(title);
+      left.appendChild(meta);
+
+      const btns = document.createElement("div");
+      btns.className = "btns";
+
+      const btnUse = document.createElement("button");
+      btnUse.textContent = "View";
+      btnUse.className = "smallBtn good";
+      btnUse.addEventListener("click", () => {
+        $("viewerSnapshot").value = s.id;
+        state.viewer.snapshotId = s.id;
+        switchTab("viewer");
+        renderViewer(true);
+      });
+
+      const btnRename = document.createElement("button");
+      btnRename.textContent = "Rename";
+      btnRename.className = "smallBtn";
+      btnRename.addEventListener("click", () => {
+        const nl = promptLabel(s.label);
+        if (nl) {
+          s.label = nl;
+          refreshSnapshotSelectors();
+          renderSnapshotsList();
+          renderViewer();
+        }
+      });
+
+      const btnRemove = document.createElement("button");
+      btnRemove.textContent = "Remove";
+      btnRemove.className = "smallBtn danger";
+      btnRemove.addEventListener("click", () => {
+        state.snapshots = state.snapshots.filter(x => x.id !== s.id);
+        if (state.selectedProductId && !findProductAcrossSnapshots(state.selectedProductId).length) {
+          setSelectedProduct(null);
+        }
+        refreshSnapshotSelectors();
+        renderSnapshotsList();
+        renderViewer(true);
+      });
+
+      btns.appendChild(btnUse);
+      btns.appendChild(btnRename);
+      btns.appendChild(btnRemove);
+
+      top.appendChild(left);
+      top.appendChild(btns);
+
+      box.appendChild(top);
+
+      wrap.appendChild(box);
+    }
+  }
+
+  function getActiveSnapshot() {
+    if (!state.viewer.snapshotId) return null;
+    return state.snapshots.find(s => s.id === state.viewer.snapshotId) || null;
+  }
+
+  function sortRows(rows, sortId) {
+    const list = rows.slice();
+    const s = sortId || "name_asc";
+    const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+    if (s === "id_asc") list.sort((a,b) => cmp(a.id, b.id));
+    if (s === "name_asc") list.sort((a,b) => cmp(a.name.toLowerCase(), b.name.toLowerCase()));
+    if (s === "name_desc") list.sort((a,b) => cmp(b.name.toLowerCase(), a.name.toLowerCase()));
+    if (s === "price_asc") list.sort((a,b) => (Number(a.priceCents ?? 1e15) - Number(b.priceCents ?? 1e15)));
+    if (s === "price_desc") list.sort((a,b) => (Number(b.priceCents ?? -1) - Number(a.priceCents ?? -1)));
+    return list;
+  }
+
+  function openDetailInNewTab(productId) {
+    const pid = encodeURIComponent(String(productId));
+    const url = `https://www.paknsave.co.nz/shop/product/${pid}`;
+    window.open(url, "_blank", "noopener");
+  }
+
+  function renderViewer(resetRenderLimit) {
+    const snap = getActiveSnapshot();
+    const tbody = $("viewerTbody");
+    tbody.innerHTML = "";
+
+    if (!snap) {
+      $("filteredBadge").textContent = "0 shown";
+      state.currentExportRows = [];
+      return;
+    }
+
+    if (resetRenderLimit) {
+      const lim = Number($("viewerLimit").value || 500);
+      state.viewer.limit = lim;
+      state.viewer.renderLimit = Math.min(lim, 500);
+    }
+
+    const search = ($("viewerSearch").value || "").trim().toLowerCase();
+    const sortId = $("viewerSort").value || "name_asc";
+    const filters = readViewerFiltersFromUI();
+
+    let rows = snap.list;
+
+    // Search across id, name, brand, categories
+    if (search) {
+      rows = rows.filter(r =>
+        r.id.toLowerCase().includes(search) ||
+        r.name.toLowerCase().includes(search) ||
+        (r.brand || "").toLowerCase().includes(search) ||
+        (r.categories || "").toLowerCase().includes(search)
+      );
+    }
+
+    rows = applyFilters(rows, filters);
+    rows = sortRows(rows, sortId);
+
+    const hardLimit = Number($("viewerLimit").value || 500);
+    const displayLimit = Math.min(rows.length, Math.max(1, state.viewer.renderLimit));
+    const showRows = rows.slice(0, hardLimit === 999999 ? displayLimit : Math.min(displayLimit, hardLimit));
+
+    state.currentExportRows = showRows.map(r => r.raw);
+    $("countBadge").textContent = `${fmtInt(snap.list.length)} products`;
+    $("filteredBadge").textContent = `${fmtInt(showRows.length)} shown`;
+
+    for (const r of showRows) {
+      const tr = document.createElement("tr");
+
+      const tdOpen = document.createElement("td");
+      const btn = document.createElement("span");
+      btn.className = "btnlink";
+      btn.textContent = "Open";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDetailInNewTab(r.id);
+      });
+      tdOpen.appendChild(btn);
+
+      const tdId = document.createElement("td");
+      tdId.className = "mono";
+      tdId.textContent = r.id;
+
+      const tdName = document.createElement("td");
+      renderNameCell(tdName, r);
+
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "nowrap";
+      tdPrice.textContent = fmtMoneyFromCents(r.priceCents);
+
+      const tdUnit = document.createElement("td");
+      tdUnit.className = "nowrap";
+      tdUnit.textContent = r.unitCents !== null ? fmtMoneyFromCents(r.unitCents) : "";
+
+      const tdCat = document.createElement("td");
+      tdCat.textContent = r.categories;
+
+      const tdPromo = document.createElement("td");
+      tdPromo.className = "mono";
+      tdPromo.textContent = r.promoId || "";
+
+      const tdAvail = document.createElement("td");
+      tdAvail.textContent = r.availability;
+
+      tr.appendChild(tdOpen);
+      tr.appendChild(tdId);
+      tr.appendChild(tdName);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdUnit);
+      tr.appendChild(tdCat);
+      tr.appendChild(tdPromo);
+      tr.appendChild(tdAvail);
+
+      tr.addEventListener("click", () => setSelectedProduct(r.id));
+
+      tbody.appendChild(tr);
+    }
+
+    $("btnLoadMore").disabled = (hardLimit !== 999999 && showRows.length >= hardLimit) || (showRows.length >= rows.length);
+
+    // Detail stays coherent if selected id no longer matches filter set
+    if (state.selectedProductId) {
+      const exists = snap.products.has(state.selectedProductId);
+      if (exists) setSelectedProduct(state.selectedProductId, true);
+    }
+  }
+
+  function setSelectedProduct(productId, soft) {
+    state.selectedProductId = productId;
+
+    if (!productId) {
+      $("detailId").textContent = "No Selection";
+      $("detailPrice").textContent = "Price";
+      $("detailJson").textContent = "No product selected.";
+      $("priceHistoryBox").textContent = "No product selected.";
+      return;
+    }
+
+    const entries = findProductAcrossSnapshots(productId);
+    if (!entries.length) {
+      if (!soft) setStatus("Product not found in snapshots");
+      return;
+    }
+
+    // Pick most recent as main raw
+    const latest = entries[entries.length - 1];
+    const price = latest.normalized.priceCents;
+
+    $("detailId").textContent = String(productId);
+    $("detailPrice").textContent = price !== null ? fmtMoneyFromCents(price) : "No price";
+
+    // Price history text
+    const lines = entries.map(e => {
+      const ts = new Date(e.snapshot.takenAtMs).toISOString();
+      const p = e.normalized.priceCents !== null ? fmtMoneyFromCents(e.normalized.priceCents) : "No price";
+      const u = e.normalized.unitCents !== null ? `  | unit ${fmtMoneyFromCents(e.normalized.unitCents)}` : "";
+      const promo = e.normalized.promoId ? `  | promo ${e.normalized.promoId}` : "";
+      return `${ts}  |  ${p}${u}${promo}  |  ${e.snapshot.label}`;
+    }).join("\n");
+
+    $("priceHistoryBox").textContent = lines || "No history.";
+
+    // JSON view
+    $("detailJson").textContent = JSON.stringify(latest.raw, null, 2);
+  }
+
+  function findProductAcrossSnapshots(productId) {
+    const id = String(productId);
+    const rows = [];
+    const snaps = state.snapshots.slice().sort((a,b) => a.takenAtMs - b.takenAtMs);
+    for (const s of snaps) {
+      const norm = s.products.get(id);
+      if (norm) rows.push({ snapshot:s, normalized:norm, raw:norm.raw });
+    }
+    return rows;
+  }
+
+  // ---------------------------
+  // Analysis
+  // ---------------------------
+  function runAnalysis() {
+    const base = state.snapshots.find(s => s.id === $("baseSnapshot").value);
+    const comp = state.snapshots.find(s => s.id === $("compareSnapshot").value);
+
+    if (!base || !comp) {
+      setStatus("Select snapshots first");
+      return;
+    }
+
+    const baseIds = new Set(base.products.keys());
+    const compIds = new Set(comp.products.keys());
+
+    const added = [];
+    const removed = [];
+    const common = [];
+
+    for (const id of compIds) if (!baseIds.has(id)) added.push(id);
+    for (const id of baseIds) if (!compIds.has(id)) removed.push(id);
+    for (const id of baseIds) if (compIds.has(id)) common.push(id);
+
+    const changes = [];
+    let up = 0, down = 0, same = 0;
+
+    for (const id of common) {
+      const a = base.products.get(id);
+      const b = comp.products.get(id);
+      const pa = Number(a?.priceCents);
+      const pb = Number(b?.priceCents);
+      if (!Number.isFinite(pa) || !Number.isFinite(pb)) continue;
+      if (pa === pb) { same++; continue; }
+      const delta = pb - pa;
+      if (delta > 0) up++;
+      if (delta < 0) down++;
+      changes.push({
+        id,
+        name: b.name || a.name,
+        categories: b.categories || a.categories,
+        baseCents: pa,
+        compareCents: pb,
+        deltaCents: delta
+      });
+    }
+
+    // Sort by absolute delta desc
+    changes.sort((x,y) => Math.abs(y.deltaCents) - Math.abs(x.deltaCents));
+
+    state.analysis.results.added = added.map(id => comp.products.get(id)).filter(Boolean);
+    state.analysis.results.removed = removed.map(id => base.products.get(id)).filter(Boolean);
+    state.analysis.results.priceChanges = changes;
+
+    // Reset field differences for this comparison
+    state.analysis.results.fieldChanges = [];
+    state.analysis.fieldDiffInfo = { ran:false, ranAtISO:null, keys:[], changedProducts:0 };
+
+    $("kpiBase").textContent = fmtInt(base.list.length);
+    $("kpiCompare").textContent = fmtInt(comp.list.length);
+    $("kpiAdded").textContent = fmtInt(added.length);
+    $("kpiRemoved").textContent = fmtInt(removed.length);
+    $("kpiUp").textContent = fmtInt(up);
+    $("kpiDown").textContent = fmtInt(down);
+    $("kpiChanged").textContent = fmtInt(changes.length);
+    $("kpiSame").textContent = fmtInt(same);
+
+    renderPriceChanges();
+    renderMissingAdded();
+    renderReport();
+    $("fieldDiffSummary").textContent = "No results yet.";
+    $("fieldTbody").innerHTML = "";
+
+    switchAnalysisTab("report");
+
+    setStatus(`Analysis ready (${fmtInt(changes.length)} price changes)`);
+  }
+
+  function renderPriceChanges() {
+    const tb = $("priceTbody");
+    tb.innerHTML = "";
+
+    const minDelta = Math.max(0, Number($("minDelta").value || 1));
+    const dir = $("deltaDirection").value || "any";
+    const q = ($("analysisSearch").value || "").trim().toLowerCase();
+
+    const rows = state.analysis.results.priceChanges.filter(r => {
+      if (Math.abs(r.deltaCents) < minDelta) return false;
+      if (dir === "up" && r.deltaCents <= 0) return false;
+      if (dir === "down" && r.deltaCents >= 0) return false;
+      if (q) {
+        return r.id.toLowerCase().includes(q) || (r.name || "").toLowerCase().includes(q) || (r.categories || "").toLowerCase().includes(q);
+      }
+      return true;
+    });
+
+    state.analysis.lastExportRows = rows.map(r => ({
+      productId: r.id,
+      name: r.name,
+      categories: r.categories,
+      basePrice: r.baseCents,
+      comparePrice: r.compareCents,
+      delta: r.deltaCents
+    }));
+
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+
+      const tdOpen = document.createElement("td");
+      const btn = document.createElement("span");
+      btn.className = "btnlink";
+      btn.textContent = "Open";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDetailInNewTab(r.id);
+      });
+      tdOpen.appendChild(btn);
+
+      const tdId = document.createElement("td");
+      tdId.className = "mono";
+      tdId.textContent = r.id;
+
+      const tdName = document.createElement("td");
+      renderNameCell(tdName, r);
+
+      const tdA = document.createElement("td");
+      tdA.className = "nowrap";
+      tdA.textContent = fmtMoneyFromCents(r.baseCents);
+
+      const tdB = document.createElement("td");
+      tdB.className = "nowrap";
+      tdB.textContent = fmtMoneyFromCents(r.compareCents);
+
+      const tdDelta = document.createElement("td");
+      tdDelta.className = "nowrap";
+      const sign = r.deltaCents > 0 ? "+" : "";
+      tdDelta.textContent = `${sign}${fmtMoneyFromCents(r.deltaCents)}`;
+
+      const tdCat = document.createElement("td");
+      tdCat.textContent = r.categories || "";
+
+      tr.appendChild(tdOpen);
+      tr.appendChild(tdId);
+      tr.appendChild(tdName);
+      tr.appendChild(tdA);
+      tr.appendChild(tdB);
+      tr.appendChild(tdDelta);
+      tr.appendChild(tdCat);
+
+      tr.addEventListener("click", () => setSelectedProduct(r.id));
+
+      tb.appendChild(tr);
+    }
+  }
+
+  function renderMissingAdded() {
+    const added = state.analysis.results.added || [];
+    const removed = state.analysis.results.removed || [];
+
+    $("addedMeta").textContent = `${fmtInt(added.length)} products`;
+    $("removedMeta").textContent = `${fmtInt(removed.length)} products`;
+
+    const aTb = $("addedTbody");
+    const rTb = $("removedTbody");
+    aTb.innerHTML = "";
+    rTb.innerHTML = "";
+
+    function rowToTr(norm) {
+      const tr = document.createElement("tr");
+      const tdOpen = document.createElement("td");
+      const btn = document.createElement("span");
+      btn.className = "btnlink";
+      btn.textContent = "Open";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDetailInNewTab(norm.id);
+      });
+      tdOpen.appendChild(btn);
+
+      const tdId = document.createElement("td");
+      tdId.className = "mono";
+      tdId.textContent = norm.id;
+
+      const tdName = document.createElement("td");
+      renderNameCell(tdName, norm);
+
+      const tdCat = document.createElement("td");
+      tdCat.textContent = norm.categories;
+
+      tr.appendChild(tdOpen);
+      tr.appendChild(tdId);
+      tr.appendChild(tdName);
+      tr.appendChild(tdCat);
+      tr.addEventListener("click", () => setSelectedProduct(norm.id));
+      return tr;
+    }
+
+    for (const n of added.slice(0, 2500)) aTb.appendChild(rowToTr(n));
+    for (const n of removed.slice(0, 2500)) rTb.appendChild(rowToTr(n));
+  }
+
+  
+  function makeProductLink(productId) {
+    const pid = encodeURIComponent(String(productId));
+    return `https://www.paknsave.co.nz/shop/product/${pid}`;
+  }
+
+  function formatPct(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "";
+    const sign = n > 0 ? "+" : "";
+    return sign + n.toFixed(2) + "%";
+  }
+
+  function joinBrandName(brand, name) {
+    const b = String(brand || "").trim();
+    const n = String(name || "").trim();
+    if (!b) return n;
+    const nl = n.toLowerCase();
+    const bl = b.toLowerCase();
+    if (nl.startsWith(bl)) return n;
+    return (b + " " + n).trim();
+  }
+
+  function pickLevel2(norm) {
+    const raw = norm?.raw || {};
+    const c = String(norm?.categories || "").trim();
+    // Prefer category path splitting
+    if (c) {
+      // if multiple paths separated by |
+      const firstPath = c.split("|")[0].trim();
+      const parts = firstPath.split(">").map(x => x.trim()).filter(Boolean);
+      if (parts.length >= 2) return parts[1];
+      if (parts.length === 1) return parts[0];
+    }
+    // Fall back to known category fields from API
+    const candidates = [raw?.category1NI, raw?.category1, raw?.category1Name, raw?.category2NI, raw?.category0NI];
+    for (const v of candidates) {
+      const s = String(v || "").trim();
+      if (s) return s;
+    }
+    return "";
+  }
+
+  function showIf(id, ok) {
+    const el = $(id);
+    if (!el) return;
+    el.style.display = ok ? "" : "none";
+  }
+
+  function renderReport() {
+    const base = state.snapshots.find(s => s.id === $("baseSnapshot").value);
+    const comp = state.snapshots.find(s => s.id === $("compareSnapshot").value);
+
+    if (!base || !comp) {
+      showIf("reportEmptyHint", true);
+      showIf("textAnalysisCard", false);
+      showIf("reportPriceUpWrap", false);
+      showIf("reportPriceDownWrap", false);
+      showIf("reportAddedWrap", false);
+      showIf("reportRemovedWrap", false);
+      showIf("reportCategoryWrap", false);
+      showIf("reportNotesWrap", false);
+      return;
+    }
+
+    showIf("reportEmptyHint", false);
+
+    const limit = Math.max(1, Number($("reportLimit").value || 5000));
+    const minPctAbs = Math.max(0, Number($("reportMinPct").value || 0));
+
+    const added = state.analysis.results.added || [];
+    const removed = state.analysis.results.removed || [];
+    const priceChanges = state.analysis.results.priceChanges || [];
+    const fieldChanges = state.analysis.results.fieldChanges || [];
+
+    const baseTime = new Date(base.takenAtMs).toLocaleString("en-NZ");
+    const compTime = new Date(comp.takenAtMs).toLocaleString("en-NZ");
+
+    const upRowsAll = [];
+    const downRowsAll = [];
+
+    for (const r of priceChanges) {
+      const id = String(r.id || "");
+      if (!id) continue;
+
+      const baseNorm = base.products.get(id);
+      const compNorm = comp.products.get(id);
+      const norm = compNorm || baseNorm || {};
+      const brand = norm?.brand || "";
+      const item = joinBrandName(brand, norm?.name || r.name || "");
+      const unit = String(norm?.pack || "");
+      const level2 = pickLevel2(norm);
+      const baseC = Number(r.baseCents);
+      const compC = Number(r.compareCents);
+      const deltaC = Number(r.deltaCents);
+      const pct = (Number.isFinite(baseC) && baseC !== 0) ? ((deltaC / baseC) * 100) : null;
+
+      const row = {
+        productId: id,
+        item,
+        level2,
+        unit,
+        baseCents: baseC,
+        newCents: compC,
+        deltaCents: deltaC,
+        deltaPct: pct,
+        link: makeProductLink(id),
+        categories: String(norm?.categories || r.categories || "")
+      };
+
+      if (Number.isFinite(pct) && Math.abs(pct) < minPctAbs) continue;
+
+      if (deltaC > 0) upRowsAll.push(row);
+      if (deltaC < 0) downRowsAll.push(row);
+    }
+
+    upRowsAll.sort((a,b) => (Math.abs(b.deltaPct ?? 0) - Math.abs(a.deltaPct ?? 0)) || (Math.abs(b.deltaCents) - Math.abs(a.deltaCents)));
+    downRowsAll.sort((a,b) => (Math.abs(b.deltaPct ?? 0) - Math.abs(a.deltaPct ?? 0)) || (Math.abs(b.deltaCents) - Math.abs(a.deltaCents)));
+
+    const upRows = upRowsAll.slice(0, limit);
+    const downRows = downRowsAll.slice(0, limit);
+
+    // Summary text
+    const changedSet = new Set();
+    for (const x of added) changedSet.add(String(x.id));
+    for (const x of removed) changedSet.add(String(x.id));
+    for (const x of priceChanges) changedSet.add(String(x.id));
+    for (const x of fieldChanges) changedSet.add(String(x.id));
+
+    const totalChangeEvents = (added.length + removed.length + priceChanges.length + fieldChanges.length);
+
+    const parts = [];
+    parts.push(`From ${baseTime} to ${compTime}.`);
+
+    if (added.length || removed.length) {
+      parts.push(`${fmtInt(added.length)} items have been added and ${fmtInt(removed.length)} have been removed.`);
+    }
+
+    if (upRowsAll.length || downRowsAll.length) {
+      parts.push(`${fmtInt(upRowsAll.length)} items have increased in price and ${fmtInt(downRowsAll.length)} items have decreased in price.`);
+    }
+
+    if (priceChanges.length) {
+      parts.push(`There were ${fmtInt(priceChanges.length)} price changes over this period.`);
+    }
+
+    if (fieldChanges.length) {
+      parts.push(`There were ${fmtInt(fieldChanges.length)} field changes over this period.`);
+    }
+
+    parts.push(`There were ${fmtInt(totalChangeEvents)} total changes across ${fmtInt(changedSet.size)} products over this period.`);
+    parts.push(`Base snapshot had ${fmtInt(base.list.length)} products and compare snapshot had ${fmtInt(comp.list.length)} products.`);
+
+    const fd = state.analysis.fieldDiffInfo || { ran:false, keys:[], changedProducts:0 };
+    if (!fd.ran) {
+      parts.push(`Field change detection is not included unless you run "Compute Field Differences" in the Field Changes tab.`);
+    } else if (!fieldChanges.length) {
+      const kN = Array.isArray(fd.keys) ? fd.keys.length : 0;
+      parts.push(`Field differences were computed${kN ? ` across ${fmtInt(kN)} keys` : ""} and no field changes were detected for the selected keys.`);
+    } else {
+      const kN = Array.isArray(fd.keys) ? fd.keys.length : 0;
+      if (kN) parts.push(`Field differences were computed across ${fmtInt(kN)} keys.`);
+    }
+
+    $("textAnalysisSummary").textContent = parts.join(" ");
+    showIf("textAnalysisCard", true);
+
+    // Price Up Table
+    const upTb = $("priceUpTbody");
+    upTb.innerHTML = "";
+    $("priceUpMeta").textContent = `${fmtInt(upRowsAll.length)} items (showing ${fmtInt(upRows.length)})`;
+
+    for (const row of upRows) {
+      const tr = document.createElement("tr");
+
+      const tdOpen = document.createElement("td");
+      const btn = document.createElement("span");
+      btn.className = "btnlink";
+      btn.textContent = "Open";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDetailInNewTab(row.productId);
+      });
+      tdOpen.appendChild(btn);
+
+      const tdItem = document.createElement("td");
+      tdItem.textContent = row.item;
+
+      const tdL2 = document.createElement("td");
+      tdL2.textContent = row.level2;
+
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "nowrap";
+      tdPrice.textContent = fmtMoneyFromCents(row.newCents);
+
+      const tdUnit = document.createElement("td");
+      tdUnit.textContent = row.unit;
+
+      const tdBase = document.createElement("td");
+      tdBase.className = "nowrap";
+      tdBase.textContent = fmtMoneyFromCents(row.baseCents);
+
+      const tdNew = document.createElement("td");
+      tdNew.className = "nowrap";
+      tdNew.textContent = fmtMoneyFromCents(row.newCents);
+
+      const tdPct = document.createElement("td");
+      tdPct.className = "nowrap";
+      tdPct.textContent = formatPct(row.deltaPct);
+
+      const tdDelta = document.createElement("td");
+      tdDelta.className = "nowrap";
+      tdDelta.textContent = fmtMoneyFromCents(row.deltaCents);
+
+      const tdLink = document.createElement("td");
+      const a = document.createElement("a");
+      a.href = row.link;
+      a.textContent = "Link";
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.style.color = "rgba(231,238,248,0.92)";
+      tdLink.appendChild(a);
+
+      tr.appendChild(tdOpen);
+      tr.appendChild(tdItem);
+      tr.appendChild(tdL2);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdUnit);
+      tr.appendChild(tdBase);
+      tr.appendChild(tdNew);
+      tr.appendChild(tdPct);
+      tr.appendChild(tdDelta);
+      tr.appendChild(tdLink);
+
+      upTb.appendChild(tr);
+    }
+
+    // Price Down Table
+    const downTb = $("priceDownTbody");
+    downTb.innerHTML = "";
+    $("priceDownMeta").textContent = `${fmtInt(downRowsAll.length)} items (showing ${fmtInt(downRows.length)})`;
+
+    for (const row of downRows) {
+      const tr = document.createElement("tr");
+
+      const tdOpen = document.createElement("td");
+      const btn = document.createElement("span");
+      btn.className = "btnlink";
+      btn.textContent = "Open";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDetailInNewTab(row.productId);
+      });
+      tdOpen.appendChild(btn);
+
+      const tdItem = document.createElement("td");
+      tdItem.textContent = row.item;
+
+      const tdL2 = document.createElement("td");
+      tdL2.textContent = row.level2;
+
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "nowrap";
+      tdPrice.textContent = fmtMoneyFromCents(row.newCents);
+
+      const tdUnit = document.createElement("td");
+      tdUnit.textContent = row.unit;
+
+      const tdBase = document.createElement("td");
+      tdBase.className = "nowrap";
+      tdBase.textContent = fmtMoneyFromCents(row.baseCents);
+
+      const tdNew = document.createElement("td");
+      tdNew.className = "nowrap";
+      tdNew.textContent = fmtMoneyFromCents(row.newCents);
+
+      const tdPct = document.createElement("td");
+      tdPct.className = "nowrap";
+      tdPct.textContent = formatPct(row.deltaPct);
+
+      const tdDelta = document.createElement("td");
+      tdDelta.className = "nowrap";
+      tdDelta.textContent = fmtMoneyFromCents(row.deltaCents);
+
+      const tdLink = document.createElement("td");
+      const a = document.createElement("a");
+      a.href = row.link;
+      a.textContent = "Link";
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.style.color = "rgba(231,238,248,0.92)";
+      tdLink.appendChild(a);
+
+      tr.appendChild(tdOpen);
+      tr.appendChild(tdItem);
+      tr.appendChild(tdL2);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdUnit);
+      tr.appendChild(tdBase);
+      tr.appendChild(tdNew);
+      tr.appendChild(tdPct);
+      tr.appendChild(tdDelta);
+      tr.appendChild(tdLink);
+
+      downTb.appendChild(tr);
+    }
+
+    showIf("reportPriceUpWrap", upRowsAll.length > 0);
+    showIf("reportPriceDownWrap", downRowsAll.length > 0);
+
+    // Added / Removed
+    const addRowsAll = added.map(n => ({
+      productId: String(n.id),
+      item: joinBrandName(n.brand, n.name),
+      level2: pickLevel2(n),
+      priceCents: Number(n.priceCents),
+      unit: String(n.pack || ""),
+      link: makeProductLink(n.id)
+    }));
+    const remRowsAll = removed.map(n => ({
+      productId: String(n.id),
+      item: joinBrandName(n.brand, n.name),
+      level2: pickLevel2(n),
+      priceCents: Number(n.priceCents),
+      unit: String(n.pack || ""),
+      link: makeProductLink(n.id)
+    }));
+
+    const addRows = addRowsAll.slice(0, limit);
+    const remRows = remRowsAll.slice(0, limit);
+
+    $("addedMetaReport").textContent = `${fmtInt(addRowsAll.length)} items (showing ${fmtInt(addRows.length)})`;
+    $("removedMetaReport").textContent = `${fmtInt(remRowsAll.length)} items (showing ${fmtInt(remRows.length)})`;
+
+    const addTb = $("addedReportTbody");
+    addTb.innerHTML = "";
+    for (const row of addRows) {
+      const tr = document.createElement("tr");
+
+      const tdOpen = document.createElement("td");
+      const btn = document.createElement("span");
+      btn.className = "btnlink";
+      btn.textContent = "Open";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDetailInNewTab(row.productId);
+      });
+      tdOpen.appendChild(btn);
+
+      const tdItem = document.createElement("td");
+      tdItem.textContent = row.item;
+
+      const tdL2 = document.createElement("td");
+      tdL2.textContent = row.level2;
+
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "nowrap";
+      tdPrice.textContent = fmtMoneyFromCents(row.priceCents);
+
+      const tdUnit = document.createElement("td");
+      tdUnit.textContent = row.unit;
+
+      const tdLink = document.createElement("td");
+      const a = document.createElement("a");
+      a.href = row.link;
+      a.textContent = "Link";
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.style.color = "rgba(231,238,248,0.92)";
+      tdLink.appendChild(a);
+
+      tr.appendChild(tdOpen);
+      tr.appendChild(tdItem);
+      tr.appendChild(tdL2);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdUnit);
+      tr.appendChild(tdLink);
+
+      addTb.appendChild(tr);
+    }
+
+    const remTb = $("removedReportTbody");
+    remTb.innerHTML = "";
+    for (const row of remRows) {
+      const tr = document.createElement("tr");
+
+      const tdOpen = document.createElement("td");
+      const btn = document.createElement("span");
+      btn.className = "btnlink";
+      btn.textContent = "Open";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDetailInNewTab(row.productId);
+      });
+      tdOpen.appendChild(btn);
+
+      const tdItem = document.createElement("td");
+      tdItem.textContent = row.item;
+
+      const tdL2 = document.createElement("td");
+      tdL2.textContent = row.level2;
+
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "nowrap";
+      tdPrice.textContent = fmtMoneyFromCents(row.priceCents);
+
+      const tdUnit = document.createElement("td");
+      tdUnit.textContent = row.unit;
+
+      const tdLink = document.createElement("td");
+      const a = document.createElement("a");
+      a.href = row.link;
+      a.textContent = "Link";
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.style.color = "rgba(231,238,248,0.92)";
+      tdLink.appendChild(a);
+
+      tr.appendChild(tdOpen);
+      tr.appendChild(tdItem);
+      tr.appendChild(tdL2);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdUnit);
+      tr.appendChild(tdLink);
+
+      remTb.appendChild(tr);
+    }
+
+    showIf("reportAddedWrap", addRowsAll.length > 0);
+    showIf("reportRemovedWrap", remRowsAll.length > 0);
+
+    // Category summary
+    const catMap = new Map(); // level2 -> stats
+    const ensure = (l2) => {
+      const key = String(l2 || "").trim() || "(Uncategorised)";
+      if (!catMap.has(key)) catMap.set(key, { level2:key, added:0, removed:0, up:0, down:0, sumUpPct:0, sumDownPct:0 });
+      return catMap.get(key);
+    };
+
+    for (const r of addRowsAll) ensure(r.level2).added++;
+    for (const r of remRowsAll) ensure(r.level2).removed++;
+
+    for (const r of upRowsAll) {
+      const st = ensure(r.level2);
+      st.up++;
+      if (Number.isFinite(r.deltaPct)) st.sumUpPct += Number(r.deltaPct);
+    }
+    for (const r of downRowsAll) {
+      const st = ensure(r.level2);
+      st.down++;
+      if (Number.isFinite(r.deltaPct)) st.sumDownPct += Number(r.deltaPct); // negative values
+    }
+
+    const catRows = Array.from(catMap.values())
+      .filter(x => x.added || x.removed || x.up || x.down)
+      .map(x => ({
+        level2: x.level2,
+        added: x.added,
+        removed: x.removed,
+        up: x.up,
+        avgUpPct: x.up ? (x.sumUpPct / x.up) : null,
+        down: x.down,
+        avgDownPct: x.down ? (x.sumDownPct / x.down) : null
+      }))
+      .sort((a,b) => (b.removed + b.added + b.up + b.down) - (a.removed + a.added + a.up + a.down));
+
+    $("catMeta").textContent = `${fmtInt(catRows.length)} level 2 categories`;
+    const catTb = $("catTbody");
+    catTb.innerHTML = "";
+
+    for (const r of catRows.slice(0, limit)) {
+      const tr = document.createElement("tr");
+
+      const tdL2 = document.createElement("td");
+      tdL2.textContent = r.level2;
+
+      const tdA = document.createElement("td");
+      tdA.className = "nowrap";
+      tdA.textContent = fmtInt(r.added);
+
+      const tdR = document.createElement("td");
+      tdR.className = "nowrap";
+      tdR.textContent = fmtInt(r.removed);
+
+      const tdUp = document.createElement("td");
+      tdUp.className = "nowrap";
+      tdUp.textContent = fmtInt(r.up);
+
+      const tdUpPct = document.createElement("td");
+      tdUpPct.className = "nowrap";
+      tdUpPct.textContent = r.avgUpPct === null ? "" : formatPct(r.avgUpPct);
+
+      const tdDown = document.createElement("td");
+      tdDown.className = "nowrap";
+      tdDown.textContent = fmtInt(r.down);
+
+      const tdDownPct = document.createElement("td");
+      tdDownPct.className = "nowrap";
+      tdDownPct.textContent = r.avgDownPct === null ? "" : formatPct(r.avgDownPct);
+
+      tr.appendChild(tdL2);
+      tr.appendChild(tdA);
+      tr.appendChild(tdR);
+      tr.appendChild(tdUp);
+      tr.appendChild(tdUpPct);
+      tr.appendChild(tdDown);
+      tr.appendChild(tdDownPct);
+
+      catTb.appendChild(tr);
+    }
+
+    showIf("reportCategoryWrap", catRows.length > 0);
+
+    // Extra insights text
+    const insights = [];
+    const topUpPct = upRowsAll.filter(x => Number.isFinite(x.deltaPct)).sort((a,b) => (b.deltaPct - a.deltaPct))[0];
+    const topUpAbs = upRowsAll.sort((a,b) => (b.deltaCents - a.deltaCents))[0];
+    const topDownPct = downRowsAll.filter(x => Number.isFinite(x.deltaPct)).sort((a,b) => (a.deltaPct - b.deltaPct))[0];
+    const topDownAbs = downRowsAll.sort((a,b) => (a.deltaCents - b.deltaCents))[0];
+
+    if (topUpPct) insights.push(`Largest percent increase was ${formatPct(topUpPct.deltaPct)} for ${topUpPct.item}.`);
+    if (topUpAbs) insights.push(`Largest dollar increase was ${fmtMoneyFromCents(topUpAbs.deltaCents)} for ${topUpAbs.item}.`);
+    if (topDownPct) insights.push(`Largest percent decrease was ${formatPct(topDownPct.deltaPct)} for ${topDownPct.item}.`);
+    if (topDownAbs) insights.push(`Largest dollar decrease was ${fmtMoneyFromCents(topDownAbs.deltaCents)} for ${topDownAbs.item}.`);
+
+    const mostRemoved = catRows.slice().sort((a,b) => b.removed - a.removed)[0];
+    const mostAdded = catRows.slice().sort((a,b) => b.added - a.added)[0];
+    if (mostRemoved && mostRemoved.removed) insights.push(`Most removals were in ${mostRemoved.level2} (${fmtInt(mostRemoved.removed)} removed).`);
+    if (mostAdded && mostAdded.added) insights.push(`Most additions were in ${mostAdded.level2} (${fmtInt(mostAdded.added)} added).`);
+
+    $("extraInsights").textContent = insights.join(" ");
+    showIf("reportNotesWrap", insights.length > 0);
+
+    // Stash for export
+    state.analysis.report = {
+      base: { id: base.id, label: base.label, takenAtISO: new Date(base.takenAtMs).toISOString(), count: base.list.length },
+      compare: { id: comp.id, label: comp.label, takenAtISO: new Date(comp.takenAtMs).toISOString(), count: comp.list.length },
+      summaryText: $("textAnalysisSummary").textContent,
+      totals: {
+        added: added.length,
+        removed: removed.length,
+        priceUp: upRowsAll.length,
+        priceDown: downRowsAll.length,
+        priceChanged: priceChanges.length,
+        fieldChanged: fieldChanges.length,
+        totalChangeEvents
+      },
+      priceIncreases: upRowsAll,
+      priceDecreases: downRowsAll,
+      itemsAdded: addRowsAll,
+      itemsRemoved: remRowsAll,
+      categories: catRows,
+      fieldDiffInfo: state.analysis.fieldDiffInfo || null
+    };
+  }
+
+
+  function computeFieldDiff() {
+    const base = state.snapshots.find(s => s.id === $("baseSnapshot").value);
+    const comp = state.snapshots.find(s => s.id === $("compareSnapshot").value);
+    if (!base || !comp) return;
+
+    const keys = ($("fieldKeys").value || "")
+      .split("\n")
+      .map(x => x.trim())
+      .filter(Boolean);
+
+    const commonIds = [];
+    for (const id of base.products.keys()) if (comp.products.has(id)) commonIds.push(id);
+
+    const changed = [];
+    for (const id of commonIds) {
+      const a = base.products.get(id)?.raw;
+      const b = comp.products.get(id)?.raw;
+      if (!a || !b) continue;
+
+      const diffs = [];
+      for (const k of keys) {
+        const va = getPath(a, k);
+        const vb = getPath(b, k);
+        const sa = safeString(va);
+        const sb = safeString(vb);
+        if (sa !== sb) diffs.push(k);
+      }
+      if (diffs.length) {
+        changed.push({
+          id,
+          name: pickName(b) || pickName(a),
+          keys: diffs
+        });
+      }
+    }
+
+    changed.sort((x,y) => y.keys.length - x.keys.length);
+    state.analysis.results.fieldChanges = changed;
+
+state.analysis.fieldDiffInfo = { ran:true, ranAtISO:new Date().toISOString(), keys: keys.slice(), changedProducts: changed.length };
+
+    $("fieldDiffSummary").textContent = JSON.stringify({
+      ranAtISO: state.analysis.fieldDiffInfo.ranAtISO,
+      comparedKeys: keys,
+      changedProducts: changed.length
+    }, null, 2);
+
+    const tb = $("fieldTbody");
+    tb.innerHTML = "";
+    for (const r of changed.slice(0, 2500)) {
+      const tr = document.createElement("tr");
+
+      const tdOpen = document.createElement("td");
+      const btn = document.createElement("span");
+      btn.className = "btnlink";
+      btn.textContent = "Open";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDetailInNewTab(r.id);
+      });
+      tdOpen.appendChild(btn);
+
+      const tdId = document.createElement("td");
+      tdId.className = "mono";
+      tdId.textContent = r.id;
+
+      const tdName = document.createElement("td");
+      renderNameCell(tdName, r);
+
+      const tdKeys = document.createElement("td");
+      tdKeys.textContent = r.keys.join(", ");
+
+      tr.appendChild(tdOpen);
+      tr.appendChild(tdId);
+      tr.appendChild(tdName);
+      tr.appendChild(tdKeys);
+
+      tr.addEventListener("click", () => setSelectedProduct(r.id));
+
+      tb.appendChild(tr);
+    }
+
+    renderReport();
+    setStatus(`Field changes computed (${fmtInt(changed.length)})`);
+  }
+
+  // ---------------------------
+  // Export
+  // ---------------------------
+  function downloadText(filename, text, mime) {
+    const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Give the browser time to start the download
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function rowsToCSV(rows) {
+    // rows is array of plain objects
+    const keys = new Set();
+    for (const r of rows) Object.keys(r || {}).forEach(k => keys.add(k));
+    const cols = Array.from(keys);
+
+    const esc = (v) => {
+      const s = (v === null || v === undefined) ? "" : String(v);
+      if (/[,"\n]/.test(s)) return "\"" + s.replace(/"/g, "\"\"") + "\"";
+      return s;
+    };
+
+    const lines = [];
+    lines.push(cols.map(esc).join(","));
+    for (const r of rows) {
+      lines.push(cols.map(c => esc(r?.[c])).join(","));
+    }
+    return lines.join("\n");
+  }
+
+  function exportCurrentJSON() {
+    const snap = getActiveSnapshot();
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      viewerSnapshotId: snap?.id || null,
+      viewerSnapshotLabel: snap?.label || null,
+      count: state.currentExportRows.length,
+      results: state.currentExportRows
+    };
+    downloadText(`paknsave_view_${(snap?.label || "snapshot").replace(/[^a-z0-9]+/gi,"_")}.json`, JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+  }
+
+  function exportCurrentCSV() {
+    // best effort flatten for common columns
+    const rows = [];
+    for (const raw of state.currentExportRows) {
+      const n = normalizeProduct(raw);
+      rows.push({
+        productId: n.id,
+        name: n.name,
+        brand: n.brand,
+        categories: n.categories,
+        priceCents: n.priceCents,
+        priceNZD: fmtMoneyFromCents(n.priceCents),
+        unitCents: n.unitCents,
+        unitNZD: fmtMoneyFromCents(n.unitCents),
+        promoId: n.promoId,
+        availability: n.availability
+      });
+    }
+    downloadText("paknsave_view.csv", rowsToCSV(rows), "text/csv;charset=utf-8");
+  }
+
+    function exportAnalysisJSON() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      report: state.analysis.report || null,
+      raw: {
+        added: (state.analysis.results.added || []).map(x => x.raw),
+        removed: (state.analysis.results.removed || []).map(x => x.raw),
+        priceChanges: (state.analysis.results.priceChanges || []),
+        fieldChanges: (state.analysis.results.fieldChanges || [])
+      }
+    };
+    downloadText("paknsave_report.json", JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+  }
+
+    function exportAnalysisCSV() {
+    const rep = state.analysis.report;
+    if (!rep) {
+      alert("Run analysis first");
+      return;
+    }
+
+    const rows = [];
+
+    for (const r of rep.priceIncreases || []) {
+      rows.push({
+        section: "price_increase",
+        productId: r.productId,
+        item: r.item,
+        level2: r.level2,
+        unit: r.unit,
+        originalPriceNZD: fmtMoneyFromCents(r.baseCents),
+        newPriceNZD: fmtMoneyFromCents(r.newCents),
+        changeNZD: fmtMoneyFromCents(r.deltaCents),
+        changePct: formatPct(r.deltaPct),
+        link: r.link
+      });
+    }
+
+    for (const r of rep.priceDecreases || []) {
+      rows.push({
+        section: "price_decrease",
+        productId: r.productId,
+        item: r.item,
+        level2: r.level2,
+        unit: r.unit,
+        originalPriceNZD: fmtMoneyFromCents(r.baseCents),
+        newPriceNZD: fmtMoneyFromCents(r.newCents),
+        changeNZD: fmtMoneyFromCents(r.deltaCents),
+        changePct: formatPct(r.deltaPct),
+        link: r.link
+      });
+    }
+
+    for (const r of rep.itemsAdded || []) {
+      rows.push({
+        section: "added",
+        productId: r.productId,
+        item: r.item,
+        level2: r.level2,
+        unit: r.unit,
+        priceNZD: fmtMoneyFromCents(r.priceCents),
+        link: r.link
+      });
+    }
+
+    for (const r of rep.itemsRemoved || []) {
+      rows.push({
+        section: "removed",
+        productId: r.productId,
+        item: r.item,
+        level2: r.level2,
+        unit: r.unit,
+        priceNZD: fmtMoneyFromCents(r.priceCents),
+        link: r.link
+      });
+    }
+
+    // Category rows last
+    for (const c of rep.categories || []) {
+      rows.push({
+        section: "category",
+        level2: c.level2,
+        added: c.added,
+        removed: c.removed,
+        priceUp: c.up,
+        avgUpPct: c.avgUpPct === null ? "" : formatPct(c.avgUpPct),
+        priceDown: c.down,
+        avgDownPct: c.avgDownPct === null ? "" : formatPct(c.avgDownPct)
+      });
+    }
+
+    downloadText("paknsave_report.csv", rowsToCSV(rows), "text/csv;charset=utf-8");
+  }
+
+
+  function buildReportDocumentHTML() {
+    const rep = state.analysis.report;
+    if (!rep) return null;
+
+    const limit = Math.max(1, Number(($("reportLimit") && $("reportLimit").value) || 5000));
+
+    const baseAt = new Date(rep.base.takenAtISO).toLocaleString("en-NZ");
+    const compAt = new Date(rep.compare.takenAtISO).toLocaleString("en-NZ");
+    const generatedAt = new Date().toLocaleString("en-NZ");
+
+    const nzMoney = (c) => fmtMoneyFromCents(Number(c));
+    const pct = (v) => formatPct(v);
+
+    const esc = escHtml;
+
+    const section = (title, html) => {
+      if (!html) return "";
+      return `<h2>${esc(title)}</h2>` + html;
+    };
+
+    const table = (headers, rows, rowFn) => {
+      if (!rows || !rows.length) return "";
+      const thead = `<thead><tr>${headers.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>`;
+      const tbody = `<tbody>${rows.map(r => `<tr>${rowFn(r).map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
+      return `<table>${thead}${tbody}</table>`;
+    };
+
+    // Insights
+    const insights = [];
+    const up = ((rep.priceIncreases || []).slice(0, limit)).slice();
+    const down = ((rep.priceDecreases || []).slice(0, limit)).slice();
+
+    const topUpPct = up.filter(x => Number.isFinite(Number(x.deltaPct))).sort((a,b) => Number(b.deltaPct) - Number(a.deltaPct))[0];
+    const topUpAbs = up.sort((a,b) => Number(b.deltaCents) - Number(a.deltaCents))[0];
+    const topDownPct = down.filter(x => Number.isFinite(Number(x.deltaPct))).sort((a,b) => Number(a.deltaPct) - Number(b.deltaPct))[0];
+    const topDownAbs = down.sort((a,b) => Number(a.deltaCents) - Number(b.deltaCents))[0];
+
+    if (topUpPct) insights.push(`Largest percent increase: ${pct(topUpPct.deltaPct)} for ${topUpPct.item}.`);
+    if (topUpAbs) insights.push(`Largest dollar increase: ${nzMoney(topUpAbs.deltaCents)} for ${topUpAbs.item}.`);
+    if (topDownPct) insights.push(`Largest percent decrease: ${pct(topDownPct.deltaPct)} for ${topDownPct.item}.`);
+    if (topDownAbs) insights.push(`Largest dollar decrease: ${nzMoney(topDownAbs.deltaCents)} for ${topDownAbs.item}.`);
+
+    const totals = rep.totals || {};
+
+    const htmlParts = [];
+
+    htmlParts.push(`<h1>Pak&#39;nSave Product Change Report</h1>`);
+    htmlParts.push(`<div class="meta"><div><b>Period:</b> ${esc(baseAt)} to ${esc(compAt)}</div><div><b>Generated:</b> ${esc(generatedAt)}</div></div>`);
+
+    if (rep.summaryText) htmlParts.push(`<p class="summary">${esc(rep.summaryText)}</p>`);
+
+    if (insights.length) {
+      htmlParts.push(`<div class="insights"><b>Highlights:</b> ${esc(insights.join(" "))}</div>`);
+    }
+
+    // Totals mini table
+    htmlParts.push(`<div class="kpis">
+      <div><b>Added</b><div>${fmtInt(totals.added || 0)}</div></div>
+      <div><b>Removed</b><div>${fmtInt(totals.removed || 0)}</div></div>
+      <div><b>Price Up</b><div>${fmtInt(totals.priceUp || 0)}</div></div>
+      <div><b>Price Down</b><div>${fmtInt(totals.priceDown || 0)}</div></div>
+      <div><b>Price Changes</b><div>${fmtInt(totals.priceChanged || 0)}</div></div>
+      <div><b>Field Changes</b><div>${fmtInt(totals.fieldChanged || 0)}</div></div>
+    </div>`);
+
+    const incTable = table(
+      ["Item", "Level 2", "Price", "Unit", "Original Price", "New Price", "Change %", "Change (NZD)", "Link"],
+      (rep.priceIncreases || []).slice(0, limit),
+      (r) => [
+        esc(r.item || ""),
+        esc(r.level2 || ""),
+        `<span class="nowrap">${esc(nzMoney(r.newCents))}</span>`,
+        esc(r.unit || ""),
+        `<span class="nowrap">${esc(nzMoney(r.baseCents))}</span>`,
+        `<span class="nowrap">${esc(nzMoney(r.newCents))}</span>`,
+        `<span class="nowrap">${esc(pct(r.deltaPct))}</span>`,
+        `<span class="nowrap">${esc(nzMoney(r.deltaCents))}</span>`,
+        r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">Link</a>` : ""
+      ]
+    );
+
+    const decTable = table(
+      ["Item", "Level 2", "Price", "Unit", "Original Price", "New Price", "Change %", "Change (NZD)", "Link"],
+      (rep.priceDecreases || []).slice(0, limit),
+      (r) => [
+        esc(r.item || ""),
+        esc(r.level2 || ""),
+        `<span class="nowrap">${esc(nzMoney(r.newCents))}</span>`,
+        esc(r.unit || ""),
+        `<span class="nowrap">${esc(nzMoney(r.baseCents))}</span>`,
+        `<span class="nowrap">${esc(nzMoney(r.newCents))}</span>`,
+        `<span class="nowrap">${esc(pct(r.deltaPct))}</span>`,
+        `<span class="nowrap">${esc(nzMoney(r.deltaCents))}</span>`,
+        r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">Link</a>` : ""
+      ]
+    );
+
+    const addTable = table(
+      ["Item", "Level 2", "Price", "Unit", "Link"],
+      (rep.itemsAdded || []).slice(0, limit),
+      (r) => [
+        esc(r.item || ""),
+        esc(r.level2 || ""),
+        `<span class="nowrap">${esc(nzMoney(r.priceCents))}</span>`,
+        esc(r.unit || ""),
+        r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">Link</a>` : ""
+      ]
+    );
+
+    const remTable = table(
+      ["Item", "Level 2", "Price", "Unit", "Link"],
+      (rep.itemsRemoved || []).slice(0, limit),
+      (r) => [
+        esc(r.item || ""),
+        esc(r.level2 || ""),
+        `<span class="nowrap">${esc(nzMoney(r.priceCents))}</span>`,
+        esc(r.unit || ""),
+        r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">Link</a>` : ""
+      ]
+    );
+
+    const catTable = table(
+      ["Level 2", "Added", "Removed", "Price Up", "Avg Up %", "Price Down", "Avg Down %"],
+      (rep.categories || []).slice(0, limit),
+      (c) => [
+        esc(c.level2 || ""),
+        `<span class="nowrap">${esc(fmtInt(c.added || 0))}</span>`,
+        `<span class="nowrap">${esc(fmtInt(c.removed || 0))}</span>`,
+        `<span class="nowrap">${esc(fmtInt(c.up || 0))}</span>`,
+        `<span class="nowrap">${esc(c.avgUpPct === null ? "" : pct(c.avgUpPct))}</span>`,
+        `<span class="nowrap">${esc(fmtInt(c.down || 0))}</span>`,
+        `<span class="nowrap">${esc(c.avgDownPct === null ? "" : pct(c.avgDownPct))}</span>`
+      ]
+    );
+
+    htmlParts.push(section("Price Increases", incTable));
+    htmlParts.push(section("Price Decreases", decTable));
+    htmlParts.push(section("Items Added", addTable));
+    htmlParts.push(section("Items Removed", remTable));
+    htmlParts.push(section("Categories", catTable));
+
+    const doc = `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Pak'nSave Report</title>
+<style>
+  body{ font-family: Arial, Helvetica, sans-serif; margin: 18px; color:#111; }
+  h1{ font-size: 20px; margin: 0 0 8px 0; }
+  h2{ font-size: 14px; margin: 18px 0 8px 0; }
+  .meta{ font-size: 12px; color:#333; margin-bottom: 10px; display:flex; gap:14px; flex-wrap:wrap; }
+  .summary{ font-size: 12px; line-height: 1.45; margin: 10px 0; }
+  .insights{ font-size: 12px; margin: 8px 0 10px 0; }
+  .kpis{ display:flex; gap:10px; flex-wrap:wrap; margin: 10px 0 14px 0; }
+  .kpis > div{ border: 1px solid #ddd; padding: 8px 10px; border-radius: 8px; min-width: 110px; }
+  .kpis b{ display:block; font-size: 11px; color:#333; margin-bottom: 4px; }
+  table{ width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+  th, td{ border: 1px solid #ddd; padding: 6px 7px; vertical-align: top; }
+  th{ background:#f5f5f5; text-align:left; }
+  .nowrap{ white-space: nowrap; }
+  a{ color:#0645ad; text-decoration: underline; }
+  @media print{
+    body{ margin: 10mm; }
+    a{ color:#000; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+${htmlParts.join("")}
+</body>
+</html>`;
+    return doc;
+  }
+  function exportReportHTML() {
+    const html = buildReportDocumentHTML();
+    if (!html) { alert("Run analysis first"); return; }
+
+    const rep = state.analysis.report || {};
+    const baseISO = rep?.base?.takenAtISO || "";
+    const compISO = rep?.compare?.takenAtISO || "";
+
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = (d, withSeconds=true) => {
+      const y = d.getFullYear();
+      const mo = pad(d.getMonth() + 1);
+      const da = pad(d.getDate());
+      const h = pad(d.getHours());
+      const mi = pad(d.getMinutes());
+      const s = pad(d.getSeconds());
+      return withSeconds ? `${y}-${mo}-${da}_${h}-${mi}-${s}` : `${y}-${mo}-${da}_${h}-${mi}`;
+    };
+    const stampFromISO = (iso, withSeconds=false) => {
+      const ms = Date.parse(iso);
+      if (!Number.isFinite(ms)) return "snapshot";
+      return stamp(new Date(ms), withSeconds);
+    };
+
+    const baseStamp = baseISO ? stampFromISO(baseISO, false) : "base";
+    const compStamp = compISO ? stampFromISO(compISO, false) : "compare";
+    const exportStamp = stamp(new Date(), true);
+
+    const filename = `paknsave_report_${baseStamp}_to_${compStamp}_export_${exportStamp}.html`;
+
+    // BOM helps some apps detect UTF-8 correctly
+    downloadText(filename, "\ufeff" + html, "text/html;charset=utf-8");
+  }
+
+  function exportReportPDF() {
+    const html0 = buildReportDocumentHTML();
+    if (!html0) { alert("Run analysis first"); return; }
+
+    const rep = state.analysis.report;
+    const baseISO = rep?.base?.takenAtISO || "";
+    const compISO = rep?.compare?.takenAtISO || "";
+    const baseLabel = baseISO ? new Date(baseISO).toLocaleString() : "Base Snapshot";
+    const compLabel = compISO ? new Date(compISO).toLocaleString() : "Compare Snapshot";
+    const baseDay = baseISO.slice(0,10) || "base";
+    const compDay = compISO.slice(0,10) || "compare";
+    const suggested = `paknsave_report_${baseDay}_to_${compDay}.pdf`;
+
+    const banner = `
+<style>@media print{ #printHint{ display:none } }</style>
+<div id="printHint" style="position:sticky;top:0;z-index:9999;background:#fff3cd;border:1px solid #ffe69c;padding:10px 12px;font:14px system-ui, -apple-system, Segoe UI, Roboto, Arial;">
+  <b>Export PDF</b><br/>
+  This opens a print view. In the print dialog, choose <b>Save as PDF</b> (or Microsoft Print to PDF). Suggested filename: <b>${escHtml(suggested)}</b><br/>
+  Comparing: ${escHtml(baseLabel)} to ${escHtml(compLabel)}
+</div>
+`.trim();
+
+    // Inject banner right after <body>
+    const html = html0.replace(/<body>/i, "<body>\n" + banner + "\n");
+
+    // Open a blank window and write the report HTML directly so print() is treated as a user gesture.
+    const w = window.open("", "_blank");
+    if (!w) {
+      // Fallback: download the print view HTML so you can open it and print manually
+      downloadText(suggested.replace(/\.pdf$/i, ".html"), html, "text/html;charset=utf-8");
+      alert("Popup blocked. Downloaded an HTML print view instead. Open it, then use Print and choose Save as PDF.");
+      return;
+    }
+
+    try {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+    } catch (e) {
+      downloadText(suggested.replace(/\.pdf$/i, ".html"), html, "text/html;charset=utf-8");
+      alert("Could not write to the popup window. Downloaded an HTML print view instead. Open it, then use Print and choose Save as PDF.");
+      try { w.close(); } catch (e2) {}
+      return;
+    }
+
+    const triggerPrint = () => {
+      try { w.focus(); w.print(); } catch (e) {}
+    };
+
+    // Try immediately (still within the click gesture), then retry after a short delay.
+    triggerPrint();
+    setTimeout(triggerPrint, 800);
+  }
+
+  // ---------------------------
+  // Import
+  // ---------------------------
+  async function addFiles(files) {
+    if (!files || !files.length) return;
+
+    setStatus("Importing…");
+    const list = Array.from(files);
+
+    for (const file of list) {
+      try {
+        const text = await readFileAsText(file);
+        const jsonObj = tryParseJSON(text);
+
+        const results = extractResults(jsonObj);
+        if (!results.length) {
+          console.warn("No products found in file", file.name);
+        }
+
+        const fallbackISO = new Date().toISOString();
+        const takenAtISO = extractTakenAtISO(jsonObj, fallbackISO);
+        const takenAtMs = Date.parse(takenAtISO) || Date.now();
+
+        const defaultLabel = (jsonObj?.selectedCategoryPath ? String(jsonObj.selectedCategoryPath) : "")
+          || (file.name ? file.name.replace(/\.[^/.]+$/, "") : "Snapshot");
+        const label = promptLabel(defaultLabel);
+        if (!label) continue;
+
+        const snap = {
+          id: slugId(),
+          label,
+          takenAtISO,
+          takenAtMs,
+          products: new Map(),
+          list: [],
+          rawMeta: {
+            fileName: file.name,
+            importedAt: new Date().toISOString()
+          }
+        };
+
+        // Normalize and dedupe by id
+        for (const p of results) {
+          const n = normalizeProduct(p);
+          if (!n.id) continue;
+          snap.products.set(n.id, n);
+        }
+        snap.list = Array.from(snap.products.values());
+
+        state.snapshots.push(snap);
+        // keep time order
+        state.snapshots.sort((a,b) => a.takenAtMs - b.takenAtMs);
+
+      } catch (e) {
+        console.error(e);
+        alert(`Import failed for ${file.name}: ${e?.message || e}`);
+      }
+    }
+
+    refreshSnapshotSelectors();
+    renderSnapshotsList();
+    renderViewer(true);
+
+    setStatus(`Imported ${fmtInt(state.snapshots.length)} snapshots`);
+  }
+
+  // ---------------------------
+  // Tabs
+  // ---------------------------
+  function switchTab(tabId) {
+    state.activeTab = tabId;
+    const tabs = Array.from(document.querySelectorAll(".tabs .tab[data-tab]"));
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === tabId));
+    $("tab_viewer").style.display = (tabId === "viewer") ? "" : "none";
+    $("tab_analysis").style.display = (tabId === "analysis") ? "" : "none";
+    $("mainTitle").textContent = (tabId === "viewer") ? "Viewer" : "Analysis";
+  }
+
+  function switchAnalysisTab(tabId) {
+    state.activeAnalysisTab = tabId;
+    const tabs = Array.from(document.querySelectorAll(".tabs .tab[data-atab]"));
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.atab === tabId));
+    $("analysis_report").style.display = (tabId === "report") ? "" : "none";
+    $("analysis_price").style.display = (tabId === "price") ? "" : "none";
+    $("analysis_missing").style.display = (tabId === "missing") ? "" : "none";
+    $("analysis_fields").style.display = (tabId === "fields") ? "" : "none";
+  }
+
+  // ---------------------------
+  // Detail Mode (New Tab)
+  // ---------------------------
+  function isDetailMode() {
+    const u = new URL(location.href);
+    return u.searchParams.get("mode") === "detail";
+  }
+
+  function getDetailPid() {
+    const u = new URL(location.href);
+    return u.searchParams.get("pid") || "";
+  }
+
+  function wireDetailModeUI() {
+    // Keep the same UI, but focus on the detail panel and request data
+    const pid = getDetailPid();
+    if (!pid) return;
+
+    setStatus("Detail mode");
+    $("detailHint").textContent = "Waiting for product history from another tab. If nothing arrives, import snapshots in this tab.";
+
+    // Ask opener or broadcast channel for data
+    const request = { type:"PNS_REQUEST_PRODUCT", pid: String(pid) };
+
+    let sent = false;
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(request, "*");
+        sent = true;
+      }
+    } catch(_e) {}
+
+    if (bc) {
+      try { bc.postMessage(request); sent = true; } catch(_e) {}
+    }
+
+    if (!sent) {
+      $("detailHint").textContent = "No link to another tab found. Import snapshots in this tab then select the product again.";
+    }
+
+    // Also highlight pid badge
+    $("detailId").textContent = String(pid);
+  }
+
+  function handleIncomingProductHistory(payload) {
+    // payload: { pid, history: [{ snapshotLabel, takenAtISO, raw, normalized: { ... } }], snapshotsMeta: [...] }
+    try {
+      const pid = String(payload?.pid || "");
+      if (!pid) return;
+
+      // If this tab has no snapshots loaded, we can store minimal synthetic snapshots to allow price history display
+      if (!state.snapshots.length && Array.isArray(payload?.history) && payload.history.length) {
+        state.snapshots = payload.history.map(h => {
+          const ms = Date.parse(h.takenAtISO) || Date.now();
+          const snap = {
+            id: slugId(),
+            label: String(h.snapshotLabel || "Snapshot"),
+            takenAtISO: new Date(ms).toISOString(),
+            takenAtMs: ms,
+            products: new Map(),
+            list: [],
+            rawMeta: { from: "handoff" }
+          };
+          const raw = h.raw || {};
+          const n = normalizeProduct(raw);
+          snap.products.set(pid, n);
+          snap.list = [n];
+          return snap;
+        }).sort((a,b) => a.takenAtMs - b.takenAtMs);
+
+        refreshSnapshotSelectors();
+        renderSnapshotsList();
+      }
+
+      setSelectedProduct(pid);
+      setStatus("Detail loaded");
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  // ---------------------------
+  // Messaging
+  // ---------------------------
+  function respondToProductRequest(pid, targetWindow) {
+    const history = findProductAcrossSnapshots(pid).map(e => ({
+      snapshotLabel: e.snapshot.label,
+      takenAtISO: new Date(e.snapshot.takenAtMs).toISOString(),
+      raw: e.raw,
+      normalized: {
+        id: e.normalized.id,
+        name: e.normalized.name,
+        categories: e.normalized.categories,
+        priceCents: e.normalized.priceCents,
+        unitCents: e.normalized.unitCents,
+        promoId: e.normalized.promoId,
+        availability: e.normalized.availability,
+        brand: e.normalized.brand
+      }
+    }));
+
+    const payload = {
+      type: "PNS_PRODUCT_HISTORY",
+      pid: String(pid),
+      history
+    };
+
+    // Return to opener or broadcast
+    if (targetWindow) {
+      try { targetWindow.postMessage(payload, "*"); } catch(_e) {}
+    }
+    if (bc) {
+      try { bc.postMessage(payload); } catch(_e) {}
+    }
+  }
+
+  window.addEventListener("message", (ev) => {
+    const msg = ev?.data;
+    if (!msg || typeof msg !== "object") return;
+
+    if (msg.type === "PNS_REQUEST_PRODUCT") {
+      const pid = String(msg.pid || "");
+      if (!pid) return;
+      respondToProductRequest(pid, ev.source);
+    }
+
+    if (msg.type === "PNS_PRODUCT_HISTORY") {
+      handleIncomingProductHistory(msg);
+    }
+  });
+
+  if (bc) {
+    bc.onmessage = (ev) => {
+      const msg = ev?.data;
+      if (!msg || typeof msg !== "object") return;
+
+      if (msg.type === "PNS_REQUEST_PRODUCT") {
+        const pid = String(msg.pid || "");
+        if (!pid) return;
+        respondToProductRequest(pid, null);
+      }
+      if (msg.type === "PNS_PRODUCT_HISTORY") {
+        handleIncomingProductHistory(msg);
+      }
+    };
+  }
+
+  // ---------------------------
+  // Wire Events
+  // ---------------------------
+  function init() {
+    // Tabs
+    document.querySelectorAll(".tabs .tab[data-tab]").forEach(el => {
+      el.addEventListener("click", () => switchTab(el.dataset.tab));
+    });
+    document.querySelectorAll(".tabs .tab[data-atab]").forEach(el => {
+      el.addEventListener("click", () => switchAnalysisTab(el.dataset.atab));
+    });
+
+    // Buttons
+    $("btnAddSnapshot").addEventListener("click", () => $("fileInput").click());
+    $("fileInput").addEventListener("change", (e) => addFiles(e.target.files));
+
+    $("btnApplyViewer").addEventListener("click", () => renderViewer(true));
+    $("btnResetViewer").addEventListener("click", () => {
+      $("viewerSearch").value = "";
+      $("viewerSort").value = "name_asc";
+      $("viewerLimit").value = "500";
+      $("priceMode").value = "auto";
+      $("viewerFilters").innerHTML = "";
+      renderViewer(true);
+    });
+    // Ensure analysis subtab visibility matches state
+    switchAnalysisTab(state.activeAnalysisTab);
+    renderReport();
+
+
+    $("btnLoadMore").addEventListener("click", () => {
+      const hardLimit = Number($("viewerLimit").value || 500);
+      if (hardLimit === 999999) {
+        state.viewer.renderLimit = Math.min(999999, state.viewer.renderLimit + 1000);
+      } else {
+        state.viewer.renderLimit = Math.min(hardLimit, state.viewer.renderLimit + 500);
+      }
+      renderViewer(false);
+    });
+
+    $("viewerSearch").addEventListener("input", debounce(() => renderViewer(true), 140));
+    $("viewerSort").addEventListener("change", () => renderViewer(true));
+    $("viewerSnapshot").addEventListener("change", () => { state.viewer.snapshotId = $("viewerSnapshot").value; renderViewer(true); });
+    $("viewerLimit").addEventListener("change", () => renderViewer(true));
+    $("priceMode").addEventListener("change", () => renderViewer(true));
+
+    // Filters
+    $("btnAddViewerFilter").addEventListener("click", () => {
+      const snap = getActiveSnapshot();
+      if (!snap) return;
+      const keys = buildKeyCatalogFromSnapshot(snap);
+      makeFilterRow($("viewerFilters"), keys, { key:"name", op:"contains", val:"" });
+      state.viewer.filters = readViewerFiltersFromUI();
+    });
+    $("btnClearViewerFilters").addEventListener("click", () => {
+      $("viewerFilters").innerHTML = "";
+      state.viewer.filters = [];
+      renderViewer(true);
+    });
+
+    // Analysis
+    $("btnRunAnalysis").addEventListener("click", () => { runAnalysis(); });
+    $("minDelta").addEventListener("input", debounce(() => renderPriceChanges(), 120));
+    $("deltaDirection").addEventListener("change", () => renderPriceChanges());
+    $("analysisSearch").addEventListener("input", debounce(() => renderPriceChanges(), 140));
+    $("btnRunFieldDiff").addEventListener("click", () => computeFieldDiff());
+    $("btnRefreshReport").addEventListener("click", () => { renderReport(); setStatus("Report refreshed"); });
+    $("btnExportReportHtml").addEventListener("click", () => exportReportHTML());
+    $("btnExportReportPdf").addEventListener("click", () => exportReportPDF());
+    $("reportLimit").addEventListener("change", () => renderReport());
+    $("reportMinPct").addEventListener("change", () => renderReport());
+
+    // Exports
+    $("btnExportCurrentJson").addEventListener("click", () => exportCurrentJSON());
+    $("btnExportCurrentCsv").addEventListener("click", () => exportCurrentCSV());
+    $("btnExportAnalysisJson").addEventListener("click", () => exportAnalysisJSON());
+    $("btnExportAnalysisCsv").addEventListener("click", () => exportAnalysisCSV());
+
+    // New tab
+    $("btnOpenNewTab").addEventListener("click", () => {
+      window.open(location.href, "_blank", "noopener");
+    });
+
+    // Clear all
+    $("btnClearAll").addEventListener("click", () => {
+      if (!confirm("Clear all snapshots and analysis data?")) return;
+      state.snapshots = [];
+      state.selectedProductId = null;
+      state.currentExportRows = [];
+      state.analysis.results = { added:[], removed:[], priceChanges:[], fieldChanges:[] };
+      $("snapshotsList").innerHTML = "";
+      $("viewerTbody").innerHTML = "";
+      $("priceTbody").innerHTML = "";
+      $("addedTbody").innerHTML = "";
+      $("removedTbody").innerHTML = "";
+      $("fieldTbody").innerHTML = "";
+      $("viewerSnapshot").innerHTML = "";
+      $("baseSnapshot").innerHTML = "";
+      $("compareSnapshot").innerHTML = "";
+      $("countBadge").textContent = "0 products";
+      $("filteredBadge").textContent = "0 shown";
+      setSelectedProduct(null);
+      setStatus("Cleared");
+      renderSnapshotsList();
+    });
+
+    // Drop zone
+    const dz = $("dropZone");
+    dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.style.background = "rgba(64,142,255,0.10)"; });
+    dz.addEventListener("dragleave", () => { dz.style.background = "rgba(255,255,255,0.02)"; });
+    dz.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dz.style.background = "rgba(255,255,255,0.02)";
+      const files = e.dataTransfer?.files;
+      if (files && files.length) addFiles(files);
+    });
+
+    // Detail mode
+    if (isDetailMode()) {
+      wireDetailModeUI();
+      // auto focus: switch to viewer for consistency
+      switchTab("viewer");
+      // if snapshots already loaded in this tab, set selection
+      const pid = getDetailPid();
+      if (pid) setSelectedProduct(pid);
+    }
+
+    // Start
+    renderSnapshotsList();
+    refreshSnapshotSelectors();
+    renderViewer(true);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
