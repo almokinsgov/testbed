@@ -1,0 +1,1293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guess The Word</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --text:#eaf0ff;
+      --muted:#b7c3e6;
+      --ok:#2dd4bf;
+      --bad:#fb7185;
+      --line:rgba(255,255,255,.12);
+      --warnBg:rgba(251,113,133,.10);
+      --overlay:rgba(0,0,0,.55);
+      --panel:rgba(17,26,44,.98);
+      --btnBg:rgba(0,0,0,.18);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(45,212,191,.12), transparent 55%),
+                  radial-gradient(1000px 600px at 90% 20%, rgba(99,102,241,.14), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      padding:24px;
+    }
+    .wrap{max-width:980px;margin:0 auto;display:grid;gap:16px}
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+    }
+    h1,h2,h3{margin:0 0 10px 0}
+    h1{font-size:22px; letter-spacing:.2px}
+    h2{font-size:16px; color:var(--muted); font-weight:600}
+    h3{font-size:14px; color:var(--muted); font-weight:800; margin-top:12px}
+    .meta{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:13px;
+      margin-top:4px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:12px;
+    }
+    input[type="text"]{
+      flex: 1 1 260px;
+      min-width: 220px;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+      outline:none;
+      font-size:16px;
+    }
+    input[type="text"]::placeholder{color:rgba(183,195,230,.75)}
+    button{
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      color:var(--text);
+      padding:11px 12px;
+      border-radius:12px;
+      font-weight:700;
+      cursor:pointer;
+      font-size:14px;
+    }
+    button.secondary{background: var(--btnBg)}
+    button:active{transform: translateY(1px)}
+    .status{
+      margin-top:10px;
+      font-size:14px;
+      color:var(--muted);
+      line-height:1.45;
+      white-space:pre-line;
+    }
+    .status strong{color:var(--text)}
+    .status.ok{color:var(--ok)}
+    .status.bad{color:var(--bad)}
+    .small{font-size:12px; color:var(--muted)}
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background: rgba(0,0,0,.16);
+      overflow:hidden;
+    }
+    th, td{
+      padding:10px 12px;
+      text-align:left;
+      border-bottom:1px solid var(--line);
+      font-size:14px;
+      vertical-align:top;
+    }
+    th{
+      color:var(--muted);
+      font-weight:800;
+      background: rgba(255,255,255,.03);
+    }
+    tr:last-child td{border-bottom:none}
+    .right{text-align:right}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .hidden{display:none}
+    .warnRow td{background: var(--warnBg)}
+    .tagWarn{
+      display:inline-block;
+      font-size:12px;
+      font-weight:800;
+      color:var(--bad);
+      border:1px solid rgba(251,113,133,.35);
+      background: rgba(251,113,133,.10);
+      padding:4px 8px;
+      border-radius:999px;
+      white-space:nowrap;
+    }
+
+    /* Config Modal */
+    .modalOverlay{
+      position:fixed;
+      inset:0;
+      background: var(--overlay);
+      display:none;
+      align-items:flex-start;
+      justify-content:center;
+      padding:18px;
+      overflow:auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      z-index:9999;
+    }
+    .modalOverlay.open{display:flex}
+    .modal{
+      width:min(860px, 100%);
+      margin-top:18px;
+      background: var(--panel);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      max-height: calc(100vh - 36px);
+      display:flex;
+      flex-direction:column;
+      min-height: 0;
+      overflow:hidden;
+    }
+    .modalHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+    }
+    .modalTitle{
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:var(--text);
+    }
+    .modalBody{
+      padding:14px 16px 16px 16px;
+      display:grid;
+      gap:14px;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .cfgGrid{
+      display:grid;
+      gap:12px;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width: 720px){
+      .cfgGrid{grid-template-columns:1fr}
+    }
+    .cfgCard{
+      border:1px solid var(--line);
+      border-radius:14px;
+      background: rgba(0,0,0,.18);
+      padding:12px;
+    }
+    .cfgRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:8px 0;
+    }
+    .cfgRow + .cfgRow{border-top:1px solid rgba(255,255,255,.08)}
+    .cfgLabel{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+      min-width: 0;
+    }
+    .cfgLabel b{
+      font-size:13px;
+      color:var(--text);
+    }
+    .cfgLabel span{
+      font-size:12px;
+      color:rgba(183,195,230,.85);
+      line-height:1.35;
+    }
+    .cfgCtrl{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-shrink:0;
+    }
+    select, input[type="number"]{
+      background: rgba(0,0,0,.25);
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:8px 10px;
+      color:var(--text);
+      font-weight:700;
+      font-size:13px;
+      outline:none;
+    }
+    input[type="range"]{
+      width:160px;
+    }
+    .toggle{
+      width:44px;
+      height:24px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.25);
+      position:relative;
+      cursor:pointer;
+      flex-shrink:0;
+    }
+    .toggle::after{
+      content:"";
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background: rgba(255,255,255,.85);
+      position:absolute;
+      top:2px;
+      left:2px;
+      transition: left .16s ease;
+    }
+    .toggle.on{
+      background: rgba(45,212,191,.20);
+      border-color: rgba(45,212,191,.35);
+    }
+    .toggle.on::after{left:22px}
+    .cfgFooter{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      padding-top:6px;
+    }
+
+    /* Hide columns based on config */
+    .hideHintCol .colHint{display:none}
+    .hidePatternCol .colPattern{display:none}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="gameCard">
+      <h1>Guess The Word</h1>
+      <div class="meta">
+        <span class="pill">Rule: 4+ Letters</span>
+        <span class="pill">Feedback: Similar Letters</span>
+        <span class="pill">Hints: Multiple Signals</span>
+      </div>
+
+      <div class="row">
+        <input id="guessInput" type="text" placeholder="Type your guess and press Enter" autocomplete="off" spellcheck="false" />
+        <button id="guessBtn">Guess</button>
+        <button id="newBtn" class="secondary">New Game</button>
+        <button id="cfgBtn" class="secondary">Config</button>
+      </div>
+
+      <div id="status" class="status">
+        Enter a guess. You will see the number of similar letters plus helpful hints. The name appears only when guessed.
+      </div>
+
+      <div class="small" style="margin-top:10px">
+        Similar letters counts duplicates too. Hints may suggest strategies, but do not show the secret until guessed.
+      </div>
+    </div>
+
+    <div class="card" id="attemptsCard">
+      <h2>Attempts</h2>
+      <table aria-label="Attempts table">
+        <thead>
+          <tr>
+            <th class="right">#</th>
+            <th>Guess</th>
+            <th class="right">Guess Length</th>
+            <th class="right">Similar Letters</th>
+            <th class="colHint">Hint</th>
+            <th class="colPattern">Pattern</th>
+          </tr>
+        </thead>
+        <tbody id="attemptsBody">
+          <tr>
+            <td class="right mono" colspan="6" style="color:rgba(183,195,230,.85); text-align:center">
+              No attempts yet
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card hidden" id="winCard">
+      <h2>Result</h2>
+      <div class="status ok" id="winText"></div>
+    </div>
+  </div>
+
+  <!-- Config Modal -->
+  <div class="modalOverlay" id="cfgOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Config">
+      <div class="modalHeader">
+        <div class="modalTitle">Config</div>
+        <div class="cfgCtrl">
+          <button id="cfgCloseBtn" class="secondary">Close</button>
+        </div>
+      </div>
+
+      <div class="modalBody">
+        <div class="cfgGrid">
+          <div class="cfgCard">
+            <h3>Hints</h3>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Hint Strength</b>
+                <span>More strength gives more specific advice, without revealing the answer.</span>
+              </div>
+              <div class="cfgCtrl">
+                <select id="cfgHintMode">
+                  <option value="gentle">Gentle</option>
+                  <option value="helpful" selected>Helpful</option>
+                  <option value="strong">Strong</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Strategy Hints</b>
+                <span>Adds suggestions like change more letters, avoid repeats, try a new shape.</span>
+              </div>
+              <div class="cfgCtrl">
+                <div class="toggle" id="cfgStrategyToggle" title="Toggle"></div>
+              </div>
+            </div>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Show Two Hint Lines</b>
+                <span>Shows one main hint and one extra suggestion.</span>
+              </div>
+              <div class="cfgCtrl">
+                <div class="toggle" id="cfgTwoLinesToggle" title="Toggle"></div>
+              </div>
+            </div>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Anagram Style Hint</b>
+                <span>If you used the right letters but not the right word, it will tell you.</span>
+              </div>
+              <div class="cfgCtrl">
+                <div class="toggle" id="cfgAnagramToggle" title="Toggle"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="cfgCard">
+            <h3>Pattern Warning</h3>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Enable Pattern Warning</b>
+                <span>Warns when you keep entering very similar guesses in a row.</span>
+              </div>
+              <div class="cfgCtrl">
+                <div class="toggle" id="cfgPatternToggle" title="Toggle"></div>
+              </div>
+            </div>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Similarity Threshold</b>
+                <span>Higher means it only warns for very close clusters.</span>
+              </div>
+              <div class="cfgCtrl">
+                <input id="cfgSimThreshold" type="range" min="0.55" max="0.95" step="0.01" />
+                <span class="mono" id="cfgSimThresholdVal"></span>
+              </div>
+            </div>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Lookback Window</b>
+                <span>How many recent guesses it compares against.</span>
+              </div>
+              <div class="cfgCtrl">
+                <input id="cfgLookback" type="number" min="2" max="10" step="1" style="width:88px" />
+              </div>
+            </div>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Warn If Similar To</b>
+                <span>How many recent guesses must be similar before warning (example: 2 warns on the third).</span>
+              </div>
+              <div class="cfgCtrl">
+                <input id="cfgMinSimilar" type="number" min="1" max="6" step="1" style="width:88px" />
+              </div>
+            </div>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Highlight Warning Rows</b>
+                <span>Highlights attempts that triggered the warning.</span>
+              </div>
+              <div class="cfgCtrl">
+                <div class="toggle" id="cfgHighlightToggle" title="Toggle"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="cfgGrid">
+          <div class="cfgCard">
+            <h3>Table Display</h3>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Show Hint Column</b>
+                <span>Shows per-attempt hint in the table.</span>
+              </div>
+              <div class="cfgCtrl">
+                <div class="toggle" id="cfgShowHintColToggle" title="Toggle"></div>
+              </div>
+            </div>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Show Pattern Column</b>
+                <span>Shows warning tag when you are stuck in a similar cluster.</span>
+              </div>
+              <div class="cfgCtrl">
+                <div class="toggle" id="cfgShowPatternColToggle" title="Toggle"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="cfgCard">
+            <h3>Reset</h3>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Reset Config</b>
+                <span>Restores default settings and clears saved config.</span>
+              </div>
+              <div class="cfgCtrl">
+                <button id="cfgResetBtn" class="secondary">Reset</button>
+              </div>
+            </div>
+
+            <div class="small">
+              Config is saved in your browser using localStorage.
+            </div>
+          </div>
+        </div>
+
+        <div class="cfgGrid">
+          <div class="cfgCard">
+            <h3>Name</h3>
+
+            <div class="cfgRow">
+              <div class="cfgLabel">
+                <b>Change Secret Name</b>
+                <span>Hidden until guessed. Letters only, 4 or more characters. Changing it starts a new game.</span>
+              </div>
+              <div class="cfgCtrl">
+                <button id="cfgRevealNameBtn" class="secondary">Show</button>
+              </div>
+            </div>
+
+            <div id="cfgNameEditor" class="hidden">
+              <div class="row" style="margin-top:10px">
+                <input id="cfgNameInput" type="password" placeholder="Enter new secret name" autocomplete="off" spellcheck="false" />
+                <button id="cfgNameShowBtn" class="secondary">Show Text</button>
+              </div>
+
+              <div class="row">
+                <button id="cfgNameApplyBtn">Apply Name</button>
+                <button id="cfgNameHideBtn" class="secondary">Hide</button>
+                <button id="cfgNameResetBtn" class="secondary">Reset To Tasman</button>
+              </div>
+
+              <div class="small" id="cfgNameMsg"></div>
+            </div>
+          </div>
+
+          <div class="cfgCard">
+            <h3>About</h3>
+            <div class="small">
+              This game gives a similar letter count and helpful hints. The name is not shown until you guess it.
+            </div>
+          </div>
+        </div>
+
+        <div class="cfgFooter">
+          <button id="cfgSaveBtn">Save</button>
+          <button id="cfgCancelBtn" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Secret word: do not display until guessed
+    const SECRET_STORAGE_KEY = "nameGuessSecret_v1";
+    const DEFAULT_SECRET = "tasman";
+    let SECRET = loadSecret();
+    // --- Elements ---
+    const guessInput = document.getElementById("guessInput");
+    const guessBtn = document.getElementById("guessBtn");
+    const newBtn = document.getElementById("newBtn");
+    const cfgBtn = document.getElementById("cfgBtn");
+    const statusEl = document.getElementById("status");
+    const attemptsBody = document.getElementById("attemptsBody");
+    const winCard = document.getElementById("winCard");
+    const winText = document.getElementById("winText");
+    const attemptsCard = document.getElementById("attemptsCard");
+    const gameCard = document.getElementById("gameCard");
+
+    // Config elements
+    const cfgOverlay = document.getElementById("cfgOverlay");
+    const cfgCloseBtn = document.getElementById("cfgCloseBtn");
+    const cfgSaveBtn = document.getElementById("cfgSaveBtn");
+    const cfgCancelBtn = document.getElementById("cfgCancelBtn");
+    const cfgResetBtn = document.getElementById("cfgResetBtn");
+
+    const cfgHintMode = document.getElementById("cfgHintMode");
+    const cfgStrategyToggle = document.getElementById("cfgStrategyToggle");
+    const cfgTwoLinesToggle = document.getElementById("cfgTwoLinesToggle");
+    const cfgAnagramToggle = document.getElementById("cfgAnagramToggle");
+
+    const cfgPatternToggle = document.getElementById("cfgPatternToggle");
+    const cfgSimThreshold = document.getElementById("cfgSimThreshold");
+    const cfgSimThresholdVal = document.getElementById("cfgSimThresholdVal");
+    const cfgLookback = document.getElementById("cfgLookback");
+    const cfgMinSimilar = document.getElementById("cfgMinSimilar");
+    const cfgHighlightToggle = document.getElementById("cfgHighlightToggle");
+
+    const cfgShowHintColToggle = document.getElementById("cfgShowHintColToggle");
+    const cfgShowPatternColToggle = document.getElementById("cfgShowPatternColToggle");
+
+    const cfgRevealNameBtn = document.getElementById("cfgRevealNameBtn");
+    const cfgNameEditor = document.getElementById("cfgNameEditor");
+    const cfgNameInput = document.getElementById("cfgNameInput");
+    const cfgNameShowBtn = document.getElementById("cfgNameShowBtn");
+    const cfgNameApplyBtn = document.getElementById("cfgNameApplyBtn");
+    const cfgNameHideBtn = document.getElementById("cfgNameHideBtn");
+    const cfgNameResetBtn = document.getElementById("cfgNameResetBtn");
+    const cfgNameMsg = document.getElementById("cfgNameMsg");
+
+    // --- State ---
+    let attempts = [];
+    let isWon = false;
+
+    const DEFAULT_CFG = {
+      hintMode: "helpful",             // gentle | helpful | strong
+      strategyHints: true,
+      twoHintLines: true,
+      anagramHint: true,
+
+      enablePatternWarning: true,
+      similarityThreshold: 0.74,
+      lookback: 4,
+      minSimilar: 2,                   // warn on the 3rd similar guess
+      highlightWarnRows: true,
+
+      showHintColumn: true,
+      showPatternColumn: true
+    };
+
+    let CFG = loadCfg();
+
+    // --- Utils ---
+    function normalize(s){
+      return (s || "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z]/g, "");
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function pick(arr){
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function setStatus(msg, kind){
+      statusEl.className = "status" + (kind ? (" " + kind) : "");
+      statusEl.textContent = msg;
+    }
+
+    function setToggle(el, on){
+      el.classList.toggle("on", !!on);
+    }
+    function getToggle(el){
+      return el.classList.contains("on");
+    }
+
+    function openCfg(){
+      syncCfgToUi();
+      showNameEditor(false);
+      cfgOverlay.classList.add("open");
+      cfgOverlay.setAttribute("aria-hidden", "false");
+    }
+    function closeCfg(){
+      cfgOverlay.classList.remove("open");
+      cfgOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    function showNameEditor(show){
+      if (!cfgNameEditor) return;
+      cfgNameEditor.classList.toggle("hidden", !show);
+      if (!show){
+        cfgNameInput.value = "";
+        cfgNameInput.type = "password";
+        cfgNameShowBtn.textContent = "Show Text";
+        cfgNameMsg.textContent = "";
+      } else {
+        cfgNameMsg.textContent = "Enter a new name, then apply. This starts a new game.";
+      }
+    }
+
+    function saveCfg(cfg){
+      localStorage.setItem("nameGuessCfg_v1", JSON.stringify(cfg));
+    }
+    function loadSecret(){
+      try{
+        const raw = localStorage.getItem(SECRET_STORAGE_KEY) || "";
+        const s = normalize(raw);
+        if (s && s.length >= 4) return s;
+        return DEFAULT_SECRET;
+      } catch {
+        return DEFAULT_SECRET;
+      }
+    }
+
+    function saveSecret(s){
+      try{
+        localStorage.setItem(SECRET_STORAGE_KEY, String(s || ""));
+      } catch {}
+    }
+
+    function setSecret(s){
+      SECRET = normalize(s || "");
+      if (!SECRET || SECRET.length < 4) SECRET = DEFAULT_SECRET;
+      saveSecret(SECRET);
+    }
+
+    function loadCfg(){
+      try{
+        const raw = localStorage.getItem("nameGuessCfg_v1");
+        if (!raw) return { ...DEFAULT_CFG };
+        const parsed = JSON.parse(raw);
+        return { ...DEFAULT_CFG, ...parsed };
+      } catch {
+        return { ...DEFAULT_CFG };
+      }
+    }
+
+    function applyCfg(){
+      // table columns
+      attemptsCard.classList.toggle("hideHintCol", !CFG.showHintColumn);
+      attemptsCard.classList.toggle("hidePatternCol", !CFG.showPatternColumn);
+    }
+
+    function syncCfgToUi(){
+      cfgHintMode.value = CFG.hintMode;
+
+      setToggle(cfgStrategyToggle, CFG.strategyHints);
+      setToggle(cfgTwoLinesToggle, CFG.twoHintLines);
+      setToggle(cfgAnagramToggle, CFG.anagramHint);
+
+      setToggle(cfgPatternToggle, CFG.enablePatternWarning);
+      cfgSimThreshold.value = String(CFG.similarityThreshold);
+      cfgSimThresholdVal.textContent = Number(CFG.similarityThreshold).toFixed(2);
+      cfgLookback.value = String(CFG.lookback);
+      cfgMinSimilar.value = String(CFG.minSimilar);
+      setToggle(cfgHighlightToggle, CFG.highlightWarnRows);
+
+      setToggle(cfgShowHintColToggle, CFG.showHintColumn);
+      setToggle(cfgShowPatternColToggle, CFG.showPatternColumn);
+    }
+
+    function readCfgFromUi(){
+      const cfg = { ...CFG };
+      cfg.hintMode = cfgHintMode.value;
+
+      cfg.strategyHints = getToggle(cfgStrategyToggle);
+      cfg.twoHintLines = getToggle(cfgTwoLinesToggle);
+      cfg.anagramHint = getToggle(cfgAnagramToggle);
+
+      cfg.enablePatternWarning = getToggle(cfgPatternToggle);
+      cfg.similarityThreshold = clamp(Number(cfgSimThreshold.value), 0.55, 0.95);
+      cfg.lookback = clampInt(Number(cfgLookback.value), 2, 10);
+      cfg.minSimilar = clampInt(Number(cfgMinSimilar.value), 1, 6);
+      cfg.highlightWarnRows = getToggle(cfgHighlightToggle);
+
+      cfg.showHintColumn = getToggle(cfgShowHintColToggle);
+      cfg.showPatternColumn = getToggle(cfgShowPatternColToggle);
+
+      return cfg;
+    }
+
+    function clamp(n, a, b){
+      if (!Number.isFinite(n)) return a;
+      return Math.max(a, Math.min(b, n));
+    }
+    function clampInt(n, a, b){
+      n = Math.round(n);
+      if (!Number.isFinite(n)) return a;
+      return Math.max(a, Math.min(b, n));
+    }
+
+    // --- Similar Letters ---
+    function letterCounts(s){
+      const m = new Map();
+      for (const ch of s){
+        m.set(ch, (m.get(ch) || 0) + 1);
+      }
+      return m;
+    }
+
+    // Multiset intersection size (counts duplicates)
+    function lettersInCommon(a, b){
+      const ca = letterCounts(a);
+      const cb = letterCounts(b);
+      let total = 0;
+      for (const [ch, na] of ca.entries()){
+        const nb = cb.get(ch) || 0;
+        total += Math.min(na, nb);
+      }
+      return total;
+    }
+
+    // --- Similarity For Pattern Detection ---
+    // Vector similarity: bag-of-letters cosine similarity
+    function letterVector(s){
+      const v = new Array(26).fill(0);
+      for (const ch of s){
+        const idx = ch.charCodeAt(0) - 97;
+        if (idx >= 0 && idx < 26) v[idx]++;
+      }
+      return v;
+    }
+
+    function cosineSimilarity(a, b){
+      const va = letterVector(a);
+      const vb = letterVector(b);
+      let dot = 0, na = 0, nb = 0;
+      for (let i = 0; i < 26; i++){
+        dot += va[i] * vb[i];
+        na += va[i] * va[i];
+        nb += vb[i] * vb[i];
+      }
+      if (na === 0 || nb === 0) return 0;
+      return dot / (Math.sqrt(na) * Math.sqrt(nb));
+    }
+
+    // Positional similarity for same-length words
+    function positionalSimilarity(a, b){
+      if (!a || !b) return 0;
+      if (a.length !== b.length) return 0;
+      let same = 0;
+      for (let i = 0; i < a.length; i++){
+        if (a[i] === b[i]) same++;
+      }
+      return same / a.length;
+    }
+
+    // Edit similarity (normalized)
+    function levenshteinDistance(a, b){
+      if (a === b) return 0;
+      const n = a.length, m = b.length;
+      if (n === 0) return m;
+      if (m === 0) return n;
+
+      const dp = new Array(m + 1);
+      for (let j = 0; j <= m; j++) dp[j] = j;
+
+      for (let i = 1; i <= n; i++){
+        let prev = dp[0];
+        dp[0] = i;
+        for (let j = 1; j <= m; j++){
+          const tmp = dp[j];
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[j] = Math.min(
+            dp[j] + 1,        // delete
+            dp[j - 1] + 1,    // insert
+            prev + cost       // replace
+          );
+          prev = tmp;
+        }
+      }
+      return dp[m];
+    }
+
+    function combinedSimilarity(a, b){
+      const v = cosineSimilarity(a, b);
+      const p = positionalSimilarity(a, b);
+      const maxLen = Math.max(a.length, b.length) || 1;
+      const d = levenshteinDistance(a, b);
+      const e = 1 - (d / maxLen);
+      return Math.max(v, p, e);
+    }
+
+    // Pattern warning: detects repeated similar guesses in a row
+    function patternWarning(currentGuess, previousAttempts){
+      if (!CFG.enablePatternWarning) return null;
+      const recent = previousAttempts.slice(-CFG.lookback);
+      if (recent.length < 2) return null;
+
+      const sims = recent.map(a => combinedSimilarity(currentGuess, a.guess));
+      const similarCount = sims.filter(s => s >= CFG.similarityThreshold).length;
+      const maxSim = Math.max(...sims);
+
+      if (similarCount >= CFG.minSimilar){
+        // Make it actionable based on your own recent guesses
+        const actionable = patternActionableTip(currentGuess, recent);
+        const base = (maxSim >= 0.9)
+          ? "Your last guesses are almost the same."
+          : "Your last guesses are very similar.";
+
+        return base + " " + actionable;
+      }
+      return null;
+    }
+
+    function patternActionableTip(currentGuess, recent){
+      // Look at common structure within recent guesses (not the secret)
+      const sameLen = recent.filter(r => r.guess.length === currentGuess.length);
+      if (sameLen.length >= 2){
+        // detect if only 1 position tends to change
+        const words = [...sameLen.map(r => r.guess), currentGuess];
+        const len = currentGuess.length;
+
+        let fixedPositions = 0;
+        for (let i = 0; i < len; i++){
+          const ch = words[0][i];
+          if (words.every(w => w[i] === ch)) fixedPositions++;
+        }
+
+        const changing = len - fixedPositions;
+        if (changing <= 1){
+          return "You are mostly changing one letter. Try changing two or three letters at once.";
+        }
+        if (fixedPositions >= Math.max(2, Math.floor(len * 0.6))){
+          return "You are keeping most positions the same. Try a different base word.";
+        }
+      }
+
+      // fallback
+      return "Try changing more letters, try a different word length, or start from a new word shape.";
+    }
+
+    // --- Hint Engine ---
+    function uniqueRatio(s){
+      const set = new Set(s.split(""));
+      return set.size / (s.length || 1);
+    }
+
+    function vowelCount(s){
+      const m = s.match(/[aeiou]/g);
+      return m ? m.length : 0;
+    }
+
+    function recentLengthsStuck(prevAttempts, len, window=4){
+      const recent = prevAttempts.slice(-window);
+      if (recent.length < 3) return false;
+      return recent.every(a => a.len === len);
+    }
+
+    function recentOverlapStalled(prevAttempts, window=4){
+      const recent = prevAttempts.slice(-window);
+      if (recent.length < 3) return false;
+      const vals = recent.map(a => a.common);
+      const max = Math.max(...vals);
+      const min = Math.min(...vals);
+      return max === min;
+    }
+
+    function anagramMatch(guess, secret){
+      if (guess.length !== secret.length) return false;
+      const cg = letterCounts(guess);
+      const cs = letterCounts(secret);
+      if (cg.size !== cs.size) return false;
+      for (const [ch, n] of cg.entries()){
+        if ((cs.get(ch) || 0) !== n) return false;
+      }
+      return true;
+    }
+
+    function helpfulHint(guess, common, prevAttempts){
+      // primary hint from overlap
+      const primary = primaryHint(common);
+
+      // optional second hint from strategies
+      const secondary = CFG.strategyHints ? strategyHint(guess, common, prevAttempts) : null;
+
+      const lines = [];
+      lines.push(primary);
+      if (CFG.twoHintLines && secondary) lines.push(secondary);
+
+      // add anagram style hint if enabled and relevant
+      if (CFG.anagramHint && !isWon && guess !== SECRET && anagramMatch(guess, SECRET)){
+        const extra = (CFG.hintMode === "strong")
+          ? "You have the right letters, but not the right word. Try rearranging."
+          : "You may have the right letters. Try rearranging.";
+        // prefer to append instead of adding another line
+        if (CFG.twoHintLines && lines.length >= 2) {
+          lines[1] = lines[1] + " " + extra;
+        } else {
+          lines.push(extra);
+        }
+      }
+
+      return lines.slice(0, CFG.twoHintLines ? 2 : 1).join("\n");
+    }
+
+    function primaryHint(common){
+      // This is based on similarity count only, as requested.
+      // It does not reveal letters or positions.
+      const gentle = {
+        none: [
+          "No overlap yet. Try a completely different set of letters.",
+          "No shared letters. Switch to a very different guess."
+        ],
+        tiny: [
+          "A little overlap. Keep one letter and change the rest.",
+          "Some overlap. You need more shared letters."
+        ],
+        some: [
+          "Good progress. Several letters overlap.",
+          "You are getting closer. Keep refining."
+        ],
+        close: [
+          "Very close. Most letters overlap.",
+          "Nearly there. A small change might do it."
+        ]
+      };
+
+      const helpful = {
+        none: [
+          "No overlap. Pick a new guess with a totally different set of letters.",
+          "Zero shared letters. Try a different direction."
+        ],
+        tiny: [
+          "Small overlap. Change 2 to 4 letters and try again.",
+          "A couple of letters match. Keep experimenting with bigger changes."
+        ],
+        some: [
+          "Solid overlap. Keep some letters and change 1 to 2 letters.",
+          "You have several matching letters. Try small edits."
+        ],
+        close: [
+          "Very close. Try swapping one letter, or rearranging your guess.",
+          "High overlap. One or two moves away."
+        ]
+      };
+
+      const strong = {
+        none: [
+          "No overlap. Replace most of the letters in your guess.",
+          "Zero shared letters. Try a new base word."
+        ],
+        tiny: [
+          "Low overlap. Keep 1 to 2 letters, change the rest.",
+          "A little overlap. Try a different word pattern."
+        ],
+        some: [
+          "Mid overlap. Keep your best letters and adjust 1 to 2 letters.",
+          "Good overlap. If you keep getting the same number, change a different part of the word."
+        ],
+        close: [
+          "Very close. Try changing a single letter first. If that fails, rearrange.",
+          "High overlap. Try one-letter edits, then try reshuffling."
+        ]
+      };
+
+      const band = common <= 0 ? "none" : (common <= 2 ? "tiny" : (common <= 4 ? "some" : "close"));
+      const bank = (CFG.hintMode === "gentle") ? gentle : (CFG.hintMode === "strong" ? strong : helpful);
+
+      return pick(bank[band]);
+    }
+
+    function strategyHint(guess, common, prevAttempts){
+      // Tips are based on your guess and your recent behavior, not the secret itself.
+      const tips = [];
+
+      // Repeats reduce exploration
+      const ur = uniqueRatio(guess);
+      if (guess.length >= 5 && ur <= 0.7){
+        tips.push("You are repeating letters. Try more unique letters to explore faster.");
+      }
+
+      // Vowel balance heuristic
+      const v = vowelCount(guess);
+      if (guess.length >= 4){
+        if (v === 0) tips.push("Try including at least one vowel.");
+        if (v >= Math.ceil(guess.length * 0.75)) tips.push("Try adding more consonants.");
+      }
+
+      // If you keep the same length and are not improving, suggest changing length
+      if (prevAttempts.length >= 3 && recentLengthsStuck(prevAttempts, guess.length, 4) && recentOverlapStalled(prevAttempts, 4)){
+        tips.push("You have tried the same length a few times without progress. Try a different length.");
+      }
+
+      // If overlap is stuck, recommend bigger edits
+      if (prevAttempts.length >= 3 && recentOverlapStalled(prevAttempts, 4)){
+        tips.push("Your overlap has stalled. Make a bigger change, not a one-letter swap.");
+      }
+
+      // If user is in a tight similarity cluster, reinforce exploration
+      const warn = patternWarning(guess, prevAttempts);
+      if (warn){
+        tips.push("You are circling the same pattern. Pick a new base guess and branch out.");
+      }
+
+      // If close, suggest focused edits
+      if (common >= 4){
+        tips.push("Try one-letter edits across different positions until the overlap increases.");
+      } else if (common >= 2){
+        tips.push("Try changing two letters at once, then check if overlap improves.");
+      }
+
+      // Return one good tip
+      const filtered = tips.filter(Boolean);
+      if (filtered.length === 0) return null;
+
+      // prefer non-duplicate tips
+      return pick(uniqueStrings(filtered));
+    }
+
+    function uniqueStrings(arr){
+      const out = [];
+      const set = new Set();
+      for (const s of arr){
+        if (!set.has(s)){
+          set.add(s);
+          out.push(s);
+        }
+      }
+      return out;
+    }
+
+    // --- Rendering ---
+    function renderAttempts(){
+      attemptsBody.innerHTML = "";
+      const colCount = 6;
+
+      if (attempts.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="right mono" colspan="${colCount}" style="color:rgba(183,195,230,.85); text-align:center">
+            No attempts yet
+          </td>
+        `;
+        attemptsBody.appendChild(tr);
+        return;
+      }
+
+      for (let i = 0; i < attempts.length; i++){
+        const a = attempts[i];
+        const tr = document.createElement("tr");
+
+        const doHighlight = CFG.highlightWarnRows && a.patternWarn;
+        if (doHighlight) tr.classList.add("warnRow");
+
+        tr.innerHTML = `
+          <td class="right mono">${i + 1}</td>
+          <td class="mono">${escapeHtml(a.guess)}</td>
+          <td class="right mono">${a.len}</td>
+          <td class="right mono">${a.common}</td>
+          <td class="colHint">${escapeHtml(a.hint || "")}</td>
+          <td class="colPattern">${a.patternWarn ? '<span class="tagWarn">Try Something Different</span>' : ""}</td>
+        `;
+        attemptsBody.appendChild(tr);
+      }
+    }
+
+    function win(guess){
+      isWon = true;
+      guessInput.disabled = true;
+      guessBtn.disabled = true;
+      setStatus("Correct. Name unlocked.", "ok");
+      winCard.classList.remove("hidden");
+      winText.innerHTML = `You guessed <strong class="mono">${escapeHtml(guess)}</strong>. The name is <strong class="mono">${SECRET}</strong>.`;
+    }
+
+    function handleGuess(){
+      if (isWon) return;
+
+      const raw = guessInput.value;
+      const g = normalize(raw);
+
+      if (!g){
+        setStatus("Type a guess using letters A to Z.", "bad");
+        return;
+      }
+      if (g.length < 4){
+        setStatus("Guess must be at least 4 letters.", "bad");
+        return;
+      }
+
+      const common = lettersInCommon(g, SECRET);
+      const warnMsg = patternWarning(g, attempts);
+      const hint = helpfulHint(g, common, attempts);
+
+      const patternWarn = Boolean(warnMsg);
+      attempts.push({ guess: g, len: g.length, common, hint: hint.replace(/\n/g, " "), patternWarn });
+
+      renderAttempts();
+
+      if (g === SECRET){
+        win(g);
+      } else {
+        const lines = [];
+        lines.push(`Similar letters: ${common}.`);
+        lines.push(hint);
+        if (warnMsg) lines.push(`Pattern Warning: ${warnMsg}`);
+        setStatus(lines.join("\n"), patternWarn ? "bad" : "");
+      }
+
+      guessInput.value = "";
+      guessInput.focus();
+    }
+
+    function newGame(){
+      attempts = [];
+      isWon = false;
+      guessInput.disabled = false;
+      guessBtn.disabled = false;
+      guessInput.value = "";
+      winCard.classList.add("hidden");
+      winText.textContent = "";
+      setStatus("New game started. Enter a guess.", "");
+      renderAttempts();
+      guessInput.focus();
+    }
+
+    // --- Events ---
+    guessBtn.addEventListener("click", handleGuess);
+    newBtn.addEventListener("click", newGame);
+    guessInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleGuess();
+    });
+
+    cfgBtn.addEventListener("click", openCfg);
+    cfgCloseBtn.addEventListener("click", closeCfg);
+    cfgCancelBtn.addEventListener("click", closeCfg);
+
+    cfgOverlay.addEventListener("click", (e) => {
+      if (e.target === cfgOverlay) closeCfg();
+    });
+
+    // Toggle click handlers
+    const toggleIds = [
+      cfgStrategyToggle, cfgTwoLinesToggle, cfgAnagramToggle,
+      cfgPatternToggle, cfgHighlightToggle,
+      cfgShowHintColToggle, cfgShowPatternColToggle
+    ];
+    for (const t of toggleIds){
+      t.addEventListener("click", () => t.classList.toggle("on"));
+    }
+
+    cfgSimThreshold.addEventListener("input", () => {
+      cfgSimThresholdVal.textContent = Number(cfgSimThreshold.value).toFixed(2);
+    });
+
+    cfgSaveBtn.addEventListener("click", () => {
+      CFG = readCfgFromUi();
+      saveCfg(CFG);
+      applyCfg();
+      renderAttempts();
+      closeCfg();
+      setStatus("Config saved.", "");
+      setTimeout(() => {
+        if (!isWon) setStatus("Enter a guess. You will see the number of similar letters plus helpful hints. The name appears only when guessed.", "");
+      }, 600);
+    });
+
+    cfgRevealNameBtn.addEventListener("click", () => {
+      const isHidden = cfgNameEditor.classList.contains("hidden");
+      showNameEditor(isHidden);
+      if (isHidden) cfgNameInput.focus();
+    });
+
+    cfgNameHideBtn.addEventListener("click", () => {
+      showNameEditor(false);
+    });
+
+    cfgNameShowBtn.addEventListener("click", () => {
+      const showing = cfgNameInput.type === "text";
+      cfgNameInput.type = showing ? "password" : "text";
+      cfgNameShowBtn.textContent = showing ? "Show Text" : "Hide Text";
+    });
+
+    cfgNameApplyBtn.addEventListener("click", () => {
+      const proposed = normalize(cfgNameInput.value);
+      if (!proposed){
+        cfgNameMsg.textContent = "Type a name using letters only.";
+        return;
+      }
+      if (proposed.length < 4){
+        cfgNameMsg.textContent = "Name must be 4 or more letters.";
+        return;
+      }
+      setSecret(proposed);
+      showNameEditor(false);
+      closeCfg();
+      newGame();
+      setStatus("Name updated. New game started.", "");
+    });
+
+    cfgNameResetBtn.addEventListener("click", () => {
+      setSecret(DEFAULT_SECRET);
+      showNameEditor(false);
+      closeCfg();
+      newGame();
+      setStatus("Name reset to default. New game started.", "");
+    });
+
+    cfgResetBtn.addEventListener("click", () => {
+      CFG = { ...DEFAULT_CFG };
+      localStorage.removeItem("nameGuessCfg_v1");
+      syncCfgToUi();
+      applyCfg();
+      renderAttempts();
+    });
+
+    // --- Start ---
+    applyCfg();
+    syncCfgToUi();
+    newGame();
+  </script>
+</body>
+</html>
