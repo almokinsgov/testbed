@@ -1,0 +1,130 @@
+{
+  "general": {
+    "providersOff": false,
+    "defaultPastDays": 30,
+    "defaultForecastDays": 7,
+    "snapshotMinLookbackDays": 30
+  },
+  "dash": {
+    "preferCacheWhenAvailable": true,
+    "maxCacheAgeMinutes": null,
+    "autoRefreshOnLoad": false,
+    "providerFallbackWhenMissing": true
+  },
+  "layout": {
+    "enabled": true,
+    "rememberActiveTab": true,
+    "defaultTabId": "tab_main"
+  },
+  "drought": {
+    "windows": {
+      "rainPastDays": 14,
+      "rhPastDays": 7,
+      "et0ForecastDays": 7,
+      "vpdForecastDays": 7,
+      "soilBaselineDays": 30
+    },
+    "thresholds": {
+      "rain14": {
+        "wet": 80,
+        "dry": 10
+      },
+      "rain7Forecast": {
+        "wet": 50,
+        "dry": 5
+      },
+      "rh7": {
+        "wet": 80,
+        "dry": 40
+      },
+      "et07": {
+        "low": 10,
+        "high": 30
+      },
+      "vpd": {
+        "low": 0.5,
+        "high": 2
+      }
+    },
+    "weights": {
+      "soil": 0.42,
+      "rain": 0.3,
+      "evap": 0.2,
+      "river": 0.06,
+      "humidity": 0.02
+    },
+    "soilLayers": [
+      {
+        "key": "soil_moisture_0_1cm",
+        "label": "0-1 cm",
+        "w": 0.1
+      },
+      {
+        "key": "soil_moisture_1_3cm",
+        "label": "1-3 cm",
+        "w": 0.15
+      },
+      {
+        "key": "soil_moisture_3_9cm",
+        "label": "3-9 cm",
+        "w": 0.2
+      },
+      {
+        "key": "soil_moisture_9_27cm",
+        "label": "9-27 cm",
+        "w": 0.25
+      },
+      {
+        "key": "soil_moisture_27_81cm",
+        "label": "27-81 cm",
+        "w": 0.3
+      }
+    ],
+    "useRiverHybridForIndex": true
+  },
+  "wick": {
+    "windLow": 10,
+    "windHigh": 25,
+    "rhHigh": 55,
+    "rhLow": 25,
+    "vpdLow": 0.06,
+    "vpdHigh": 1.5,
+    "lowRhThreshold": 20,
+    "lowWindBumpMax": 0.09
+  },
+  "riverAnalysis": {
+    "defaultInterval": "hour",
+    "windowDays": 30,
+    "alignTolHours": 2,
+    "alignTolDays": 6,
+    "rainCtxFastHours": 6,
+    "rainCtxSlowHours": 72,
+    "responseWindowsHour": [
+      1,
+      6,
+      24,
+      72
+    ],
+    "responseWindowsDay": [
+      1,
+      3,
+      7
+    ],
+    "lagMaxHours": 72,
+    "lagMinPoints": 12,
+    "lagMinCorrStrong": 0.25,
+    "halfLifeFastHours": 12,
+    "halfLifeSlowHours": 72,
+    "kneeSlopeMult": 1,
+    "kneeMinSlope": 0.02,
+    "kneeBaselineFrac": 0.35,
+    "kneeConsecutive": 3,
+    "kneeSmoothWin": 5,
+    "kneeMinPairs": 30,
+    "kneeFallbackEnabled": true,
+    "handlingHighScore": 0.7,
+    "handlingLowScore": 0.35,
+    "drainFastScore": 0.7,
+    "drainSlowScore": 0.35
+  }
+}

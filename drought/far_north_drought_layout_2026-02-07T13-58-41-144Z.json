@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "activeTabId": "tab_701f2bda",
+  "tabs": [
+    {
+      "id": "tab_main",
+      "title": "Main",
+      "items": [
+        {
+          "type": "module",
+          "id": "district"
+        },
+        {
+          "type": "module",
+          "id": "map"
+        },
+        {
+          "type": "module",
+          "id": "locations"
+        },
+        {
+          "type": "module",
+          "id": "events"
+        },
+        {
+          "type": "module",
+          "id": "text_summary"
+        }
+      ]
+    },
+    {
+      "id": "tab_acec443f",
+      "title": "District summary",
+      "items": [
+        {
+          "type": "module",
+          "id": "district"
+        }
+      ]
+    },
+    {
+      "id": "tab_e8098d4a",
+      "title": "Locations",
+      "items": [
+        {
+          "type": "module",
+          "id": "map"
+        },
+        {
+          "type": "module",
+          "id": "locations"
+        }
+      ]
+    },
+    {
+      "id": "tab_219cf9b2",
+      "title": "Rivers & groundwater",
+      "items": [
+        {
+          "type": "submodule",
+          "id": "hydro_readings"
+        },
+        {
+          "type": "submodule",
+          "id": "hydro_stress"
+        },
+        {
+          "type": "submodule",
+          "id": "hydro_analysis"
+        },
+        {
+          "type": "submodule",
+          "id": "hydro_response"
+        }
+      ]
+    },
+    {
+      "id": "tab_580d0c3c",
+      "title": "Trends",
+      "items": [
+        {
+          "type": "submodule",
+          "id": "loc_index_trend"
+        },
+        {
+          "type": "submodule",
+          "id": "district_env"
+        },
+        {
+          "type": "submodule",
+          "id": "district_trend"
+        },
+        {
+          "type": "submodule",
+          "id": "hydro_stress"
+        },
+        {
+          "type": "module",
+          "id": "events"
+        }
+      ]
+    },
+    {
+      "id": "tab_f0ede48b",
+      "title": "Text summary",
+      "items": [
+        {
+          "type": "module",
+          "id": "text_summary"
+        }
+      ]
+    },
+    {
+      "id": "tab_701f2bda",
+      "title": "Public",
+      "items": [
+        {
+          "type": "module",
+          "id": "content_display_1"
+        },
+        {
+          "type": "module",
+          "id": "content_display_2"
+        }
+      ]
+    }
+  ]
+}
