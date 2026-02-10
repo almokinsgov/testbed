@@ -1,0 +1,3086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Far North Drought Index Dashboard</title>
+
+  <!-- Leaflet (map) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <style>
+    :root{
+      --bg: #0b0f14;
+      --panel: #101826;
+      --panel2: #0f1722;
+      --text: #e8eef7;
+      --muted: #9fb0c6;
+      --border: rgba(255,255,255,0.10);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --radius: 14px;
+      --radius2: 10px;
+      --gap: 14px;
+      --ok: #38bdf8;
+      --watch: #a3e635;
+      --warn: #fbbf24;
+      --severe: #fb7185;
+      --extreme: #f97316;
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{ height: 100%; }
+    body{
+      margin: 0;
+      background: radial-gradient(1100px 700px at 20% -10%, rgba(56,189,248,0.12), transparent 60%),
+                  radial-gradient(900px 650px at 90% 0%, rgba(251,191,36,0.10), transparent 55%),
+                  linear-gradient(180deg, var(--bg), #070a0f 65%);
+      color: var(--text);
+      font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    header{
+      padding: 18px 18px 10px 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    h1{
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .sub{
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .controls{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn{
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.24);
+      user-select: none;
+    }
+    .btn:hover{ filter: brightness(1.05); }
+
+    .pill{
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .pill strong{ color: var(--text); font-weight: 600; }
+
+    .field{
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+    }
+    .field input{
+      width: 76px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .field select{
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 8px;
+  outline: none;
+}
+.field input[type="datetime-local"]{
+  width: 200px;
+}
+.field input:disabled, .field select:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+main{
+      padding: 0 18px 18px 18px;
+      display: grid;
+      gap: var(--gap);
+      grid-template-columns: 1.1fr 1.5fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    /* Full-width panels for Map and Locations */
+    #panelMap, #panelLocations{ grid-column: 1 / -1; }
+
+    @media (max-width: 1050px){
+      main{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel .hd{
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.15);
+    }
+
+    .panel .hd h2{
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.2px;
+      color: var(--text);
+    }
+
+    .kpiGrid{
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 12px;
+    }
+    @media (max-width: 1050px){
+      .kpiGrid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    .kpi{
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+    }
+    .kpi .label{ color: var(--muted); font-size: 12px; }
+    .kpi .value{ font-size: 20px; font-weight: 700; margin-top: 4px; }
+    .kpi .tiny{ color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    #map{
+      max-height: 500px;
+	  height: 500px;
+      width: 100%;
+      background: #0a0e14;
+    }
+    @media (max-width: 1050px){
+      #map{ height: 360px; }
+    }
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      vertical-align: middle;
+    }
+    th{
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+      background: rgba(0,0,0,0.12);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    tbody tr{
+      cursor: pointer;
+      background: rgba(0,0,0,0.06);
+    }
+    tbody tr:hover{ background: rgba(255,255,255,0.04); }
+
+    .tag{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.20);
+      color: var(--text);
+      font-weight: 600;
+      letter-spacing: 0.15px;
+      white-space: nowrap;
+    }
+    .dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(56,189,248,0.15);
+    }
+
+    
+    .climateExplainGrid{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .explainItem{
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.16);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .explainTitle{
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .explainBody{
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--text);
+      opacity: 0.92;
+    }
+.mono{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+    .muted{ color: var(--muted); }
+
+    .split{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      height: 100%;
+    }
+    .scroll{
+      overflow: auto;
+      max-height: 520px;
+    }
+
+    /* Location Table Horizontal Scroll */
+    #tableWrap{ overflow-x: auto; }
+    #tbl{ width: max-content; min-width: 100%; table-layout: auto; }
+    #tbl th, #tbl td{ white-space: nowrap; }
+
+    @media (max-width: 1050px){
+      .scroll{ max-height: 420px; }
+    }
+
+    .detail{
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .detail h3{
+      margin: 0;
+      font-size: 14px;
+    }
+    .grid2{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 1050px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
+    .miniCard{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.20);
+    }
+    .miniCard .k{ color: var(--muted); font-size: 12px; }
+    .miniCard .v{ font-size: 16px; font-weight: 700; margin-top: 3px; }
+    .miniCard .s{ color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+    .spark{
+      width: 100%;
+      height: 62px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+    }
+
+    .spark.recentCanvas{
+      height: 92px;
+    }
+
+    .spark.locEnvCanvas{
+      height: 140px;
+    }
+
+
+    .note{
+      color: var(--muted);
+      font-size: 12px;
+      padding: 12px 14px 14px 14px;
+    }
+
+    
+    body.hydro-modal-open #btnOpenDistrictHydroModal{ display:none; }
+
+/* Modal */
+    .modalBack{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+    .modal{
+      width: min(900px, 100%);
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.60);
+      overflow: hidden;
+    }
+    .modal .top{
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .modal .top h3{
+      margin: 0;
+      font-size: 14px;
+    }
+    .modal .body{
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+    }
+    textarea{
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      background: rgba(0,0,0,0.25);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      outline: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .toast{
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      background: rgba(0,0,0,0.75);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      max-width: 440px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.50);
+      display: none;
+      z-index: 1100;
+    }
+  
+/* Playback panel */
+.playback-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:flex-end;
+}
+.playback-slider{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  margin-top:10px;
+}
+.playback-slider input[type="range"]{ flex:1; }
+.check{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background: rgba(255,255,255,0.03);
+  color: var(--muted);
+  user-select:none;
+}
+.check input{ accent-color: var(--accent); }
+
+
+    .trendCanvas{ height: 120px; }
+
+    .trendWrap{ position: relative; }
+    .chartTooltip{
+      position:absolute;
+      left: 10px;
+      top: 10px;
+      background: rgba(0,0,0,0.82);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 8px 10px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+      font-size: 12px;
+      line-height: 1.25;
+      color: var(--text);
+      pointer-events:none;
+      z-index: 50;
+      max-width: 320px;
+      max-height: 260px;
+      overflow: hidden;
+    }
+    
+    #districtHydroReadingsTooltip{
+      position: fixed;
+      z-index: 100000;
+    }
+
+.chartTooltip .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* Events Tooltip Supply Breakdown */
+    #eventsTimelineTooltip{
+      max-width: 520px;
+      max-height: 340px;
+      overflow: auto;
+    }
+    .evSupplyGrid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+    .evSupplyPill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 5px 9px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.03);
+      max-width: 100%;
+    }
+    .evDot{
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      display:inline-block;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.06);
+      flex: 0 0 auto;
+    }
+    .evSupplyName{
+      max-width: 170px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .evDelta{
+      display:inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.18);
+      min-width: 20px;
+      text-align:center;
+    }
+    .evChangeLine{
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .trendLegend{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin: 8px 0 10px 0;
+    }
+    .legendItem{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding: 4px 8px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.03);
+    }
+    .legendDot{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display:inline-block;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.06);
+    }
+    .legendMean{ background: var(--ok); box-shadow: 0 0 0 4px rgba(56,189,248,0.15); }
+    .legendMedian{ background: var(--warn); box-shadow: 0 0 0 4px rgba(251,191,36,0.14); }
+    .legendWorst{ background: var(--extreme); box-shadow: 0 0 0 4px rgba(249,115,22,0.16); }
+
+
+.btn.small{ padding:6px 9px; font-size:12px; }
+.tblMini{ width:100%; border-collapse: collapse; font-size:12px; }
+.tblMini thead th{ position: sticky; top:0; background: rgba(10,12,20,0.88); z-index: 1; }
+.tblMini th, .tblMini td{ padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.07); vertical-align: middle; }
+.tblMini th.sortable{ cursor:pointer; user-select:none; }
+.tblMini th.sortable:hover{ background: rgba(255,255,255,0.06); }
+.tblMini tr:hover td{ background: rgba(255,255,255,0.03); }
+.sparkCell{ display:flex; flex-direction:column; gap:3px; align-items:flex-start; }
+.sparkMini{ width:140px; height:28px; border-radius:6px; background: rgba(0,0,0,0.25); }
+.sparkLabel{ font-size:10px; opacity:0.75; margin-left:2px; }
+
+
+    /* Settings Modal */
+
+    /* Tabs */
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 10px 0; }
+
+    /* Debug Modal */
+    .dbgBox{ width:100%; min-height: 220px; resize: vertical; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; color: var(--text); padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; line-height: 1.35; }
+    .dbgActions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .testList{ max-height: 320px; overflow:auto; border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 8px; background: rgba(0,0,0,0.18); }
+    .testItem{ display:flex; justify-content:space-between; gap:10px; padding: 6px 6px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .testItem:last-child{ border-bottom: none; }
+    .badge{ display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+    .badgePass{ background: rgba(22, 128, 72, 0.25); border: 1px solid rgba(22, 128, 72, 0.45); }
+    .badgeFail{ background: rgba(192, 64, 64, 0.25); border: 1px solid rgba(192, 64, 64, 0.45); }
+    .badgeSkip{ background: rgba(120, 120, 120, 0.22); border: 1px solid rgba(120, 120, 120, 0.45); }
+
+    .tabRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin: 0 0 12px 0;
+    }
+    .tabBtn{
+      cursor:pointer;
+      user-select:none;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .tabBtn.active{
+      border-color: rgba(56,189,248,0.45);
+      background: rgba(56,189,248,0.14);
+    }
+    .tabPanel{ display:none; }
+    .tabPanel.active{ display:block; }
+
+    .settingsGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 860px){
+      .settingsGrid{ grid-template-columns: 1fr; }
+    }
+    .sField{
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.03);
+    }
+    .sField label{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      color: rgba(255,255,255,0.82);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .sField .hint{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .sField input[type="number"],
+    .sField input[type="text"],
+    .sField select{
+      width: 100%;
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.20);
+      color: var(--text);
+      outline: none;
+    }
+    .sField input[type="checkbox"]{
+      transform: scale(1.1);
+    }
+    .sTwoCol{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 520px){
+      .sTwoCol{ grid-template-columns: 1fr; }
+    }
+    .settingsTable{
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.02);
+    }
+    .settingsTable th, .settingsTable td{
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-align:left;
+      vertical-align: middle;
+    }
+    .settingsTable th{
+      color: rgba(255,255,255,0.78);
+      font-size: 12px;
+      letter-spacing: 0.2px;
+      background: rgba(255,255,255,0.04);
+    }
+    .settingsTable td input[type="number"]{
+      width: 110px;
+      max-width: 100%;
+    }
+
+  
+    .tabbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      margin:10px 0 0 0;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      background: rgba(255,255,255,.03);
+    }
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .tabbtn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.02);
+      color: inherit;
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .tabbtn[aria-selected="true"]{
+      border-color: rgba(255,255,255,.24);
+      background: rgba(255,255,255,.07);
+    }
+    .tabtools{display:flex; gap:8px; align-items:center;}
+    .tabedit{
+      padding:10px 12px;
+      margin:10px 0 0 0;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      background: rgba(255,255,255,.02);
+    }
+    .tabeditItem{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:10px;
+      margin:6px 0;
+      background: rgba(255,255,255,.02);
+    }
+    .tabeditItem .left{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .badge{
+      font-size:11px;
+      padding:2px 6px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      color: rgba(255,255,255,.85);
+    }
+
+  
+/* Location table column picker */
+.menuDetails > summary::-webkit-details-marker{display:none;}
+.menuDetails[open] > summary{box-shadow:0 0 0 3px rgba(255,255,255,0.08);}
+.colList label{display:flex; align-items:center; gap:8px; padding:6px 2px; cursor:pointer;}
+.colList input{transform:scale(1.05);}
+
+/* Content Display Module */
+.cdmRoot{ display:flex; flex-direction:column; gap:10px; padding:12px; }
+.cdmTopRow{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.cdmTopRow .muted{ color: var(--muted); }
+.cdmGrid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+@media (max-width: 1050px){ .cdmGrid{ grid-template-columns: 1fr; } }
+
+.cdmCard{ border:1px solid rgba(255,255,255,0.10); border-radius:12px; background: rgba(0,0,0,0.18); overflow:hidden; }
+.cdmCardHd{ padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.12); }
+.cdmCardHd .title{ font-weight:700; }
+
+.cdmToolbar{ display:flex; flex-wrap:wrap; gap:6px; padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+.cdmToolbar .btn{ padding:6px 10px; border-radius:10px; }
+
+.cdmEditor{ padding:10px 12px; outline:none; border-radius:10px; }
+.cdmEditor:focus{ box-shadow: inset 0 0 0 2px rgba(255,255,255,0.10); }
+.cdmPreview{ padding:10px 12px; }
+.cdmPreview img{ max-width:100%; height:auto; }
+
+.cdmEmpty{ border:1px dashed rgba(255,255,255,0.18); border-radius:12px; padding:12px; color: var(--muted); background: rgba(0,0,0,0.14); }
+/* Content Display Module Edit Mode Rules */
+html:not([data-tab-edit-mode="1"]) .cdmTopRow{ display:none; }
+html:not([data-tab-edit-mode="1"]) .cdmToolbar{ display:none; }
+html:not([data-tab-edit-mode="1"]) .cdmCardHd button{ display:none; }
+html:not([data-tab-edit-mode="1"]) .cdmCard[data-cdm-panel="preview"] .cdmCardHd{ display:none; }
+html:not([data-tab-edit-mode="1"]) .cdmGrid{ grid-template-columns: 1fr; }
+html:not([data-tab-edit-mode="1"]) .cdmCard[data-cdm-panel="editor"]{ display:none; }
+
+/* If preview was disabled, hide it only while in edit mode (view mode always shows preview) */
+html[data-tab-edit-mode="1"] .cdmRoot[data-preview-disabled="1"] .cdmCard[data-cdm-panel="preview"]{ display:none; }
+
+/* Hide empty note in view mode (preview still renders) */
+html:not([data-tab-edit-mode="1"]) .cdmEmpty{ display:none; }
+</style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Far North Drought Index Dashboard</h1>
+      <div class="sub">Modelled drought signal from Open-Meteo forecast soil moisture, rainfall, evap demand, humidity and optional Open-Meteo flood discharge</div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="btnRefresh">Refresh Data</button>
+      <button class="btn" id="btnEditLocations">Edit Locations</button>
+      <button class="btn" id="btnSettings" title="Settings and tuning">Settings</button>
+      <button class="btn" id="btnDebug" title="Debug panel and tests">Debug</button>
+      <button class="btn" id="btnDownloadData" title="Download all loaded datasets and computed results as a portable bundle">Download Data</button>
+            <button class="btn" id="btnExportZip" title="Export a GitHub-ready ZIP with Open-Meteo separate and NRC split by site and month">Export ZIP</button>
+<button class="btn" id="btnLoadData" title="Load a previously downloaded bundle to avoid re-fetching providers">Load Data</button>
+      <button class="btn" id="btnLoadZipManifest" title="Load an exported ZIP using manifest.json and the split GitHub layout">Load ZIP Manifest</button>
+      <span class="field" id="manifestUrlField" style="display:none">
+              Manifest URL
+              <input type="text" id="manifestUrlInput" placeholder="https://raw.githubusercontent.com/<user>/<repo>/<branch>/<folder>/manifest.json" style="width:420px" />
+            </span>
+            <button class="btn" id="btnLoadManifestUrl" style="display:none" title="Load data from a hosted GitHub folder by manifest URL and lazy-load NRC Hilltop month files">Load Manifest URL</button>
+
+      <button class="btn" id="btnClearLoadedData" title="Clear loaded datasets and computed results (does not change your saved locations)">Clear Loaded</button>
+      <input type="file" id="fileLoadData" accept=".json,.json.gz,application/json,application/gzip" style="display:none" />
+      <input type="file" id="fileLoadZipManifest" accept=".zip,application/zip" style="display:none" />
+
+      <span class="field">
+        Past Days
+        <input type="number" id="pastDays" min="7" max="92" step="1" value="30" />
+      </span>
+
+      <span class="field">
+        Forecast Days
+        <input type="number" id="forecastDays" min="3" max="16" step="1" value="7" />
+      </span>
+
+<span class="field">
+  Time Mode
+  <select id="timeMode">
+    <option value="live">Live</option>
+    <option value="historic">Historic</option>
+  </select>
+</span>
+
+<span class="field">
+  Historic Date Time
+  <input type="datetime-local" id="asOfInput" />
+</span>
+
+<button class="btn" id="btnLoadSnapshot" style="display:none" title="Load the selected Historic Date Time">Load Snapshot</button>
+
+
+      <span class="pill" id="statusPill">
+        <strong>Status</strong>
+        <span class="muted" id="statusText">Idle</span>
+      </span>
+
+      <span class="pill" title="Drought index scale">
+        <span class="dot" style="background: var(--ok)"></span><span class="muted">0-48 Normal</span>
+      </span>
+      <span class="pill"><span class="dot" style="background: var(--watch)"></span><span class="muted">49-63 Watch</span></span>
+      <span class="pill"><span class="dot" style="background: var(--warn)"></span><span class="muted">64-78 Warning</span></span>
+      <span class="pill"><span class="dot" style="background: var(--severe)"></span><span class="muted">79-93 Severe</span></span>
+      <span class="pill"><span class="dot" style="background: var(--extreme)"></span><span class="muted">94-100 Extreme</span></span>
+    </div>
+  </header>
+
+  <div class="tabbar" id="tabBar" aria-label="Dashboard Tabs">
+    <div class="tabs" id="tabsHost" role="tablist" aria-label="Tabs"></div>
+    <div class="tabtools">
+      <button class="btn" id="btnTabEdit" title="Edit tabs and modules">Edit Layout</button>
+      <button class="btn" id="btnTabAdd" title="Create a new tab" style="display:none;">New Tab</button>
+    </div>
+  </div>
+
+  <div class="tabedit" id="tabEditBar" style="display:none;" aria-label="Layout Editor">
+    <div class="row gap" style="align-items:center; flex-wrap:wrap;">
+      <span class="tiny muted">Add</span>
+      <select id="tabAddType">
+        <option value="module" selected>Module</option>
+        <option value="submodule">Submodule</option>
+      </select>
+      <select id="tabAddItem"></select>
+      <button class="btn" id="btnTabAddItem">Add</button>
+
+      <span class="tiny muted" style="margin-left:10px;">Selected Tab</span>
+      <input type="text" id="tabTitleInput" placeholder="Tab title" style="width:200px;" />
+      <button class="btn" id="btnTabRename">Rename</button>
+      <button class="btn" id="btnTabDelete" title="Delete selected tab">Delete Tab</button>
+
+      <span class="tiny muted" style="margin-left:10px;">Items</span>
+      <button class="btn" id="btnTabClear" title="Remove all modules and submodules from this tab">Clear</button>
+    </div>
+
+    <div class="tiny muted" id="tabEditHint" style="margin-top:6px;"></div>
+    <div id="tabEditList" style="margin-top:8px;"></div>
+  </div>
+
+
+
+  <section id="playbackPanel" class="panel playback" style="grid-column: 1 / -1; display:none;">
+    <div class="hd">
+      <h2>Playback</h2>
+      <div class="muted" id="playbackStatus">Set a play range then load and play</div>
+    </div>
+
+    <div class="playback-grid">
+      <span class="field">
+        Range Start
+        <input type="datetime-local" id="rangeStartInput" />
+      </span>
+
+      <span class="field">
+        Range End
+        <input type="datetime-local" id="rangeEndInput" />
+      </span>
+
+      <button class="btn" id="btnLoadRange" title="Fetch data for the selected range">Load Range</button>
+
+      <button class="btn" id="btnStepBack" title="Step back">◀</button>
+      <button class="btn" id="btnPlay" title="Play">Play</button>
+      <button class="btn" id="btnPause" title="Pause" style="display:none;">Pause</button>
+      <button class="btn" id="btnStepFwd" title="Step forward">▶</button>
+
+      <span class="field">
+        Step
+        <select id="playStep">
+          <option value="60">1h</option>
+          <option value="360">6h</option>
+          <option value="720">12h</option>
+          <option value="1440" selected>1d</option>
+        </select>
+      </span>
+
+      <span class="field">
+        Speed
+        <select id="playSpeed">
+          <option value="1500">Slow</option>
+          <option value="900" selected>Normal</option>
+          <option value="450">Fast</option>
+          <option value="200">Max</option>
+        </select>
+      </span>
+
+      <label class="check">
+        <input type="checkbox" id="playLoop" checked />
+        Loop
+      </label>
+
+      <label class="check" title="Updates river and groundwater during playback (slower)">
+        <input type="checkbox" id="playHydro" />
+        Update River/GW
+      </label>
+    </div>
+
+    <div class="playback-slider">
+      <input type="range" id="playSlider" min="0" max="0" value="0" step="1" />
+      <div class="muted" id="playTimeLabel"></div>
+    </div>
+  </section>
+
+  <main>
+    <section class="panel" id="panelDistrict" style="grid-column: 1 / -1;">
+      <div class="hd">
+        <h2>District Summary</h2>
+        <span class="muted mono" id="lastUpdated">Not Updated</span>
+      </div>
+      <div class="kpiGrid" id="districtKpiGrid">
+        <div class="kpi">
+          <div class="label">District Index (Mean)</div>
+          <div class="value mono" id="kpiMean">-</div>
+          <div class="tiny muted" id="kpiMeanCat"></div>
+        </div>
+        <div class="kpi">
+          <div class="label">District Index (Median)</div>
+          <div class="value mono" id="kpiMedian">-</div>
+          <div class="tiny muted" id="kpiMedianCat"></div>
+        </div>
+        <div class="kpi">
+          <div class="label">Worst Location</div>
+          <div class="value mono" id="kpiWorst">-</div>
+          <div class="tiny muted" id="kpiWorstName"></div>
+        </div>
+        <div class="kpi">
+          <div class="label">Rain 14 Day Mean</div>
+          <div class="value mono" id="kpiRain14">-</div>
+          <div class="tiny muted">Across locations</div>
+        </div>
+
+        <div class="kpi">
+          <div class="label">Forecast Rain 7d</div>
+          <div class="value mono" id="kpiRain7">-</div>
+          <div class="tiny muted">Mean across locations</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Forecast ET0 7d</div>
+          <div class="value mono" id="kpiET07">-</div>
+          <div class="tiny muted">Mean across locations</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Forecast VPD Mean 7d</div>
+          <div class="value mono" id="kpiVPD7">-</div>
+          <div class="tiny muted">Daytime mean (9-18)</div>
+        </div>
+        <div class="kpi">
+          <div class="label">RH Mean 7d</div>
+          <div class="value mono" id="kpiRH7">-</div>
+          <div class="tiny muted">Past 7 days</div>
+        </div>
+      </div>
+
+      <div style="padding: 0 12px 12px 12px;">
+        <div class="miniCard" id="districtTrendCard">
+          <div class="k">District Trend</div>
+          <div class="s muted">Mean, Median and Worst location index over time</div>
+          <div class="trendLegend">
+            <span class="legendItem"><span class="legendDot legendMean"></span><span class="muted">Mean</span></span>
+            <span class="legendItem"><span class="legendDot legendMedian"></span><span class="muted">Median</span></span>
+            <span class="legendItem"><span class="legendDot legendWorst"></span><span class="muted">Worst</span></span>
+          </div>
+          <div class="row gap" style="align-items:center; flex-wrap:wrap; margin-top:6px;">
+            <label class="tiny muted" for="districtTrendStep">Interval</label>
+            <select id="districtTrendStep" title="Chart interval for district drought trend">
+              <option value="day" selected>Daily</option>
+              <option value="hour">Hourly</option>
+            </select>
+          </div>
+          <div class="trendWrap">
+            <canvas id="districtTrendChart" class="spark trendCanvas"></canvas>
+            <div id="districtTrendTooltip" class="chartTooltip" style="display:none;"></div>
+          </div>
+          <div class="tiny muted" id="districtTrendMeta">-</div>
+          <div class="tiny muted" id="districtTrendIndicatorHelp" style="margin-top:6px;">Indicators: [Drought Watch] Mean 80+ (5d), [Drought Warning] Mean 80+ (7d), [Drought Danger] Mean 84+ (5d), [Location Danger] 94+ (3d), District wide stress when Worst-Mean ≤2 for 3d</div>
+        </div>
+
+
+
+
+<div class="miniCard" id="districtEnvCard">
+  <div class="k">District Weather and Environment Trend</div>
+  <div class="s muted">District-wide daily mean for a selected metric</div>
+  <div class="row gap" style="align-items:center; flex-wrap:wrap; margin-top:6px;">
+    <label class="tiny muted" for="districtEnvMetric">Metric</label>
+    <select id="districtEnvMetric">
+      <option value="rain_mm">Rain (Daily, mm)</option>
+      
+      <option value="rain_total_mm">District Rain Total (Sum, mm)</option>
+      <option value="temp_max_c">Air Temperature High (District Max, °C)</option>
+      <option value="temp_min_c">Air Temperature Low (District Min, °C)</option>
+      <option value="rh_max_pct">Relative Humidity High (District Max, %)</option>
+      <option value="rh_min_pct">Relative Humidity Low (District Min, %)</option>
+      <option value="wick_rating">Moisture Wicking Wind Rating (Index 0-100)</option>
+<option value="rain14_mm">Rain (14 Day Mean, mm/day)</option>
+      <option value="et0_mm">ET0 (Daily, mm)</option>
+      <option value="et07_mm">ET0 (7 Day Mean, mm/day)</option>
+      <option value="temp_c">Air Temperature (Daily Mean, °C)</option>
+      <option value="rh_pct">Relative Humidity (Daily Mean, %)</option>
+      <option value="vpd_kpa">VPD (Daily Mean, kPa)</option>
+      <option value="soil_9_27">Soil Moisture 9-27 cm (Daily Mean, m³/m³)</option>
+      <option value="soil_27_81">Soil Moisture 27-81 cm (Daily Mean, m³/m³)</option>
+      <option value="soil_0_1">Soil Moisture 0-1 cm (Daily Mean, m³/m³)</option>
+      <option value="soil_1_3">Soil Moisture 1-3 cm (Daily Mean, m³/m³)</option>
+      <option value="soil_3_9">Soil Moisture 3-9 cm (Daily Mean, m³/m³)</option>
+      <option value="wind_dir_deg">Wind Direction 10m (Daily Mean, °)</option>
+      <option value="plume_idx">Tropical Plume Signal (Index 0-100)</option>
+      <option value="wind_ms">Wind Speed 10m (Daily Mean, m/s)</option>
+      <option value="msl_hpa">Mean Sea Level Pressure (Daily Mean, hPa)</option>
+    </select>
+    <label class="tiny muted" for="districtEnvStep">Interval</label>
+    <select id="districtEnvStep" title="Chart interval for district env trend">
+      <option value="day">Daily</option>
+      <option value="hour" selected>Hourly</option>
+    </select>
+  </div>
+  <div class="trendWrap">
+    <canvas id="districtEnvChart" class="spark trendCanvas"></canvas>
+    <div id="districtEnvTooltip" class="chartTooltip" style="display:none;"></div>
+  </div>
+  <div class="tiny muted" id="districtEnvMeta">-</div>
+</div>
+
+<div class="miniCard" id="locIndexTrendCard">
+  <div class="k">Location Index Trend</div>
+  <div class="s muted">Index score over last 7 days for selected locations</div>
+    <div class="row gap" style="align-items:center; flex-wrap:wrap; margin-top:6px;">
+    <label class="tiny muted" for="locIndexTrendLocation">Location</label>
+    <select id="locIndexTrendLocation"></select>
+    <button class="btn small" id="locIndexTrendAddBtn" title="Add selected location to chart">Add</button>
+    <button class="btn small" id="locIndexTrendClearBtn" title="Clear locations">Clear</button>
+    <button class="btn small" id="locIndexTrendSelectAllBtn" title="Select all visible locations (max 15)">Select All Visible</button>
+
+    <label class="tiny muted" for="locIndexTrendStep">Interval</label>
+    <select id="locIndexTrendStep" title="Chart interval for location index trend">
+      <option value="day" selected>Daily</option>
+      <option value="hour">Hourly</option>
+    </select>
+  </div>
+  <div class="trendLegend" id="locIndexTrendLegend" style="margin-top:6px; flex-wrap:wrap;"></div>
+  <div class="trendWrap">
+    <canvas id="locIndexTrendChart" class="spark trendCanvas"></canvas>
+    <div id="locIndexTrendTooltip" class="chartTooltip" style="display:none;"></div>
+  </div>
+  <div class="tiny muted" id="locIndexTrendMeta">-</div>
+</div>
+
+<div class="miniCard" id="districtClimateCard">
+  <div class="k">Climate Drivers and Plume Signal</div>
+  <div class="s muted">Context layer only. This does not change the drought score.</div>
+
+  <div class="trendLegend" style="margin:8px 0 2px 0;">
+    <span class="tag" id="districtEnsoTag"><span class="dot" style="background:var(--ok)"></span>ENSO: <span class="mono">Loading</span></span>
+    <span class="tag" id="districtSamTag"><span class="dot" style="background:var(--ok)"></span>SAM: <span class="mono">Loading</span></span>
+    <span class="tag" id="districtMjoTag"><span class="dot" style="background:var(--ok)"></span>MJO: <span class="mono">Loading</span></span>
+    <span class="tag" id="districtPlumeTag"><span class="dot" style="background:var(--ok)"></span>Plume: <span class="mono">-</span></span>
+  </div>
+  <div class="tiny muted" id="districtDriversMeta">Best effort fetch of global indices</div>
+
+  <div class="tiny muted" id="districtPlumeReason" style="margin-top:8px;">-</div>
+  <div class="climateExplainGrid" id="districtClimateExplainGrid">
+    <div class="explainItem"><div class="explainTitle">ENSO</div><div class="explainBody" id="districtExplainEnso">-</div></div>
+    <div class="explainItem"><div class="explainTitle">SAM</div><div class="explainBody" id="districtExplainSam">-</div></div>
+    <div class="explainItem"><div class="explainTitle">MJO</div><div class="explainBody" id="districtExplainMjo">-</div></div>
+    <div class="explainItem"><div class="explainTitle">Tropical Plume Signal</div><div class="explainBody" id="districtExplainPlume">-</div></div>
+  </div>
+
+</div>
+
+<div class="miniCard" id="districtHydroStressCard">
+  <div class="k">District River and Groundwater Stress Trend</div>
+  <div class="s muted">District-wide daily mean water stress from nearest river gauges and bores (10 km limit). 0 = high water for that gauge, 100 = low</div>
+  <div class="row gap" style="align-items:center; flex-wrap:wrap; margin-top:6px;">
+    <label class="tiny muted" for="districtHydroTrendStep">Interval</label>
+    <select id="districtHydroTrendStep" title="Chart interval for district hydrology stress trend">
+      <option value="day">Daily</option>
+      <option value="hour" selected>Hourly</option>
+    </select>
+  </div>
+
+  <div class="grid2" style="margin-top:8px;">
+    <div>
+      <div class="tiny muted" style="margin-bottom:4px;">River Stress</div>
+      <div class="trendWrap">
+        <canvas id="districtRiverChart" class="spark trendCanvas"></canvas>
+        <div id="districtRiverTooltip" class="chartTooltip" style="display:none;"></div>
+      </div>
+    </div>
+    <div>
+      <div class="tiny muted" style="margin-bottom:4px;">Groundwater Stress</div>
+      <div class="trendWrap">
+        <canvas id="districtGWChart" class="spark trendCanvas"></canvas>
+        <div id="districtGWTooltip" class="chartTooltip" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tiny muted" id="districtHydroMeta">-</div>
+</div>
+
+<div id="districtHydroReadingsCardHost">
+<div class="miniCard" id="districtHydroReadingsCard">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+  <div class="k">District Hydrology Readings Over Time</div>
+  <button class="btn" id="btnToggleDistrictHydroList" title="Show a sortable list of river and groundwater readings with sparklines">List Mode</button>
+<button class="btn" id="btnToggleDistrictHydroAnalysis" title="Open hydrology analysis for selected river gauge over the current period">Analysis</button>
+  <button class="btn" id="btnOpenDistrictHydroModal" title="Open District Hydrology Readings Over Time in a popup modal">Popup</button>
+</div>
+  <div class="s muted">Mean readings from river gauges and groundwater sources. Use Step to switch between daily and hourly. Combined aggregates across selected sites, individual draws one line per selected site.</div>
+
+  <div class="row gap" style="align-items:center; flex-wrap:wrap; margin-top:6px;">
+    <label class="tiny muted" for="districtHydroKind">Data</label>
+    <select id="districtHydroKind">
+      <option value="river">Rivers</option>
+      <option value="gw">Groundwater Sources</option>
+    </select>
+
+    <label class="tiny muted" for="districtHydroMetric">Metric</label>
+    <select id="districtHydroMetric"></select>
+
+    <label class="tiny muted" for="districtHydroView">View</label>
+    <select id="districtHydroView">
+      <option value="combined">Combined</option>
+      <option value="individual">Individual</option>
+    </select>
+
+    <label class="tiny muted" for="districtHydroScope">Scope</label>
+    <select id="districtHydroScope">
+      <option value="near">Near Locations (10 km)</option>
+      <option value="all">All GuruDigital Sources</option>
+    </select>
+
+    <label class="tiny muted" for="districtHydroStep">Step</label>
+    <select id="districtHydroStep">
+      <option value="day">Daily</option>
+      <option value="hour" selected>Hourly</option>
+    </select>
+
+  </div>
+
+  <div id="districtHydroSitePickerWrap" style="margin-top:8px;">
+    <div class="tiny muted" style="margin-bottom:4px;">Sites</div>
+    <select id="districtHydroSitePicker" multiple size="6" style="width:100%;"></select>
+    <div class="tiny muted" style="margin-top:6px;">Tip: Ctrl or Cmd for multi select. Combined uses selected sites for the aggregation, individual draws a line for each selected site.</div>
+  </div>
+
+  <div class="trendLegend" id="districtHydroReadingsLegend" style="margin-top:8px; display:none;"></div>
+
+  <div class="trendWrap" style="margin-top:6px;">
+    <canvas id="districtHydroReadingsChart" class="spark trendCanvas"></canvas>
+    <div id="districtHydroReadingsTooltip" class="chartTooltip" style="display:none;"></div>
+  </div>
+
+  
+<div id="districtHydroAnalysisWrap" style="display:none; margin-top:10px;">
+  <div class="row gap" style="align-items:center; justify-content:space-between;">
+    <div class="tiny muted" id="districtHydroAnalysisMeta">-</div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn" id="btnDistrictHydroSelectAllSites" title="Select all sites in the site picker (switches Scope to All first)" style="padding:7px 10px; font-size:12px;">Select All In Picker</button>
+      <button class="btn" id="btnDistrictHydroAnalysisTable" title="Show or hide the detailed analysis table" style="padding:7px 10px; font-size:12px;">Analysis Table</button>
+      <button class="btn" id="btnCollapseDistrictHydroAnalysis" title="Hide Analysis" style="padding:7px 10px; font-size:12px;">Collapse</button>
+    </div>
+  </div>
+
+  <div class="miniCard" style="margin-top:8px; padding:10px;">
+    <div class="row gap" style="align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <div class="k">River Handling And Response Analysis</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <label class="tiny muted" for="districtHydroAnalysisStep" style="margin:0;">Interval</label>
+              <select id="districtHydroAnalysisStep" style="padding:6px 8px; font-size:12px;">
+                <option value="day">Daily</option>
+                <option value="hour" selected>Hourly</option>
+              </select>
+            </div>
+          </div>
+    <div class="s muted" style="margin-bottom:10px;">
+      Flow is derived from continuous stage data via a rating curve. This panel estimates how the gauge section responds to flow and rainfall signals within the currently loaded window.
+    </div>
+
+    <div class="row gap" style="flex-wrap:wrap; align-items:flex-start;">
+      <div style="flex:1 1 420px; min-width:320px;">
+        <div class="grid2" id="districtHydroAnalysisCards"></div>
+
+        <div class="miniCard" id="districtHydroResponseSummaryCard" style="margin-top:10px; padding:10px;">
+          <div class="row gap" style="align-items:center; justify-content:space-between;">
+            <div class="k">River Response Summary</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <label class="tiny muted" for="districtHydroResponseSummaryStep" style="margin:0;">Interval</label>
+              <select id="districtHydroResponseSummaryStep" style="padding:6px 8px; font-size:12px;">
+                <option value="day">Daily</option>
+                <option value="hour" selected>Hourly</option>
+              </select>
+            </div>
+          </div>
+          <div class="s muted" id="districtHydroResponseSummaryText" style="margin-top:8px;">-</div>
+        </div>
+
+
+        
+  <div class="miniCard" style="margin-top:10px; padding:10px;">
+    <div class="k" style="margin-bottom:6px;">Sites Summary</div>
+    <div class="s muted" style="margin-bottom:8px;">Defaults to currently selected sites. Use “Select All In Picker” to include all gauges then click a row to focus the chart.</div>
+    <div class="tableWrap"><table class="tblMini" id="tblDistrictHydroAnalysisSummary"></table></div>
+  </div>
+
+  <div class="miniCard" id="districtHydroAnalysisFullTableCard" style="margin-top:10px; padding:10px; display:none;">
+    <div class="row gap" style="align-items:center; justify-content:space-between; margin-bottom:6px;">
+      <div class="k">Analysis Table</div>
+      <button class="btn" id="btnDistrictHydroAnalysisTableClose" title="Hide the analysis table" style="padding:7px 10px; font-size:12px;">Close</button>
+    </div>
+    <div class="s muted" style="margin-bottom:8px;">Click a row to focus the chart. The table reflects the currently loaded window and selected interval.</div>
+    <div class="tableWrap"><table class="tblMini" id="tblDistrictHydroAnalysisFull"></table></div>
+  </div>
+
+<div class="miniCard" style="margin-top:10px; padding:10px;">
+          <div class="k" style="margin-bottom:6px;">Caveats</div>
+          <div class="s">
+            <ul style="margin:0; padding-left:18px;">
+              <li>Flow is not measured directly. It is computed from stage using a rating curve which may change over time.</li>
+              <li>Stage can rise without matching flow increases (backwater, tides, debris, local obstructions, or downstream controls).</li>
+              <li>Rainfall is approximated using the nearest forecast grid point to the gauge (not the full catchment).</li>
+              <li>Lag and rainfall response ratings are correlation proxies. They depend on the window length, event mix and data quality.</li>
+              <li>Half-life and drain-down ratings are less reliable during ongoing rainfall or multi-peak events.</li>
+              <li>Selecting all sites can take longer. Use a shorter time window or hourly mode only when needed.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1 1 420px; min-width:320px;">
+        <div class="miniCard" style="padding:10px;">
+          <div class="k" style="margin-bottom:6px;">Site Time Series</div>
+          <div class="s muted" style="margin-bottom:8px;">Stage and flow (where available) and rainfall for the best-fit lag window.</div>
+          <div class="trendWrap">
+            <canvas class="spark" id="districtHydroAnalysisChart"></canvas>
+            <div id="districtHydroAnalysisTooltip" class="chartTooltip" style="display:none;"></div>
+          </div>
+          <div class="tiny muted" id="districtHydroAnalysisChartMeta" style="margin-top:6px;">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="districtHydroListWrap" style="display:none; margin-top:10px;">
+  <div class="row gap" style="align-items:center; justify-content:space-between;">
+    <div class="tiny muted" id="districtHydroListMeta">-</div>
+    <button class="btn" id="btnCollapseDistrictHydroList" title="Hide List Mode" style="padding:7px 10px; font-size:12px;">Collapse</button>
+  </div>
+
+  <div class="miniCard" style="margin-top:8px; padding:10px;">
+    <div class="k" style="margin-bottom:6px;">Rivers Selected Readings</div>
+    <div class="s muted" style="margin-bottom:8px;">Latest bucket at or before the selected as-of time plus change over the visible period.</div>
+    <div class="tableWrap"><table class="tblMini" id="tblDistrictHydroRivers"></table></div>
+  </div>
+
+  <div class="miniCard" style="margin-top:10px; padding:10px;">
+    <div class="k" style="margin-bottom:6px;">Groundwater Selected Readings</div>
+    <div class="s muted" style="margin-bottom:8px;">Level readings per bore plus change over the visible period.</div>
+    <div class="tableWrap"><table class="tblMini" id="tblDistrictHydroGw"></table></div>
+  </div>
+</div>
+
+<div class="tiny muted" id="districtHydroReadingsMeta">-</div>
+</div>
+</div>
+
+
+
+      </div>
+
+<div class="note">
+        Notes: This is a heuristic index designed for quick operational awareness. It uses modelled soil moisture and weather variables and can be tuned to match your district signals and thresholds.
+      </div>
+    </section>
+
+    <section class="panel" id="panelMap" style="grid-column: 1 / -1;">
+      <div class="hd">
+        <h2>Map</h2>
+        <span class="muted">Click a marker or row for details</span>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <section class="panel" id="panelLocations" style="grid-column: 1 / -1;">
+      <div class="hd">
+        <h2>Locations</h2>
+        <div class="row gap" style="align-items:center;">
+          <span class="muted" id="tableHint">Loading is idle</span>
+
+          <details class="menuDetails" id="locColsMenu" style="position:relative;">
+            <summary class="btn" style="padding:6px 10px; font-size:12px; list-style:none;">Columns</summary>
+            <div class="menuPanel" style="position:absolute; right:0; top:34px; z-index:50; width:260px; max-height:320px; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,.10); border-radius:12px; background:rgba(10,12,16,.95); box-shadow:0 18px 40px rgba(0,0,0,.35);">
+              <div class="k" style="margin-bottom:6px;">Location Table Columns</div>
+              <div class="s muted" style="margin-bottom:8px;">Pick which columns to display.</div>
+              <div id="locColsList" class="colList"></div>
+              <div class="row gap" style="justify-content:space-between; margin-top:10px;">
+                <button class="btn" id="btnLocColsAll" type="button" style="padding:6px 10px; font-size:12px;">Show All</button>
+                <button class="btn" id="btnLocColsReset" type="button" style="padding:6px 10px; font-size:12px;">Reset</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="scroll" id="tableWrap">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th data-col="location">Location</th>
+                <th data-col="index">Index</th>
+                <th data-col="trend" class="mono">Trend</th>
+                <th data-col="category">Category</th>
+                <th data-col="rain14" class="mono">Rain 14d</th>
+                <th data-col="rain7fc" class="mono">Rain 7d Fc</th>
+                <th data-col="vpdMean" class="mono">VPD Mean</th>
+                <th data-col="riverNow" class="mono">River Now</th>
+                <th data-col="riverSource" class="mono">River Src</th>
+                <th data-col="score_soil" class="mono">Score Soil</th>
+                <th data-col="score_rain" class="mono">Score Rain</th>
+                <th data-col="score_evap" class="mono">Score Evap</th>
+                <th data-col="score_humidity" class="mono">Score RH</th>
+                <th data-col="score_river" class="mono">Score River</th>
+<th data-col="soil9_27" class="mono">Soil 9-27</th>
+                <th data-col="soil27_81" class="mono">Soil 27-81</th>
+                <th data-col="et0_7" class="mono">ET0 7d</th>
+                <th data-col="rh7" class="mono">RH 7d</th>
+                <th data-col="groundwater" class="mono">Groundwater</th>
+                <th data-col="river" class="mono">River Gauge</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <!-- rows inserted -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="detail" id="detailPanel">
+          <h3>Details</h3>
+          <div class="muted">Select a location to view the components and recent trends.</div>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="panel" id="panelEvents" style="display:none; grid-column: 1 / -1;">
+      <div class="hd">
+        <h2>Events</h2>
+        <span class="muted" id="eventsHint">Not Loaded</span>
+      </div>
+
+      <div style="padding: 0 12px 12px 12px;">
+        <div class="row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px;">
+          <div class="field">
+            <label for="eventsTypeSelect" class="muted">Event Type</label>
+            <select id="eventsTypeSelect">
+              <option value="water_restrictions" selected>Water Restrictions</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="eventsSupplySelect" class="muted">Supply</label>
+            <select id="eventsSupplySelect"></select>
+          </div>
+
+          <div class="field">
+            <label class="muted">Date Range</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input type="date" id="eventsFromDate" />
+              <span class="muted">to</span>
+              <input type="date" id="eventsToDate" />
+            </div>
+          </div>
+
+
+          <div class="field">
+            <label class="muted">Range Sync</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input type="checkbox" id="eventsSyncRange" />
+              <span class="muted" title="When enabled: Live and Snapshot sync to End Day and Past Days. Historic Range syncs to Range Start and Range End.">Sync To Dashboard</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="muted">Source</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn" id="btnEventsImport" title="Import water restriction levels JSON">Import JSON</button>
+              <button class="btn" id="btnEventsReset" title="Reset to embedded default JSON">Reset</button>
+            </div>
+            <input type="file" id="eventsImportFile" accept="application/json" style="display:none;" />
+          </div>
+        </div>
+
+        <div class="miniCard" id="eventsTimelineCard">
+          <div class="k">Events Timeline</div>
+          <div class="s muted" id="eventsTimelineMeta">Timeline view of key events</div>
+          <div class="trendWrap" style="position:relative;">
+            <canvas id="eventsTimelineCanvas" class="spark trendCanvas"></canvas>
+            <div id="eventsTimelineTooltip" class="chartTooltip" style="display:none;"></div>
+          </div>
+          <div class="tiny muted" id="eventsLegend">
+            <span class="mono">Level</span>
+            <span style="margin-left:10px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background: var(--ok);"></span> 1</span>
+            <span style="margin-left:10px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background: var(--watch);"></span> 2</span>
+            <span style="margin-left:10px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background: var(--warn);"></span> 3</span>
+            <span style="margin-left:10px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background: var(--severe);"></span> 4</span>
+          </div>
+        </div>
+
+        <div class="miniCard" id="eventsTableCard" style="margin-top:12px;">
+          <div class="k">Events Table</div>
+          <div class="s muted">Events extracted from sources (water restriction changes are included)</div>
+          <div class="scroll" style="max-height: 460px;">
+            <div id="eventsTableWrap"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panelTextSummary" style="display:none; grid-column: 1 / -1;">
+      <div class="hd">
+        <h2>Text Summary</h2>
+        <span class="muted" id="textSummaryHint">Not Loaded</span>
+      </div>
+
+      <div style="padding: 0 12px 12px 12px;">
+        <div class="miniCard" id="textDistrictSummaryCard">
+          <div class="k">District Summary</div>
+          <div class="s muted">Current conditions, past period drivers and an outlook based on already loaded metrics</div>
+          <div class="row gap" style="align-items:center; flex-wrap:wrap; margin-top:6px;">
+            <label class="tiny muted" for="textSummaryTemplateSelect">Template</label>
+            <select id="textSummaryTemplateSelect">
+              <option value="community">Community Update</option>
+              <option value="facts">Facts Only (Dashboard)</option>
+            </select>
+          </div>
+          <div id="textDistrictSummaryWrap" class="mono" style="white-space:pre-wrap; line-height:1.35;"></div>
+        </div>
+
+        <div class="miniCard" id="textLocationSummaryCard" style="margin-top:12px;">
+          <div class="k">Location Summary</div>
+          <div class="s muted">Uses the selected location and all available metrics for the current period</div>
+          <div class="row gap" style="align-items:center; flex-wrap:wrap; margin-top:6px;">
+            <label class="tiny muted" for="textSummaryLocationSelect">Location</label>
+            <select id="textSummaryLocationSelect"></select>
+            <button class="btn small" id="btnTextSummaryUseSelected" title="Use currently selected location">Use Selected</button>
+          </div>
+          <div id="textLocationSummaryWrap" class="mono" style="white-space:pre-wrap; line-height:1.35; margin-top:8px;"></div>
+        </div>
+
+        <div class="miniCard" id="textSummaryDataCard" style="margin-top:12px;">
+          <div class="k">Summary Data</div>
+          <div class="s muted">JSON report and table exports for validation, analysis and archiving</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; align-items:center;">
+            <button class="btn" id="btnTextSummaryRefresh" title="Refresh summaries and JSON">Refresh</button>
+            <button class="btn" id="btnTextSummaryCopy" title="Copy JSON to clipboard">Copy JSON</button>
+            <button class="btn" id="btnTextSummaryExport" title="Export JSON to file">Export JSON</button>
+          </div>
+          <textarea id="textSummaryJsonBox" style="margin-top:10px; min-height:220px;"></textarea>
+          <div class="scroll" style="max-height: 420px; margin-top:10px;">
+            <div id="textSummaryTableWrap"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div id="dynamicModulesHost" style="display: contents;"></div>
+  </main>
+
+  <!-- Locations Modal -->
+  <div class="modalBack" id="modalBack">
+    <div class="modal">
+      <div class="top">
+        <h3>Edit Locations</h3>
+        <button class="btn" id="btnCloseModal">Close</button>
+      </div>
+      <div class="body">
+        <div class="muted">
+          Use JSON array with: id, name, lat, lon. Saved locally in your browser (localStorage).
+        </div>
+        <textarea id="locationsJson"></textarea>
+        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+          <button class="btn" id="btnResetLocations">Reset To Defaults</button>
+          <button class="btn" id="btnSaveLocations">Save Locations</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modalBack" id="settingsModalBack">
+    <div class="modal" style="width: min(980px, 100%);">
+      <div class="top">
+        <h3>Settings</h3>
+        <button class="btn" id="btnCloseSettings" title="Close settings">Close</button>
+      </div>
+      <div class="body">
+
+        <div class="tabs" id="settingsTabRow">
+          <div class="tabBtn active" data-tab="general">General</div>
+          <div class="tabBtn" data-tab="drought">Index</div>
+          <div class="tabBtn" data-tab="soil">Soil</div>
+          <div class="tabBtn" data-tab="wick">Wicking</div>
+          <div class="tabBtn" data-tab="river">River Analysis</div>
+          <div class="tabBtn" data-tab="layout">Layout</div>
+          <div class="tabBtn" data-tab="advanced">Advanced</div>
+        </div>
+
+        <div class="tabPanel active" id="tab_general">
+          <div class="settingsGrid">
+            <div class="sField">
+              <label for="providersOff"><span>Providers Off</span><input type="checkbox" id="providersOff" /></label>
+              <div class="hint">Disable provider fetching and use loaded bundles or ZIP manifests.</div>
+            </div>
+
+            <div class="sField">
+              <label for="set_preferCacheWhenAvailable"><span>Prefer Cache When Available</span><input type="checkbox" id="set_preferCacheWhenAvailable" /></label>
+              <div class="hint">If cached data exists, use it before fetching providers.</div>
+            </div>
+
+            <div class="sField">
+              <label for="set_autoRefreshOnLoad"><span>Auto Refresh On Load</span><input type="checkbox" id="set_autoRefreshOnLoad" /></label>
+              <div class="hint">Run a refresh when the dashboard loads.</div>
+            </div>
+
+            <div class="sField">
+              <label for="set_providerFallbackWhenMissing"><span>Provider Fallback When Missing</span><input type="checkbox" id="set_providerFallbackWhenMissing" /></label>
+              <div class="hint">If a provider fails for a location, keep computing using the remaining providers.</div>
+            </div>
+
+            <div class="sField">
+              <label for="set_defaultPastDays">Default Past Days</label>
+              <input type="number" id="set_defaultPastDays" min="7" max="92" step="1" />
+              <div class="hint">Default lookback window used for live and snapshot loads.</div>
+            </div>
+
+            <div class="sField">
+              <label for="set_defaultForecastDays">Default Forecast Days</label>
+              <input type="number" id="set_defaultForecastDays" min="3" max="16" step="1" />
+              <div class="hint">Default forecast horizon for ET0 and VPD components.</div>
+            </div>
+
+            <div class="sField">
+              <label for="set_snapshotMinLookbackDays">Snapshot Minimum Lookback Days</label>
+              <input type="number" id="set_snapshotMinLookbackDays" min="7" max="120" step="1" />
+              <div class="hint">Minimum days loaded around snapshot date to support trend charts.</div>
+            </div>
+
+            <div class="sField">
+              <label for="set_maxCacheAgeMinutes">Max Cache Age Minutes</label>
+              <input type="number" id="set_maxCacheAgeMinutes" min="0" step="1" />
+              <div class="hint">Blank means no max age. Set to 0 to always refetch.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabPanel" id="tab_drought">
+          <div class="settingsGrid">
+            <div class="sField">
+              <label>Drought Windows</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">Rain Past Days</div>
+                  <input type="number" id="set_win_rainPastDays" min="7" max="30" step="1" />
+                </div>
+                <div>
+                  <div class="hint">RH Past Days</div>
+                  <input type="number" id="set_win_rhPastDays" min="3" max="14" step="1" />
+                </div>
+                <div>
+                  <div class="hint">ET0 Forecast Days</div>
+                  <input type="number" id="set_win_et0ForecastDays" min="3" max="16" step="1" />
+                </div>
+                <div>
+                  <div class="hint">VPD Forecast Days</div>
+                  <input type="number" id="set_win_vpdForecastDays" min="3" max="16" step="1" />
+                </div>
+                <div>
+                  <div class="hint">Soil Baseline Days</div>
+                  <input type="number" id="set_win_soilBaselineDays" min="7" max="60" step="1" />
+                </div>
+              </div>
+            </div>
+
+            <div class="sField">
+              <label>Rain Thresholds</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">Rain 14d Wet</div>
+                  <input type="number" id="set_thr_rain14_wet" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">Rain 14d Dry</div>
+                  <input type="number" id="set_thr_rain14_dry" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">Forecast Rain 7d Wet</div>
+                  <input type="number" id="set_thr_rain7_wet" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">Forecast Rain 7d Dry</div>
+                  <input type="number" id="set_thr_rain7_dry" step="0.1" />
+                </div>
+              </div>
+            </div>
+
+            <div class="sField">
+              <label>Humidity Thresholds</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">RH 7d Wet</div>
+                  <input type="number" id="set_thr_rh7_wet" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">RH 7d Dry</div>
+                  <input type="number" id="set_thr_rh7_dry" step="0.1" />
+                </div>
+              </div>
+            </div>
+
+            <div class="sField">
+              <label>ET0 and VPD Thresholds</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">ET0 7d Low</div>
+                  <input type="number" id="set_thr_et07_low" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">ET0 7d High</div>
+                  <input type="number" id="set_thr_et07_high" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">VPD Low</div>
+                  <input type="number" id="set_thr_vpd_low" step="0.01" />
+                </div>
+                <div>
+                  <div class="hint">VPD High</div>
+                  <input type="number" id="set_thr_vpd_high" step="0.01" />
+                </div>
+              </div>
+            </div>
+
+            <div class="sField">
+              <label>Component Weights</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">Soil</div>
+                  <input type="number" id="set_w_soil" min="0" max="1" step="0.01" />
+                </div>
+                <div>
+                  <div class="hint">Rain</div>
+                  <input type="number" id="set_w_rain" min="0" max="1" step="0.01" />
+                </div>
+                <div>
+                  <div class="hint">Evap Demand</div>
+                  <input type="number" id="set_w_evap" min="0" max="1" step="0.01" />
+                </div>
+                <div>
+                  <div class="hint">Humidity</div>
+                  <input type="number" id="set_w_humidity" min="0" max="1" step="0.01" />
+                </div>
+                <div>
+                  <div class="hint">River</div>
+                  <input type="number" id="set_w_river" min="0" max="1" step="0.01" />
+                </div>
+              </div>
+              <div class="hint">Weights are clamped to 0..1 then normalised internally where needed.</div>
+
+              <div class="sField" style="margin-top:12px;">
+                <label style="display:flex; align-items:center; gap:10px; font-weight:700;">
+                  <input type="checkbox" id="set_useRiverHybridForIndex" />
+                  Use Hybrid River Discharge For Index When Gauge Present
+                </label>
+                <div class="hint">When enabled, any location with a river gauge will use a hybrid discharge series for the River component of the drought index. The dashboard will compute the hybrid series for gauge locations on every refresh and wait for it before recomputing index scores. If hybrid cannot be computed for a location, the index falls back to modelled discharge.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabPanel" id="tab_soil">
+          <div class="sField">
+            <label>Soil Layer Weights</label>
+            <div class="hint">These weights are renormalised to sum to 1 when applied.</div>
+          </div>
+          <table class="settingsTable" aria-label="Soil layer weights">
+            <thead>
+              <tr>
+                <th>Layer</th>
+                <th style="width: 220px;">Weight</th>
+              </tr>
+            </thead>
+            <tbody id="soilWeightsBody"></tbody>
+          </table>
+        </div>
+
+        <div class="tabPanel" id="tab_wick">
+          <div class="settingsGrid">
+            <div class="sField">
+              <label>Wind Range</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">Wind Low</div>
+                  <input type="number" id="set_wick_windLow" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">Wind High</div>
+                  <input type="number" id="set_wick_windHigh" step="0.1" />
+                </div>
+              </div>
+            </div>
+
+            <div class="sField">
+              <label>RH Range</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">RH Low</div>
+                  <input type="number" id="set_wick_rhLow" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">RH High</div>
+                  <input type="number" id="set_wick_rhHigh" step="0.1" />
+                </div>
+              </div>
+            </div>
+
+            <div class="sField">
+              <label>VPD Range</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">VPD Low</div>
+                  <input type="number" id="set_wick_vpdLow" step="0.01" />
+                </div>
+                <div>
+                  <div class="hint">VPD High</div>
+                  <input type="number" id="set_wick_vpdHigh" step="0.01" />
+                </div>
+              </div>
+            </div>
+
+            <div class="sField">
+              <label>Low RH Boost</label>
+              <div class="sTwoCol">
+                <div>
+                  <div class="hint">Low RH Threshold</div>
+                  <input type="number" id="set_wick_lowRhThreshold" step="0.1" />
+                </div>
+                <div>
+                  <div class="hint">Low Wind Bump Max</div>
+                  <input type="number" id="set_wick_lowWindBumpMax" min="0" max="0.35" step="0.01" />
+                </div>
+              </div>
+              <div class="hint">If RH is extremely low and wind is light, apply a small bump to the wicking rating.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabPanel" id="tab_river">
+  <div class="settingsGrid">
+
+    <div class="sField">
+      <label for="set_ra_defaultInterval">Default Interval</label>
+      <select id="set_ra_defaultInterval">
+        <option value="hour">Hourly</option>
+        <option value="day">Daily</option>
+      </select>
+      <div class="hint">Default analysis interval when River Analysis first loads. Individual panels can still override.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_windowDays">Analysis Window Days</label>
+      <input type="number" id="set_ra_windowDays" min="3" max="365" step="1" />
+      <div class="hint">How many days of data to use when computing river analysis metrics for a site or district.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_alignTolHours">Hourly Align Tolerance (hours)</label>
+      <input type="number" id="set_ra_alignTolHours" min="0" max="24" step="0.5" />
+      <div class="hint">Max time difference allowed when pairing hourly rain and stage/flow points.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_alignTolDays">Daily Align Tolerance (hours)</label>
+      <input type="number" id="set_ra_alignTolDays" min="0" max="72" step="1" />
+      <div class="hint">Max time difference allowed when pairing daily rain and stage/flow points.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_rainCtxFastHours">Rain Context Fast (hours)</label>
+      <input type="number" id="set_ra_rainCtxFastHours" min="1" max="240" step="1" />
+      <div class="hint">Lookback window used to compute fast rain context in River Analysis.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_rainCtxSlowHours">Rain Context Slow (hours)</label>
+      <input type="number" id="set_ra_rainCtxSlowHours" min="6" max="720" step="1" />
+      <div class="hint">Lookback window used to compute slow rain context in River Analysis.</div>
+    </div>
+
+    <div class="sField" style="grid-column: 1 / -1;">
+      <label for="set_ra_responseWindowsHourCsv">Response Windows (Hourly, CSV)</label>
+      <input type="text" id="set_ra_responseWindowsHourCsv" placeholder="1, 6, 24, 72" />
+      <div class="hint">Comma-separated window sizes in hours to test for rain response (correlation) in hourly mode.</div>
+    </div>
+
+    <div class="sField" style="grid-column: 1 / -1;">
+      <label for="set_ra_responseWindowsDayCsv">Response Windows (Daily, CSV)</label>
+      <input type="text" id="set_ra_responseWindowsDayCsv" placeholder="1, 3, 7" />
+      <div class="hint">Comma-separated window sizes in days to test for rain response (correlation) in daily mode.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_lagMaxHours">Lag Search Max (hours)</label>
+      <input type="number" id="set_ra_lagMaxHours" min="6" max="240" step="1" />
+      <div class="hint">Maximum lag to test when searching for best rain-to-stage response. Daily mode converts this to days.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_lagMinPoints">Lag Min Points</label>
+      <input type="number" id="set_ra_lagMinPoints" min="3" max="200" step="1" />
+      <div class="hint">Minimum paired points required before a lag result can be considered strong. Results below this are still shown and flagged as Weak.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_lagMinCorrStrong">Lag Min Corr (Strong)</label>
+      <input type="number" id="set_ra_lagMinCorrStrong" min="0" max="1" step="0.01" />
+      <div class="hint">Absolute correlation threshold for a lag to be considered strong. Lower values can increase false positives.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_halfLifeFastHours">Drain Fast Half-Life (hours)</label>
+      <input type="number" id="set_ra_halfLifeFastHours" min="1" max="240" step="1" />
+      <div class="hint">Half-life threshold used to score fast drainage behaviour (lower is faster drain).</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_halfLifeSlowHours">Drain Slow Half-Life (hours)</label>
+      <input type="number" id="set_ra_halfLifeSlowHours" min="1" max="480" step="1" />
+      <div class="hint">Half-life threshold used to score slow drainage behaviour (higher is slower drain).</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_kneeSlopeMult">Knee Slope Threshold Multiplier</label>
+      <input type="number" id="set_ra_kneeSlopeMult" min="1" max="20" step="0.1" />
+      <div class="hint">How much steeper the stage-to-flow slope must become to flag a knee point. Higher values make detection more conservative.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_kneeMinSlope">Knee Min Slope</label>
+      <input type="number" id="set_ra_kneeMinSlope" step="0.001" min="0" max="1" />
+      <div class="hint">Minimum slope required before knee detection is allowed. Helps suppress noise at very low flow.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_kneeBaselineFrac">Knee Baseline Fraction</label>
+      <input type="number" id="set_ra_kneeBaselineFrac" min="0" max="1" step="0.01" />
+      <div class="hint">Fraction of the early-stage slope used as baseline for detecting a knee. Lower values make knee detection more sensitive.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_kneeConsecutive">Knee Consecutive Points</label>
+      <input type="number" id="set_ra_kneeConsecutive" min="1" max="20" step="1" />
+      <div class="hint">How many consecutive points must exceed the slope threshold to confirm a knee.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_kneeSmoothWin">Knee Smooth Window</label>
+      <input type="number" id="set_ra_kneeSmoothWin" min="1" max="25" step="1" />
+      <div class="hint">Smoothing window (points) applied to slope estimates before knee detection.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_kneeMinPairs">Knee Min Pairs</label>
+      <input type="number" id="set_ra_kneeMinPairs" min="5" max="500" step="1" />
+      <div class="hint">Minimum paired points required for knee detection. If there are fewer pairs, knee is skipped.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_kneeFallbackEnabled">Knee Fallback Enabled</label>
+      <input type="checkbox" id="set_ra_kneeFallbackEnabled" />
+      <div class="hint">If knee detection fails, allow a conservative fallback rating based on low flow percentiles.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_handlingHighScore">Handling High Threshold</label>
+      <input type="number" id="set_ra_handlingHighScore" min="0" max="1" step="0.01" />
+      <div class="hint">Threshold for classifying handling stress as high (score 0–1).</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_handlingLowScore">Handling Low Threshold</label>
+      <input type="number" id="set_ra_handlingLowScore" min="0" max="1" step="0.01" />
+      <div class="hint">Threshold for classifying handling stress as low (score 0–1).</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_drainFastScore">Drain Fast Threshold</label>
+      <input type="number" id="set_ra_drainFastScore" min="0" max="1" step="0.01" />
+      <div class="hint">Threshold for classifying drainage as fast (score 0–1).</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_ra_drainSlowScore">Drain Slow Threshold</label>
+      <input type="number" id="set_ra_drainSlowScore" min="0" max="1" step="0.01" />
+      <div class="hint">Threshold for classifying drainage as slow (score 0–1).</div>
+    </div>
+
+  </div>
+</div>
+
+
+<div class="tabPanel" id="tab_layout">
+  <div class="settingsGrid">
+
+    <div class="sField">
+      <label for="set_layoutEnabled"><span>Enable Tabs And Modules Layout</span><input type="checkbox" id="set_layoutEnabled" /></label>
+      <div class="hint">If disabled the dashboard shows the original single-page layout and hides the tab bar.</div>
+    </div>
+
+    <div class="sField">
+      <label for="set_layoutRememberActive"><span>Remember Active Tab</span><input type="checkbox" id="set_layoutRememberActive" /></label>
+      <div class="hint">If enabled your last selected tab is saved and restored on load.</div>
+    </div>
+
+    <div class="sField" style="grid-column: 1 / -1;">
+      <label for="set_layoutDefaultTab">Default Tab On Load</label>
+      <select id="set_layoutDefaultTab" style="width:100%;"></select>
+      <div class="hint">Used when Remember Active Tab is off, or if the saved active tab is missing.</div>
+    </div>
+
+    <div class="sField" style="grid-column: 1 / -1;">
+      <label for="layoutJsonBox">Layout JSON</label>
+      <textarea id="layoutJsonBox" style="width:100%; min-height:240px; resize:vertical;"></textarea>
+      <div class="hint">This is the saved tabs, modules, and submodules layout. Export downloads a file. Import applies from the box or file.</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+        <button class="btn" id="btnLayoutRefresh" title="Refresh JSON from current layout">Refresh JSON</button>
+        <button class="btn" id="btnLayoutCopy" title="Copy JSON to clipboard">Copy</button>
+        <button class="btn" id="btnLayoutReset" title="Reset layout to defaults">Reset Layout</button>
+        <button class="btn" id="btnLayoutImport" title="Import layout from JSON box or file">Import Layout</button>
+        <button class="btn" id="btnLayoutExport" title="Export layout to JSON and download">Export Layout</button>
+      </div>
+    </div>
+
+    <input type="file" id="fileLayoutImport" accept=".json,application/json" style="display:none" />
+  </div>
+</div>
+
+
+<div class="tabPanel" id="tab_advanced">
+          <div class="sField">
+            <label for="settingsJsonBox">Settings JSON</label>
+            <textarea id="settingsJsonBox" style="width:100%; min-height:240px; resize:vertical;"></textarea>
+            <div class="hint">Paste JSON here and press Import. Export writes the current settings and downloads a file.</div>
+          </div>
+          <input type="file" id="fileSettingsImport" accept=".json,application/json" style="display:none" />
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top: 12px;">
+          <button class="btn" id="btnSettingsReset" title="Reset settings to defaults">Reset</button>
+          <button class="btn" id="btnSettingsImport" title="Import settings from Settings JSON box or file">Import</button>
+          <button class="btn" id="btnSettingsExport" title="Export settings to JSON and download">Export</button>
+          <button class="btn" id="btnSettingsApply" title="Apply settings now">Apply</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  
+  <!-- District Hydrology Modal -->
+  <div class="modalBack" id="hydroModalBack">
+    <div class="modal" style="width: min(1100px, 100%);">
+      <div class="top">
+        <h3>District Hydrology Readings Over Time</h3>
+        <button class="btn" id="btnReturnHydroToDashboard">Return To Dashboard</button>
+      </div>
+      <div class="body" id="hydroModalBody"></div>
+    </div>
+  </div>
+
+
+
+  <!-- Debug Modal -->
+  <div class="modalBack" id="debugModalBack" style="display:none">
+    <div class="modal" style="width: min(1100px, 100%);">
+      <div class="top">
+        <h3>Debug And Tests</h3>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div class="hint" id="debugQuickSummary"></div>
+          <button class="btn" id="btnCloseDebug">Close</button>
+        </div>
+      </div>
+      <div class="body">
+        <div class="tabs" id="debugTabRow">
+          <button class="tabBtn active" data-tab="runtime">Runtime</button>
+          <button class="tabBtn" data-tab="actions">Actions</button>
+          <button class="tabBtn" data-tab="tests">Tests</button>
+          <button class="tabBtn" data-tab="logs">Logs</button>
+        </div>
+
+        <div class="tabPanel active" id="tab_debug_runtime">
+          <div class="sField">
+            <label for="debugReportBox">Debug Report</label>
+            <textarea id="debugReportBox" class="dbgBox" spellcheck="false"></textarea>
+            <div class="dbgRowBtns" style="margin-top:10px;">
+              <button class="btn" id="btnDebugRefreshReport">Refresh Report</button>
+              <button class="btn" id="btnDebugCopyReport">Copy</button>
+              <button class="btn" id="btnDebugDownloadReport">Download JSON</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabPanel" id="tab_debug_actions">
+          <div class="dbgRowBtns" style="margin-bottom:10px;">
+            <button class="btn" id="btnDbgRefreshNow">Refresh Now</button>
+            <button class="btn" id="btnDbgRecompute">Recompute From Cache</button>
+            <button class="btn" id="btnDbgOpenSettings">Open Settings</button>
+          </div>
+          <div class="dbgRowBtns" style="margin-bottom:10px;">
+            <button class="btn" id="btnDbgClearProviderCache">Clear Provider JSON Cache</button>
+            <button class="btn" id="btnDbgClearHistoryCache">Clear History Caches</button>
+            <button class="btn" id="btnDbgResetSettings">Reset Settings To Defaults</button>
+          </div>
+          <div class="sField">
+            <label for="debugActionOut">Action Output</label>
+            <textarea id="debugActionOut" class="dbgBox" spellcheck="false"></textarea>
+            <div class="hint">These actions are safe to run even before loading data. Any errors will be captured in Logs.</div>
+          </div>
+        </div>
+
+        <div class="tabPanel" id="tab_debug_tests">
+          <div class="dbgRowBtns" style="margin-bottom:10px;">
+            <button class="btn" id="btnDbgRunSmoke">Run Smoke Tests</button>
+            <button class="btn" id="btnDbgRunRegression">Run Regression Suite</button>
+          </div>
+          <div class="sField">
+            <label for="debugTestsOut">Test Results</label>
+            <textarea id="debugTestsOut" class="dbgBox" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div class="tabPanel" id="tab_debug_logs">
+          <div class="sField">
+            <label for="debugErrorBox">Recent Errors</label>
+            <textarea id="debugErrorBox" class="dbgBox" spellcheck="false"></textarea>
+          </div>
+          <div class="sField" style="margin-top:10px;">
+            <label for="debugEventBox">Recent Events</label>
+            <textarea id="debugEventBox" class="dbgBox" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+<div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <script id="restrictionLevelsJson" type="application/json">{"generatedAtLocalDate":"2026-02-05","timeZone":"Pacific/Auckland","levelMeaning":{"1":"No restrictions (use water sensibly)","2":"No outdoor sprinklers or irrigation","3":"No outdoor sprinklers, irrigation systems, or hoses","4":"Essential water use only (no outdoor use)"},"supplies":[{"id":"kaitaia","name":"Kait\u0101ia"},{"id":"kaikohe_ngawha","name":"Kaikohe-Ng\u0101wh\u0101"},{"id":"kawakawa_moerewa","name":"Kawakawa-Moerewa"},{"id":"kerikeri_waipapa","name":"Kerikeri-Waipapa"},{"id":"paihia_opua_waitangi","name":"Paihia-\u014cpua-Waitangi"},{"id":"okaihau","name":"\u014ckaihau"},{"id":"omanaia_rawene","name":"\u014cmanaia-R\u0101wene"},{"id":"opononi_omapere","name":"\u014cpononi-\u014cm\u0101pere"}],"items":[{"publishedDate":"2024-03-22","snapshotDate":"2024-03-25","title":"Lack Of Rain Brings More Restrictions","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2024/march/lack-of-rain-brings-more-restrictions","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":3,"kawakawa_moerewa":2,"kerikeri_waipapa":2,"paihia_opua_waitangi":2,"okaihau":1,"omanaia_rawene":2,"opononi_omapere":2}},{"publishedDate":"2024-04-18","snapshotDate":"2024-04-18","title":"Matawii Dam Eases Kaikohe Water Restrictions","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2024/april/matawii-dam-eases-kaikohe-water-restrictions","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":2,"kawakawa_moerewa":1,"kerikeri_waipapa":2,"paihia_opua_waitangi":2,"okaihau":1,"omanaia_rawene":1,"opononi_omapere":1}},{"publishedDate":"2024-12-12","snapshotDate":"2024-12-12","title":"New Look Water Restriction Signs Prepare For Summer","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2024/december/new-look-water-restriction-signs-prepare-for-summer","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":1,"kawakawa_moerewa":1,"kerikeri_waipapa":1,"paihia_opua_waitangi":1,"okaihau":1,"omanaia_rawene":1,"opononi_omapere":1}},{"publishedDate":"2024-12-20","snapshotDate":"2024-12-16","title":"Preparing To Plug In Kait\u0101ia's Sweetwater Supply","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2024/december/preparing-to-plug-in-kaitaias-sweetwater-supply","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":1,"kawakawa_moerewa":2,"kerikeri_waipapa":1,"paihia_opua_waitangi":1,"okaihau":1,"omanaia_rawene":2,"opononi_omapere":2}},{"publishedDate":"2025-01-10","snapshotDate":"2025-01-13","title":"More Water Restrictions For The Far North","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2025/january/more-water-restrictions-for-the-far-north","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":1,"kawakawa_moerewa":2,"kerikeri_waipapa":2,"paihia_opua_waitangi":2,"okaihau":1,"omanaia_rawene":3,"opononi_omapere":3}},{"publishedDate":"2025-02-14","snapshotDate":"2025-02-14","title":"Water Restrictions Remain After Welcome Rainfall","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2025/february/water-restrictions-remain-after-welcome-rainfall","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":1,"kawakawa_moerewa":2,"kerikeri_waipapa":2,"paihia_opua_waitangi":2,"okaihau":1,"omanaia_rawene":3,"opononi_omapere":3}},{"publishedDate":"2025-03-14","snapshotDate":"2025-03-17","title":"Restrictions Coming To All Far North Water Supplies","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2025/march/restrictions-coming-to-all-far-north-water-supplies","restrictionLevels":{"kaitaia":2,"kaikohe_ngawha":2,"kawakawa_moerewa":2,"kerikeri_waipapa":2,"paihia_opua_waitangi":2,"okaihau":2,"omanaia_rawene":3,"opononi_omapere":3}},{"publishedDate":"2025-04-04","snapshotDate":"2025-04-04","title":"Overnight Rain Impacts Roads, Closes Kaeo Library","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2025/april/overnight-rain-impacts-roads%2C-closes-kaeo-library","restrictionLevels":{"kaitaia":2,"kaikohe_ngawha":2,"kawakawa_moerewa":3,"kerikeri_waipapa":2,"paihia_opua_waitangi":2,"okaihau":2,"omanaia_rawene":3,"opononi_omapere":3}},{"publishedDate":"2025-05-05","snapshotDate":"2025-05-05","title":"Water Restrictions Lift Across Far North","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2025/may/water-restrictions-lift-across-far-north","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":1,"kawakawa_moerewa":1,"kerikeri_waipapa":1,"paihia_opua_waitangi":1,"okaihau":1,"omanaia_rawene":1,"opononi_omapere":1}},{"publishedDate":"2025-12-24","snapshotDate":"2025-12-29","title":"Level 2 Restrictions Coming To Hokianga Water Supplies","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2025/december/level-2-restrictions-coming-to-hokianga-water-supplies","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":1,"kawakawa_moerewa":1,"kerikeri_waipapa":1,"paihia_opua_waitangi":1,"okaihau":1,"omanaia_rawene":2,"opononi_omapere":2}},{"publishedDate":"2026-01-28","snapshotDate":"2026-01-28","title":"\u014cpononi and \u014cm\u0101pere Residents Step Up To Protect Water Supplies","url":"https://www.fndc.govt.nz/Council/Latest-news/news-items/2026/january/Opononi-and-Omapere-residents-step-up-to-protect-water-supplies","restrictionLevels":{"kaitaia":1,"kaikohe_ngawha":1,"kawakawa_moerewa":1,"kerikeri_waipapa":2,"paihia_opua_waitangi":1,"okaihau":1,"omanaia_rawene":2,"opononi_omapere":2}}]}</script>
+
+
+  <script>
+/***********************
+     * Configuration
+     ***********************/
+    const STORAGE_KEY_LOCATIONS = "fn_drought_locations_v1";
+    const STORAGE_KEY_LASTSEL = "fn_drought_last_selected_v1";
+
+    // Dashboard runtime configuration (edit these defaults as needed)
+    // Tip: You can still override most values in the browser console via window.<KEY> if you prefer.
+    const DASH_CONFIG = {
+      // Generic network retry policy (non Open-Meteo fetches)
+      network: {
+        maxRetries: 6,
+        retryBaseMs: 1200,
+        retryMaxMs: 60000
+      },
+
+      // Open-Meteo bulk fetch policy (keeps large location sets stable)
+      openMeteo: {
+        // Batching protects against 414 URI Too Large. Smaller batches and longer delays reduce 429 risk.
+        batchSize: 90,
+        maxUrlLength: 7000,
+
+        // Adaptive defaults by location count (first match wins)
+        adaptive: [
+          { minLocations: 260, batchSize: 60, betweenBatchDelayMs: 25000 },
+          { minLocations: 180, batchSize: 70, betweenBatchDelayMs: 18000 },
+          { minLocations: 120, batchSize: 80, betweenBatchDelayMs: 14000 },
+          { minLocations:   0, batchSize: 90, betweenBatchDelayMs: 9000  }
+        ],
+
+        // Flood endpoint is optional. Auto rules reduce request "weight" for large runs.
+        includeFloodMaxLocations: 160,
+        includeFloodMaxTotalDays: 60,
+
+        // Delay between the forecast call and optional flood call within a batch
+        betweenEndpointDelayMs: 450,
+
+        // Open-Meteo specific retry policy (429 can require longer backoff)
+        net: {
+          maxRetries: 12,
+          retryBaseMs: 5000,
+          retryMaxMs: 180000
+        }
+      },
+
+      // Hilltop (NRC) history fetch policy (mainly impacts district river and groundwater trends)
+      hilltop: {
+        // Proxy prefix used when Hilltop does not allow CORS
+        proxyPrefix: "https://corsproxy.io/?url=",
+
+        // Batch river and bore site history into ~1 month windows to avoid proxy response size limits
+        maxDaysPerCall: 31,
+        chunkOverlapHours: 1,
+        betweenChunkDelayMs: 200
+      },
+
+      // Export and archive bundles (download and reload data to avoid re-fetching providers)
+      export: {
+        // Download as .json.gz if the browser supports CompressionStream
+        compressGzip: true,
+
+        // Pretty JSON makes files larger, keep false for big historic exports
+        prettyPrint: false,
+
+        // Include computed per-location results (index, components and mini series)
+        includeComputed: true,
+
+        // Include cached ENSO, SAM and MJO context tags
+        includeClimateDrivers: true,
+    includeHydroCaches: true,
+
+        // Include raw provider payloads (Open-Meteo arrays, NRC site lists and gauge series)
+        includeRawProviders: true,
+
+        // ZIP export: GitHub-ready split layout (providers separated, NRC split by site+month)
+        zipGithubLayout: true,
+        zipIncludeBundleJson: true,
+        zipRootFolder: true,
+
+        // Open-Meteo chunking in ZIP to keep files manageable (locations per chunk)
+        openMeteoChunkSize: 25,
+
+        // Hilltop (NRC) history export split policy
+        nrcSplitHilltopByMonth: true
+
+      },
+
+      import: {
+        // Load and restore from the ZIP split layout (manifest.json plus provider folders)
+        enableZipManifestLoad: true,
+
+        // Load from a hosted GitHub folder by manifest URL (GitHub raw or GitHub Pages)
+        enableManifestUrlLoad: true,
+
+        // Remember a manifest URL between sessions (stored in localStorage)
+        manifestUrlRememberKey: "drought_dash_manifest_url",
+        manifestUrlDefault: "",
+
+        // Optional proxy for hosted files (generally not needed for GitHub raw, and may have size limits)
+        manifestUrlUseProxy: false,
+        manifestUrlProxyPrefix: "",
+
+        // Hosted chunk discovery: fetch chunk_000.json, chunk_001.json... until 404 or maxChunks
+        manifestUrlMaxChunks: 800,
+        manifestUrlBetweenChunkDelayMs: 50,
+
+        // Lazy-load NRC Hilltop month files from the hosted archive as charts request them
+        lazyLoadHilltopMonthFiles: true,
+        // Archive session behaviour after loading a ZIP or hosted manifest
+        autoSwitchHistoricOnArchiveLoad: true,
+        autoSetAsOfToArchiveLatestValid: true,
+        clampAsOfToArchiveRange: true,
+        clampPastForecastToArchiveMeta: true,
+
+        // When true, Open-Meteo and live Hilltop provider fetches are disabled while an archive is loaded
+        disableProviderFetchWhenArchiveLoaded: true,
+
+        // IndexedDB caching for Hilltop month files (persists across reloads and reduces repeated downloads)
+        indexedDbEnabled: true,
+        indexedDbName: "fn_drought_archive_cache",
+        indexedDbStoreHilltopMonthsOnZipLoad: true,
+        indexedDbStoreHilltopMonthsFromHosted: true,
+        indexedDbPreferHilltopMonths: true,
+
+
+        // When true, clear in-memory caches before applying imported data
+        clearCachesBeforeLoad: true,
+
+        // If both bundle.json and split folders exist in the ZIP, prefer split folders
+        preferBundleJsonIfPresent: false,
+
+        // When true, the dashboard will prefer imported/archived data and avoid calling providers unless needed
+        preferImportedDataOverProviders: true,
+
+        // When true, and imported data is missing something, allow fallback to live providers
+        providerFallbackWhenMissing: true
+      },
+
+      startup: {
+        // When true, automatically fetch from providers on page load. Leave false if you mainly use archive ZIPs/manifests
+        autoRefreshOnLoad: false
+      },
+
+      cache: {
+        // When true, refresh() will reuse cached data if it fully covers the current view and locations
+        preferCacheWhenAvailable: true,
+
+        // Optional: if set (minutes), refresh() will refetch from providers when the cache is older than this
+        // Use null to never refetch purely due to age
+        maxCacheAgeMinutes: null
+      }
+    };
+
+
+    
+
+    // Provider endpoint constants (used for export provenance)
+    const OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+    const OPEN_METEO_HISTORICAL_FORECAST_URL = "https://historical-forecast-api.open-meteo.com/v1/forecast";
+    const OPEN_METEO_FLOOD_URL = "https://flood-api.open-meteo.com/v1/flood";
+
+const DEFAULT_LOCATIONS = [
+  {
+    "id": "kaitaia",
+    "name": "Kaitaia",
+    "lat": -35.098679,
+    "lon": 173.264026
+  },
+  {
+    "id": "kerikeri",
+    "name": "Kerikeri",
+    "lat": -35.2271,
+    "lon": 173.947
+  },
+  {
+    "id": "kaikohe",
+    "name": "Kaikohe",
+    "lat": -35.4053,
+    "lon": 173.8008
+  },
+  {
+    "id": "kawakawa",
+    "name": "Kawakawa",
+    "lat": -35.3818,
+    "lon": 174.067
+  },
+  {
+    "id": "opua",
+    "name": "Opua",
+    "lat": -35.3118,
+    "lon": 174.12
+  },
+  {
+    "id": "waima",
+    "name": "Waima",
+    "lat": -35.4791,
+    "lon": 173.545
+  },
+  {
+    "id": "houhora",
+    "name": "Houhora",
+    "lat": -34.785,
+    "lon": 173.08888
+  },
+  {
+    "id": "herekino",
+    "name": "Herekino",
+    "lat": -35.2018,
+    "lon": 173.157
+  },
+  {
+    "id": "kaeo",
+    "name": "Kaeo",
+    "lat": -35.108235,
+    "lon": 173.79291
+  },
+  {
+    "id": "tehapua",
+    "name": "Te Hapua",
+    "lat": -34.5167,
+    "lon": 172.9101
+  },
+  {
+    "id": "peria",
+    "name": "Peria",
+    "lat": -35.16109,
+    "lon": 173.530011
+  },
+  {
+    "id": "waiharara",
+    "name": "Waiharara",
+    "lat": -34.915392,
+    "lon": 173.187835
+  },
+  {
+    "id": "waipoua",
+    "name": "Waipoua",
+    "lat": -35.661256,
+    "lon": 173.610337
+  },
+  {
+    "id": "taemaro",
+    "name": "Taemaro",
+    "lat": -34.948733,
+    "lon": 173.571108
+  },
+  {
+    "id": "broadwood",
+    "name": "Broadwood",
+    "lat": -35.2642897701786,
+    "lon": 173.39444294899548
+  },
+  {
+    "id": "karikari",
+    "name": "Karikari",
+    "lat": -34.885892728273944,
+    "lon": 173.3462494365898
+  },
+  {
+    "id": "mitimiti",
+    "name": "Mitimiti",
+    "lat": -35.44304730746896,
+    "lon": 173.32767061538746
+  },
+  {
+    "id": "puketi",
+    "name": "Puketi",
+    "lat": -35.20213200802538,
+    "lon": 173.69140163503218
+  },
+  {
+    "id": "parapara",
+    "name": "Parapara",
+    "lat": -35.05534148467114,
+    "lon": 173.39589493503365
+  },
+  {
+    "id": "tekao",
+    "name": "Te Kao",
+    "lat": -34.65177461439293,
+    "lon": 172.96693021841563
+  }
+];
+
+    // Thresholds and weights are designed to be sensible defaults.
+    // You should tune them to align with local impacts and signals.
+    const droughtConfig = {
+      windows: {
+        rainPastDays: 14,
+        rhPastDays: 7,
+        et0ForecastDays: 7,
+        vpdForecastDays: 7,
+        soilBaselineDays: 30
+      },
+
+      thresholds: {
+        rain14: { wet: 80, dry: 10 },       // mm in 14 days
+        rain7Forecast: { wet: 50, dry: 5 }, // mm in 7 days
+        rh7: { wet: 80, dry: 40 },          // %
+        et07: { low: 10, high: 30 },        // mm over next 7 days
+        vpd: { low: 0.5, high: 2.0 },       // kPa (typical)
+      },
+
+      // Soil layers included, and their weights (sum should be 1).
+      soilLayers: [
+        { key: "soil_moisture_0_1cm", label: "0-1 cm", w: 0.10 },
+        { key: "soil_moisture_1_3cm", label: "1-3 cm", w: 0.15 },
+        { key: "soil_moisture_3_9cm", label: "3-9 cm", w: 0.20 },
+        { key: "soil_moisture_9_27cm", label: "9-27 cm", w: 0.25 },
+        { key: "soil_moisture_27_81cm", label: "27-81 cm", w: 0.30 },
+      ],
+
+      // Overall weights for the combined index.
+      // If river data fails, weights are automatically renormalised.
+      weights: {
+        soil: 0.42,
+        rain: 0.30,
+        evap: 0.20,
+        river: 0.06,
+        humidity: 0.02
+      }
+    };
+
+    
+  </script>
+
+
+  <!-- Local Modules (switch src to hosted URLs when deploying) -->
+  <script src="./fn_drought_providers_cache_v43_2_13.js"></script>
+  <script src="./fn_drought_compute_hydro_v43_2_13.js"></script>
+  <script src="./fn_drought_module_content_display_v43_2_13.js"></script>
+  <script src="./fn_drought_render_ui_v43_2_13.js"></script>
+
+<script>
+/***********************
+     * Main Data Flow
+     ***********************/
+    async function refresh(opts){
+      const options = opts || {};
+      const forceProviders = !!options.forceProviders;
+
+      if (!Array.isArray(locations) || !locations.length){
+        showToast("No locations are loaded.");
+        return;
+      }
+
+      // Optional cache reset: keep caches between refreshes unless forcing providers or explicitly requested.
+      const resetDerivedCaches = !!options.resetDerivedCaches;
+      if (forceProviders || resetDerivedCaches){
+        try{ hilltopRangeCache.clear(); }catch(e){}
+        try{ clearProviderJsonCache(); }catch(e){}
+        try{ if (typeof climateDriversCache !== "undefined" && climateDriversCache){ climateDriversCache.fetchedAt = 0; climateDriversCache.enso = null; climateDriversCache.sam = null; climateDriversCache.mjo = null; climateDriversCache.loading = false; } }catch(e){}
+        try{ if (typeof districtHydroReadingsCache !== "undefined" && districtHydroReadingsCache) districtHydroReadingsCache.clear(); }catch(e){}
+        try{ if (typeof districtHydroHistoryCache !== "undefined" && districtHydroHistoryCache) districtHydroHistoryCache.clear(); }catch(e){}
+        try{ if (typeof districtHydroReadings !== "undefined" && districtHydroReadings) districtHydroReadings.key = ""; }catch(e){}
+        try{ if (typeof districtHydroTrend !== "undefined" && districtHydroTrend) districtHydroTrend.key = ""; }catch(e){}
+        try{ if (typeof _NRC_HYBRID_DISCHARGE_CACHE_ !== "undefined" && _NRC_HYBRID_DISCHARGE_CACHE_) _NRC_HYBRID_DISCHARGE_CACHE_.clear(); }catch(e){}
+        try{ if (typeof dataCache !== "undefined" && dataCache){ dataCache.riverHybridForLoc = null; dataCache.riverHybridAsOfKey = null; } }catch(e){}
+      }
+
+let pastDays = clamp(Number($("pastDays").value) || 30, 7, 92);
+      const forecastDays = clamp(Number($("forecastDays").value) || 7, 3, 16);
+
+  // Snapshot mode should always include at least 30 days lookback (like Live).
+  if (timeMode === "historic" && !historicUseRange){
+    pastDays = Math.max(pastDays, getSnapshotMinLookbackDays());
+  }
+      $("pastDays").value = pastDays;
+      $("forecastDays").value = forecastDays;
+
+      if (timeMode === "historic"){
+        const now = nowLocal();
+        if (!(asOfSnapshot instanceof Date) || isNaN(asOfSnapshot.getTime())){
+          asOfSnapshot = new Date(now.getTime());
+        }
+        if (asOfSnapshot > now){
+          asOfSnapshot = new Date(now.getTime());
+          localStorage.setItem(STORAGE_KEY_ASOF, asOfSnapshot.toISOString());
+          updateTimeControls();
+          showToast("Historic date is in the future. Using current time instead.");
+        }
+        $("tableHint").textContent = `Loading historical data as of ${formatDateTimeLocal(asOfSnapshot)}...`;
+      } else {
+        $("tableHint").textContent = "Loading Open-Meteo, river and groundwater data...";
+      }
+      setStatus("Loading");
+
+      // Cache-first: if the loaded cache fully covers the current view, do not call providers.
+      const preferCache = !!(DASH_CONFIG?.cache?.preferCacheWhenAvailable);
+      const cursor = (timeMode === "historic") ? asOfSnapshot : nowLocal();
+      const maxAgeMin = DASH_CONFIG?.cache?.maxCacheAgeMinutes;
+
+      // Optional UI toggle (not always present): when true, never fall back to live providers.
+      // If the checkbox isn't in this build, it simply defaults to false.
+      const providersOff = !!(document.getElementById("providersOff")?.checked);
+
+      const ageOk = (maxAgeMin == null || !(dataCache.loadedAt instanceof Date) || isNaN(dataCache.loadedAt.getTime()))
+        ? true
+        : ((Date.now() - dataCache.loadedAt.getTime()) <= (Number(maxAgeMin) * 60 * 1000));
+
+      if (!forceProviders && preferCache && dataCache.wxList && cacheMatchesCurrentLocations() && cacheCoversAsOf(cursor) && ageOk){
+        ensureCacheLocationsSig();
+        try{
+          // Hydrology values are snapshot-based in historic mode, so update them from cache/archive if available.
+          if (timeMode === "historic"){
+            await hydrateNrcGaugesAtAsOf(dataCache.riverForLoc, dataCache.gwForLoc, cursor);
+          }
+        } catch(e){
+          // Non-fatal: drought scoring can still render without a hydrology update.
+          console.warn("Hydrology hydrate from cache/archive failed:", e);
+        }
+
+        const minStr = (dataCache.rangeMin instanceof Date) ? ymdLocal(dataCache.rangeMin) : "";
+        const maxStr = (dataCache.rangeMax instanceof Date) ? ymdLocal(dataCache.rangeMax) : "";
+        $("tableHint").textContent = (minStr && maxStr)
+          ? `Using cached data (${minStr} to ${maxStr}). No provider calls were made.`
+          : "Using cached data. No provider calls were made.";
+
+        try{
+          if (droughtConfig && droughtConfig.useRiverHybridForIndex && typeof precomputeRiverHybridForIndexIfEnabled_ === "function"){
+            await precomputeRiverHybridForIndexIfEnabled_();
+          }
+        }catch(e){}
+
+        recomputeFromCache();
+        if (timeMode === "historic"){
+          updatePlaybackSlider();
+          setPlaybackStatus("Using cached data (no provider calls).");
+        }
+        try{ if (typeof window.eventsNotifyTimeRangeChanged_ === "function") window.eventsNotifyTimeRangeChanged_(); }catch(_e){}
+        setStatus("Ready");
+        return;
+      }
+
+      // If the cache is missing coverage and provider fallback is disabled, stop here.
+      if (!forceProviders && preferCache && dataCache.wxList && (providersOff || DASH_CONFIG?.import?.providerFallbackWhenMissing === false)){
+        showToast("Archive does not cover the requested window and provider fallback is disabled.");
+        setStatus("Ready");
+        return;
+      }
+
+try{
+        // Open-Meteo requests are batched to avoid 414 Request-URI Too Large when many locations are loaded.
+        // NRC river and groundwater datasets remain "best effort".
+        const nrcRiversP = (NRC_RIVERS_URL ? fetchJsonCached(NRC_RIVERS_URL, 25000, 12*60*60*1000, forceProviders, "NRC_RIVERS") : Promise.resolve(null));
+        const nrcGwP = (NRC_GW_URL ? fetchJsonCached(NRC_GW_URL, 25000, 12*60*60*1000, forceProviders, "NRC_GW") : Promise.resolve(null));
+
+        // Provider refresh replaces wx and flood series so invalidate derived hybrid cache to rebuild against the new model series
+        try{ if (typeof _NRC_HYBRID_DISCHARGE_CACHE_ !== "undefined" && _NRC_HYBRID_DISCHARGE_CACHE_) _NRC_HYBRID_DISCHARGE_CACHE_.clear(); }catch(e){}
+        try{ if (typeof dataCache !== "undefined" && dataCache){ dataCache.riverHybridForLoc = null; dataCache.riverHybridAsOfKey = null; } }catch(e){}
+
+        const om = await fetchOpenMeteoBatched(locations, pastDays, forecastDays);
+        const forecastData = om.forecastData;
+        const floodData = om.floodData;
+
+        if (!forecastData || !forecastData.length){
+          throw new Error("Forecast API failed");
+        }
+
+        const [nrcRivers, nrcGw] = await Promise.allSettled([nrcRiversP, nrcGwP])
+          .then(results => results.map(r => r.status === "fulfilled" ? r.value : null));
+
+        const wxList = forecastData;
+        const floodList = floodData || [];
+
+const riverSites = Array.isArray(nrcRivers) ? nrcRivers : [];
+const riverForLoc = locations.map(loc => pickNearestRiverSite(loc, riverSites));
+
+const gwSites = Array.isArray(nrcGw) ? nrcGw : [];
+const gwForLoc = locations.map(loc => pickNearestGroundwaterSite(loc, gwSites));
+
+if (timeMode === "historic"){
+  await hydrateNrcGaugesAtAsOf(riverForLoc, gwForLoc, getAsOfDate());
+}
+
+dataCache.wxList = wxList;
+dataCache.floodList = floodList;
+dataCache.riverSites = riverSites;
+dataCache.gwSites = gwSites;
+dataCache.riverForLoc = riverForLoc;
+dataCache.gwForLoc = gwForLoc;
+dataCache.locationsSig = fingerprintLocations(locations);
+dataCache.loadedAt = new Date();
+dataCache.pastDays = pastDays;
+dataCache.forecastDays = forecastDays;
+
+const range = deriveWxRange(wxList[0]);
+dataCache.rangeMin = range.min;
+dataCache.rangeMax = range.max;
+updateTimeInputMinMax();
+clampAsOfToRange();
+
+try{
+  if (droughtConfig && droughtConfig.useRiverHybridForIndex && typeof precomputeRiverHybridForIndexIfEnabled_ === "function"){
+    await precomputeRiverHybridForIndexIfEnabled_();
+  }
+}catch(e){}
+
+recomputeFromCache();
+
+if (timeMode === "historic"){
+  updatePlaybackSlider();
+  if (historicRangeStart && historicRangeEnd){
+    setPlaybackStatus("Range loaded. Press Play.");
+  }
+}
+
+try{ if (typeof window.eventsNotifyTimeRangeChanged_ === "function") window.eventsNotifyTimeRangeChanged_(); }catch(_e){}
+setStatus("Ready");
+
+      } catch (err){
+        console.error(err);
+        setStatus("Error");
+        document.getElementById("tableHint").textContent = "Error loading data";
+        showToast("Could not load one or more datasets. Check your network and try again.");
+      }
+    }
+
+    
+
+/***********************
+     * Boot
+     ***********************/
+    window.addEventListener("load", () => {
+      locations = loadLocations();
+      initMap();
+      if (typeof initTabSystem === "function") initTabSystem();
+      if (typeof initLocationTableColumnsUi === "function") initLocationTableColumnsUi();
+
+  // Best effort fetch of global climate drivers for context tags
+  ensureClimateDriversFetched();
+  applyClimateDriversToUi();
+
+// District env metric selector
+const envSel = document.getElementById("districtEnvMetric");
+if (envSel && !envSel._hooked){
+  envSel._hooked = true;
+  const saved = localStorage.getItem(STORAGE_KEY_ENV_METRIC);
+  if (saved) envSel.value = saved;
+  envSel.addEventListener("change", ()=>{
+    localStorage.setItem(STORAGE_KEY_ENV_METRIC, envSel.value);
+    districtEnvTrend.key = null;
+    scheduleDistrictTrendBuild();
+  });
+}
+
+// Time explorer controls
+const selTimeMode = document.getElementById("timeMode");
+const inpAsOf = document.getElementById("asOfInput");
+if (selTimeMode && inpAsOf){
+  const savedMode = localStorage.getItem(STORAGE_KEY_TIMEMODE);
+  if (savedMode === "historic" || savedMode === "live") timeMode = savedMode;
+  else if (savedMode === "snapshot") timeMode = "historic";
+
+  const savedAsOf = localStorage.getItem(STORAGE_KEY_ASOF);
+  if (savedAsOf){
+    const d = new Date(savedAsOf);
+    if (!isNaN(d.getTime())) asOfSnapshot = d;
+  }
+  if (!asOfSnapshot) asOfSnapshot = new Date();
+
+  updateTimeControls();
+
+  
+selTimeMode.addEventListener("change", async () => {
+    stopPlayback();
+    timeMode = selTimeMode.value === "historic" ? "historic" : "live";
+    localStorage.setItem(STORAGE_KEY_TIMEMODE, timeMode);
+
+    if (timeMode === "historic"){
+      // Snapshot mode is the default. Load Range switches Playback on.
+      historicUseRange = false;
+      // Keep existing loaded cursor (or now) but do not auto-fetch.
+      if (!(asOfSnapshot instanceof Date) || isNaN(asOfSnapshot.getTime())){
+        asOfSnapshot = new Date(nowLocal().getTime());
+        localStorage.setItem(STORAGE_KEY_ASOF, asOfSnapshot.toISOString());
+      }
+      pendingAsOfStr = formatDateTimeLocal(asOfSnapshot);
+      updateTimeControls();
+      updatePlaybackSlider();
+      setPlaybackStatus("Pick a Historic Date Time then click Load Snapshot, or use Playback to load a range.");
+      // Show whatever is currently in cache without forcing fetch
+      try{
+        if (typeof droughtConfig !== "undefined" && droughtConfig && droughtConfig.useRiverHybridForIndex && typeof precomputeRiverHybridForIndexIfEnabled_ === "function"){
+          await precomputeRiverHybridForIndexIfEnabled_();
+        }
+      }catch(_e){}
+      recomputeFromCache();
+      try{ if (typeof window.eventsNotifyTimeRangeChanged_ === "function") window.eventsNotifyTimeRangeChanged_(); }catch(_e){}
+      return;
+    }
+
+    // Live mode: return to now and refresh providers normally
+    pendingAsOfStr = null;
+    updateTimeControls();
+    updatePlaybackSlider();
+    await refresh();
+  });
+
+  inpAsOf.addEventListener("change", () => {
+    if (timeMode !== "historic") return;
+    pendingAsOfStr = inpAsOf.value;
+    const btnSnap = document.getElementById("btnLoadSnapshot");
+    if (btnSnap) btnSnap.disabled = !parseDateTimeLocal(pendingAsOfStr);
+    // No auto-load here.
+  });
+
+  const btnLoadSnapshot = document.getElementById("btnLoadSnapshot");
+  if (btnLoadSnapshot){
+    btnLoadSnapshot.addEventListener("click", async () => {
+      if (timeMode !== "historic") return;
+      stopPlayback();
+      historicUseRange = false;
+      const d = parseDateTimeLocal(inpAsOf.value);
+      if (!d){
+        showToast("Invalid historic date and time.");
+        return;
+      }
+      pendingAsOfStr = inpAsOf.value;
+      setPlaybackStatus(`Loading snapshot ${formatDateTimeLocal(d)}...`);
+      await seekCursor(d, { allowRefresh: true });
+      setPlaybackStatus(`Snapshot loaded: ${formatDateTimeLocal(getAsOfDate())}`);
+      // Button disable state depends on the picker value
+      btnLoadSnapshot.disabled = !parseDateTimeLocal(inpAsOf.value);
+    });
+  }
+}
+
+
+  if (inpAsOf && timeMode === "live") inpAsOf.disabled = true;
+
+
+// Playback controls (historic range)
+syncPlaybackInputs();
+showPlaybackPanel(timeMode === "historic");
+updatePlaybackSlider();
+
+const inpRangeStart = document.getElementById("rangeStartInput");
+const inpRangeEnd = document.getElementById("rangeEndInput");
+const btnLoadRange = document.getElementById("btnLoadRange");
+const btnPlay = document.getElementById("btnPlay");
+const btnPause = document.getElementById("btnPause");
+const btnStepBack = document.getElementById("btnStepBack");
+const btnStepFwd = document.getElementById("btnStepFwd");
+const selStep = document.getElementById("playStep");
+const selSpeed = document.getElementById("playSpeed");
+const chkLoop = document.getElementById("playLoop");
+const chkHydro = document.getElementById("playHydro");
+const playSlider = document.getElementById("playSlider");
+
+function readAndPersistPlaybackSettings(){
+  if (selStep){
+    playbackState.stepMinutes = Number(selStep.value) || playbackState.stepMinutes;
+    localStorage.setItem(STORAGE_KEY_PLAY_STEP, String(playbackState.stepMinutes));
+  }
+  if (selSpeed){
+    playbackState.speedMs = Number(selSpeed.value) || playbackState.speedMs;
+    localStorage.setItem(STORAGE_KEY_PLAY_SPEED, String(playbackState.speedMs));
+  }
+  if (chkLoop){
+    playbackState.loop = !!chkLoop.checked;
+    localStorage.setItem(STORAGE_KEY_PLAY_LOOP, String(playbackState.loop));
+  }
+  if (chkHydro){
+    playbackState.hydro = !!chkHydro.checked;
+    localStorage.setItem(STORAGE_KEY_PLAY_HYDRO, String(playbackState.hydro));
+  }
+}
+
+if (selStep) selStep.addEventListener("change", () => { readAndPersistPlaybackSettings(); updatePlaybackSlider(); });
+if (selSpeed) selSpeed.addEventListener("change", () => { readAndPersistPlaybackSettings(); if (playbackState.isPlaying){ stopPlayback(); startPlayback(); } });
+if (chkLoop) chkLoop.addEventListener("change", () => { readAndPersistPlaybackSettings(); });
+if (chkHydro) chkHydro.addEventListener("change", () => { readAndPersistPlaybackSettings(); });
+
+if (btnLoadRange){
+  btnLoadRange.addEventListener("click", async () => {
+    readAndPersistPlaybackSettings();
+    stopPlayback();
+    historicUseRange = true;
+
+    const dStart = inpRangeStart ? parseDateTimeLocal(inpRangeStart.value) : null;
+    const dEnd = inpRangeEnd ? parseDateTimeLocal(inpRangeEnd.value) : null;
+    if (!dStart || !dEnd){
+      showToast("Please set Range Start and Range End.");
+      return;
+    }
+
+    historicRangeStart = dStart;
+    historicRangeEnd = dEnd;
+    if (historicRangeStart > historicRangeEnd){
+      const tmp = historicRangeStart; historicRangeStart = historicRangeEnd; historicRangeEnd = tmp;
+    }
+
+    localStorage.setItem(STORAGE_KEY_RANGE_START, historicRangeStart.toISOString());
+    localStorage.setItem(STORAGE_KEY_RANGE_END, historicRangeEnd.toISOString());
+
+    // Set cursor to range start for a consistent playback start
+    asOfSnapshot = new Date(historicRangeStart.getTime());
+    localStorage.setItem(STORAGE_KEY_ASOF, asOfSnapshot.toISOString());
+    if (inpAsOf){
+    inpAsOf.value = formatDateTimeLocal(asOfSnapshot);
+    pendingAsOfStr = inpAsOf.value;
+  }
+
+    updatePlaybackSlider();
+    setPlaybackStatus(`Loading range ${formatDateTimeLocal(historicRangeStart)} to ${formatDateTimeLocal(historicRangeEnd)}...`);
+
+    // Fetch once for the whole range (with buffers)
+    await refresh();
+
+    setPlaybackStatus("Range loaded. Press Play.");
+    updatePlaybackSlider();
+  });
+}
+
+if (playSlider){
+  playSlider.addEventListener("input", async () => {
+    stopPlayback();
+    const c = getCursorFromSlider();
+    if (c) await seekCursor(c, { allowRefresh: false });
+  });
+}
+
+if (btnStepBack){
+  btnStepBack.addEventListener("click", async () => {
+    stopPlayback();
+    const slider = document.getElementById("playSlider");
+    if (!slider) return;
+    let v = Number(slider.value) || 0;
+    v = Math.max(Number(slider.min)||0, v-1);
+    slider.value = String(v);
+    const c = getCursorFromSlider();
+    if (c) await seekCursor(c, { allowRefresh: false });
+  });
+}
+
+if (btnStepFwd){
+  btnStepFwd.addEventListener("click", async () => {
+    stopPlayback();
+    const slider = document.getElementById("playSlider");
+    if (!slider) return;
+    let v = Number(slider.value) || 0;
+    v = Math.min(Number(slider.max)||0, v+1);
+    slider.value = String(v);
+    const c = getCursorFromSlider();
+    if (c) await seekCursor(c, { allowRefresh: false });
+  });
+}
+
+if (btnPlay) btnPlay.addEventListener("click", () => { readAndPersistPlaybackSettings(); startPlayback(); });
+if (btnPause) btnPause.addEventListener("click", () => { stopPlayback(); });
+
+      document.getElementById("btnRefresh").addEventListener("click", () => refresh({ forceProviders: true }));
+      document.getElementById("btnEditLocations").addEventListener("click", openModal);
+      document.getElementById("btnSettings").addEventListener("click", openSettingsModal);
+
+      // Settings init
+      loadSettings();
+      applySettingsToRuntime();
+      wireSettingsUi();
+      wireDebugUi();
+      const btnDebug = $("btnDebug");
+      if (btnDebug) btnDebug.addEventListener("click", openDebugModal);
+
+  // District Hydrology Readings Over Time modal
+  const hydroModalBack = document.getElementById("hydroModalBack");
+  const hydroModalBody = document.getElementById("hydroModalBody");
+  const hydroCardHost = document.getElementById("districtHydroReadingsCardHost");
+  const hydroCard = document.getElementById("districtHydroReadingsCard");
+  const btnOpenHydroModal = document.getElementById("btnOpenDistrictHydroModal");
+  const btnReturnHydroToDashboard = document.getElementById("btnReturnHydroToDashboard");
+
+  function isHydroModalOpen(){
+    return !!(hydroModalBack && hydroModalBack.style.display === "flex");
+  }
+
+  function redrawHydroReadingsSoon(){
+    setTimeout(() => {
+      try{
+        if (typeof scheduleDistrictHydroReadingsBuild === "function") scheduleDistrictHydroReadingsBuild();
+        else if (typeof buildDistrictHydroReadings === "function") buildDistrictHydroReadings();
+      } catch(e){}
+    }, 80);
+  }
+
+  function openHydroModal(){
+    if (!hydroModalBack || !hydroModalBody || !hydroCard) return;
+    document.body.classList.add("hydro-modal-open");
+    hydroModalBack.style.display = "flex";
+    hydroModalBody.appendChild(hydroCard);
+    redrawHydroReadingsSoon();
+  }
+
+  function closeHydroModal(){
+    if (!hydroModalBack || !hydroCardHost || !hydroCard) return;
+    document.body.classList.remove("hydro-modal-open");
+    hydroModalBack.style.display = "none";
+    hydroCardHost.appendChild(hydroCard);
+    redrawHydroReadingsSoon();
+  }
+
+  if (btnOpenHydroModal) btnOpenHydroModal.addEventListener("click", openHydroModal);
+  if (btnReturnHydroToDashboard) btnReturnHydroToDashboard.addEventListener("click", closeHydroModal);
+
+  if (hydroModalBack){
+    hydroModalBack.addEventListener("click", (e) => {
+      if (e.target === hydroModalBack) closeHydroModal();
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isHydroModalOpen()) closeHydroModal();
+  });
+
+
+
+      document.getElementById("btnDownloadData").addEventListener("click", async () => {
+        try{
+          const bundle = buildExportBundle();
+          await downloadObjectAsFile(bundle);
+        } catch (e){
+          console.error(e);
+          showToast("Could not build a download bundle. See console for details.");
+        }
+      });
+
+      
+
+      const btnZip = document.getElementById("btnExportZip");
+      if (btnZip){
+        btnZip.addEventListener("click", async () => {
+          try{
+            await exportZipGithubLayout();
+          } catch (e){
+            console.error(e);
+            showToast("ZIP export failed. See console for details.");
+          }
+        });
+      }
+
+const fileInp = document.getElementById("fileLoadData");
+      document.getElementById("btnLoadData").addEventListener("click", () => {
+        if (fileInp) fileInp.click();
+      });
+
+      if (fileInp){
+        fileInp.addEventListener("change", async (e) => {
+          const f = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+          if (!f) return;
+          try{
+            const bundle = await parseBundleFromFile(f);
+            if (!applyLoadedBundle(bundle)){
+              showToast("Bundle could not be loaded.");
+            }
+          } catch (err){
+            console.error(err);
+            showToast("Could not read that file. If it is .gz, your browser may not support DecompressionStream.");
+          } finally {
+            fileInp.value = "";
+          }
+        });
+
+      // Load ZIP manifest (split GitHub layout)
+      const zipInp = document.getElementById("fileLoadZipManifest");
+      document.getElementById("btnLoadZipManifest").addEventListener("click", () => {
+        if (zipInp) zipInp.click();
+      });
+
+      if (zipInp){
+        zipInp.addEventListener("change", async (e) => {
+          const f = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+          if (!f) return;
+          try{
+            await loadZipManifestSplitLayout(f);
+          } finally {
+            zipInp.value = "";
+          }
+        });
+      }
+
+      }
+
+      
+// Hosted manifest URL import (GitHub raw/GitHub Pages)
+const manifestUrlField = document.getElementById("manifestUrlField");
+const manifestUrlInput = document.getElementById("manifestUrlInput");
+const btnLoadManifestUrl = document.getElementById("btnLoadManifestUrl");
+
+if (DASH_CONFIG?.import?.enableManifestUrlLoad){
+  if (manifestUrlField) manifestUrlField.style.display = "inline-flex";
+  if (btnLoadManifestUrl) btnLoadManifestUrl.style.display = "inline-block";
+
+  const rememberKey = DASH_CONFIG?.import?.manifestUrlRememberKey || "";
+  const remembered = rememberKey ? localStorage.getItem(rememberKey) : null;
+
+  if (manifestUrlInput){
+    manifestUrlInput.value = (remembered && String(remembered).trim()) ? String(remembered) : String(DASH_CONFIG?.import?.manifestUrlDefault || "");
+    manifestUrlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter"){
+        e.preventDefault();
+        if (btnLoadManifestUrl) btnLoadManifestUrl.click();
+      }
+    });
+  }
+
+  if (btnLoadManifestUrl){
+    btnLoadManifestUrl.addEventListener("click", async () => {
+      const u = manifestUrlInput ? String(manifestUrlInput.value || "").trim() : "";
+      if (!u){
+        showToast("Please enter a manifest URL.");
+        return;
+      }
+      try{
+        await loadHostedManifestUrl(u);
+        if (rememberKey) localStorage.setItem(rememberKey, u);
+      } catch (e){
+        console.error(e);
+        showToast("Hosted manifest load failed. See console for details.");
+      }
+    });
+  }
+} else {
+  if (manifestUrlField) manifestUrlField.style.display = "none";
+  if (btnLoadManifestUrl) btnLoadManifestUrl.style.display = "none";
+}
+
+document.getElementById("btnClearLoadedData").addEventListener("click", () => {
+        clearLoadedData();
+      });
+
+      document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+
+      document.getElementById("btnResetLocations").addEventListener("click", () => {
+        locations = DEFAULT_LOCATIONS.slice();
+        document.getElementById("locationsJson").value = JSON.stringify(locations, null, 2);
+        showToast("Reset to default locations.");
+      });
+
+      document.getElementById("btnSaveLocations").addEventListener("click", () => {
+        const parsed = safeJsonParse(document.getElementById("locationsJson").value);
+        if (!Array.isArray(parsed)){
+          showToast("Invalid JSON. Expected an array of locations.");
+          return;
+        }
+        const cleaned = parsed
+          .filter(x => x && typeof x === "object")
+          .map(x => ({
+            id: String(x.id ?? "").trim() || ("loc_" + Math.random().toString(16).slice(2)),
+            name: String(x.name ?? "Unnamed").trim(),
+            lat: Number(x.lat),
+            lon: Number(x.lon)
+          }))
+          .filter(x => isFinite(x.lat) && isFinite(x.lon) && x.name);
+
+        if (!cleaned.length){
+          showToast("No valid locations found. Each location needs name, lat and lon.");
+          return;
+        }
+        locations = cleaned;
+        saveLocations(locations);
+        closeModal();
+        showToast("Locations saved. Refreshing data.");
+        refresh();
+      });
+
+      document.getElementById("modalBack").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("modalBack")) closeModal();
+      });
+      if (DASH_CONFIG?.startup?.autoRefreshOnLoad){
+        refresh({ forceProviders: true });
+      } else {
+        // Stay idle until the user clicks Refresh or loads an archive ZIP/manifest
+        $("tableHint").textContent = "Ready. Load an archive ZIP/manifest or click Refresh to fetch from providers.";
+        setStatus("Ready");
+      }
+    });
+  
+  </script>
+</body>
+</html>
