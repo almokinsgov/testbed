@@ -1,7 +1,11 @@
-export_timestamp=20260215_144031
-source_root=D:\dev2\workspacewithai\Projects\FNED\fned_split_bundle_v4
-files=
-- v23_v32_split_js_v2.html
-- fned_module_editor.js
-- rwas_region_warning.js
-- situation_map_feed.js
+export_timestamp=20260215_145005
+export_type=live_v2
+html=fned_dashboard_live_v2.html
+js_files=
+- situation_map_feed_v2.js
+- rwas_region_warning_v2.js
+- fned_module_editor_v2.js
+script_ref_updates=
+- ./situation_map_feed.js -> ./situation_map_feed_v2.js
+- ./rwas_region_warning.js -> ./rwas_region_warning_v2.js
+- ./fned_module_editor.js -> ./fned_module_editor_v2.js
