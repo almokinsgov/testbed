@@ -49,3 +49,39 @@ Add
 
 Change
 - None
+
+## Run 85 Updates
+
+### Added Files
+
+- index.html
+
+### Modified Files
+
+#### manifest.webmanifest
+
+Remove
+- start_url "./v23_v32_split_js_v2.html"
+
+Add
+- id "./"
+
+Change
+- start_url is now "./" so GitHub Pages root URL is installable
+
+#### service-worker.js
+
+Remove
+- Precaching of non existent ./src/* files
+
+Add
+- Precaching for ./ and ./index.html
+
+Change
+- Version bumped to 0.1.1
+
+#### fned_notifications.js
+
+Change
+- iOS install guidance now triggers before Notification API detection so iPhone Chrome tabs show install instructions instead of a generic unavailable message
+- Version bumped to 0.1.4

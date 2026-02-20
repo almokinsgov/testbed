@@ -103,3 +103,19 @@ iPhone
 Notes
 
 - This run does not include push notifications. It supports notifications while the app is open.
+
+## Run 85 Handover
+
+Key focus
+- Fix PWA install prompt not appearing on GitHub Pages
+- Ensure iPhone Chrome shows install guidance instead of Notification API errors
+
+Changes
+- Added index.html and updated manifest to start_url "./"
+- Added manifest.json and updated HTML to use it
+- Updated service worker cache list and version
+- Updated fned_notifications iOS support detection order
+
+Next
+- If you want a visible Install button, add a CTA action to call FNED_PWA_API.promptInstall()
+- Consider adding a small PWA status tile in the header for staff testing

@@ -1,6 +1,6 @@
 /*
   FNED Service Worker
-  Version: 0.1.0
+  Version: 0.1.1
 
   Goals
   - Support PWA install
@@ -14,28 +14,27 @@
 (function () {
   "use strict";
 
-  var SW_VERSION = "0.1.0";
+  var SW_VERSION = "0.1.1";
   var CACHE_SHELL = "fned-shell-v" + SW_VERSION;
   var CACHE_RUNTIME = "fned-runtime-v" + SW_VERSION;
 
   var PRECACHE_URLS = [
-    "./v23_v32_split_js_v2.html",
-    "./manifest.webmanifest",
-    "./service-worker.js",
-    "./fned_pwa.js",
-    "./src/config/editor_config_utils.js",
-    "./src/data/endpoints.js",
-    "./src/data/fetch_helpers.js",
-    "./fned_notifications.js",
-    "./fned_module_editor.js",
-    "./rwas_region_warning.js",
-    "./situation_map_feed.js",
-    "./files/fned_custom_messages_example.json",
-    "./files/public_closures_FNDC_data.js",
-    "./files/public_closures_FNDC.json",
-    "./icons/icon-192.png",
-    "./icons/icon-512.png",
-    "./icons/apple-touch-icon-180.png"
+    './',
+    './index.html',
+    './v23_v32_split_js_v2.html',
+    './manifest.json',
+    './service-worker.js',
+    './fned_pwa.js',
+    './fned_notifications.js',
+    './fned_module_editor.js',
+    './rwas_region_warning.js',
+    './situation_map_feed.js',
+    './files/fned_custom_messages_example.json',
+    './files/public_closures_FNDC_data.js',
+    './files/public_closures_FNDC.json',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    './icons/apple-touch-icon-180.png'
   ];
 
   self.addEventListener("install", function (event) {

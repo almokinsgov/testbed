@@ -72,3 +72,15 @@ Changes include:
 - Updated notification CTA behaviour on iPhone: shows Install For Notifications and opens install help
 - Added Install Help button and PWA status line in the editor notification settings
 - Bumped fned_notifications.js to 0.1.3
+
+## Run 85
+
+Fixed GitHub Pages PWA install eligibility and improved iPhone Chrome install guidance.
+
+Changes include:
+
+- Added index.html as a stable PWA start_url entry point for GitHub Pages
+- Updated manifest.webmanifest to use start_url "./" and include an id
+- Fixed service-worker.js precache list to only include files that exist in this bundle (previous missing src paths caused install failures)
+- Updated iOS detection logic so install guidance is shown on iPhone and iPad even when Notification is undefined in browser tabs
+- Bumped service-worker.js and fned_notifications.js versions

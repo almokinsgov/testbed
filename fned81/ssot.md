@@ -55,3 +55,8 @@ Editor integration:
 
 - Added PWA support (manifest, service worker, icons) so the dashboard can be installed to Home Screen.
 - iPhone guidance is now built in: the Receive Notifications CTA and editor can open install steps.
+
+## Run 85 Note
+
+- Added index.html and switched the manifest link to manifest.json for better GitHub Pages install detection in Chrome.
+- Notification support checks now show iOS install guidance even when Notification is undefined in iPhone browser tabs.

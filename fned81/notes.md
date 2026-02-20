@@ -84,3 +84,8 @@ Run 80 adds a migration step during config sanitise so older saved configs are u
 - FNED is now a PWA with a manifest, icons, and a service worker.
 - On iPhone, notifications can be enabled after installing to Home Screen and launching in standalone mode.
 - The Receive Notifications CTA will show Install For Notifications on iPhone browser tabs and opens the install steps.
+
+## Run 85 Notes
+
+- Added index.html and switched manifest link to manifest.json to improve PWA install detection on GitHub Pages.
+- Updated Notification support detection so iPhone Chrome browser tabs show install guidance instead of a generic Notification API unavailable message.

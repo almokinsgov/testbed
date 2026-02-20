@@ -1,12 +1,15 @@
 FNED live export bundle
 
 Open:
+- index.html (recommended)
 - v23_v32_split_js_v2.html
 
 Recommended:
 - Serve with a local static server (e.g. VS Code Live Server) to avoid browser file:// restrictions.
 
 Included runtime files:
+- index.html
+- manifest.json
 - manifest.webmanifest
 - service-worker.js
 - fned_pwa.js
@@ -26,3 +29,6 @@ iPhone install steps for notifications:
 2. Share then Add to Home Screen
 3. Open FNED from the Home Screen icon
 4. Tap Receive Notifications
+
+iPhone Chrome note:
+- iPhone Chrome cannot install to Home Screen directly. Use Safari for the install steps.

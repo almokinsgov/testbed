@@ -91,3 +91,22 @@ Allow FNED to be installed as a PWA so iPhone users can enable notifications in 
 - Added iPhone and iPad detection so browser notifications are treated as unavailable unless the dashboard is running as an installed Home Screen web app.
 - Updated Notification constructor usage to rely on the detected Notification constructor, reducing edge case errors.
 - Documentation updated with iOS requirements and toast fallback behaviour.
+
+# Run 85 - GitHub Pages Install Fix and iPhone Chrome Guidance
+Date: 2026-02-21
+
+## Goal
+Make PWA install detection reliable on GitHub Pages and ensure iPhone Chrome shows install guidance instead of a generic Notification API unavailable message.
+
+## Changes
+1. PWA entry and manifest compatibility
+- Added index.html as a stable start_url
+- Added manifest.json and updated HTML to link to it (GitHub Pages can serve .webmanifest with less compatible content types)
+- Updated manifest start_url to "./" and added id
+
+2. Notification support detection
+- iOS install guidance now triggers before Notification API checks
+
+3. Service worker
+- Updated precache list to include index.html and manifest.json
+- Version bumped to 0.1.1

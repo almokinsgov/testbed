@@ -1,6 +1,6 @@
 /*
   FNED Notifications and Custom Messages
-  Version: 0.1.3
+  Version: 0.1.4
 
   Goal
   - While the dashboard tab is open, poll for alerts and custom messages
@@ -19,7 +19,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.1.3";
+  var VERSION = "0.1.4";
 
   var DEFAULT_NOTIFICATIONS_CFG = {
     enabled: true,
@@ -352,6 +352,12 @@
   }
 
   function browserNotificationSupport() {
+    // iOS and iPadOS only support web notifications in installed Home Screen web apps.
+    // We return the install guidance even if Notification is undefined in this context.
+    if (isIOSDevice() && !isStandaloneMode()) {
+      return { supported: false, code: "ios-install", reason: "On iPhone and iPad, notifications work after Add to Home Screen. Open in Safari then install." };
+    }
+
     var N = getNotificationCtor();
     if (!N) {
       return { supported: false, code: "no-api", reason: "Notification API is not available on this device or browser." };
@@ -360,11 +366,6 @@
     // Some environments define Notification but only allow it in secure contexts.
     if (!isSecureOriginForNotifications()) {
       return { supported: false, code: "insecure", reason: "Browser notifications require HTTPS or localhost. Toasts will still work." };
-    }
-
-    // iOS and iPadOS only support web notifications in installed Home Screen web apps.
-    if (isIOSDevice() && !isStandaloneMode()) {
-      return { supported: false, code: "ios-install", reason: "On iPhone and iPad, notifications work after Add to Home Screen. Open in Safari then install." };
     }
 
     // Some browsers can throw when accessing permission in restricted contexts.

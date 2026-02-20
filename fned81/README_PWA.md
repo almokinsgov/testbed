@@ -18,11 +18,16 @@ If FNED is opened in a normal browser tab on iPhone, the Receive Notifications C
 
 ## Files Added
 
-- manifest.webmanifest
+- manifest.json
+- manifest.webmanifest (kept for reference)
 - service-worker.js
 - fned_pwa.js
 - icons folder
 
+
+## GitHub Pages Note
+
+GitHub Pages does not always serve .webmanifest with an ideal content type. This bundle links to manifest.json for best compatibility with Chrome install detection.
 ## Service Worker Notes
 
 - The service worker caches the app shell and local files for faster reload and basic offline support
