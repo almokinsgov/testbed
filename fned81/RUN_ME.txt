@@ -1,0 +1,18 @@
+FNED live export bundle
+
+Open:
+- v23_v32_split_js_v2.html
+
+Recommended:
+- Serve with a local static server (e.g. VS Code Live Server) to avoid browser file:// restrictions.
+
+Included runtime files:
+- situation_map_feed.js
+- rwas_region_warning.js
+- fned_notifications.js
+- fned_module_editor.js
+- src/config/editor_config_utils.js
+- src/data/endpoints.js
+- src/data/fetch_helpers.js
+- files/public_closures_FNDC_data.js
+- files/fned_custom_messages_example.json
