@@ -121,3 +121,13 @@ Change
 - Added secure origin detection (https or localhost) and improved Notification API feature detection
 - Wrapped requestPermission so it never throws and never leaves unhandled promise rejections
 - CTA now shows "Toasts Only" when browser notifications are unavailable and explains why via toast
+
+## Run 83 Fix
+
+### fned_notifications.js
+
+Change
+
+- Close getNotificationCtor correctly so helper functions are in the correct scope
+- Remove an extra stray closing brace after isStandaloneMode
+- Bump script version to 0.1.2

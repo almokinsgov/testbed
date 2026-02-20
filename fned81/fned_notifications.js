@@ -1,6 +1,6 @@
 /*
   FNED Notifications and Custom Messages
-  Version: 0.1.1
+  Version: 0.1.2
 
   Goal
   - While the dashboard tab is open, poll for alerts and custom messages
@@ -19,7 +19,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.1.0";
+  var VERSION = "0.1.2";
 
   var DEFAULT_NOTIFICATIONS_CFG = {
     enabled: true,
@@ -271,6 +271,7 @@
     } catch (e) {
       return null;
     }
+  }
 
   function isIOSDevice() {
     try {
@@ -301,8 +302,6 @@
     }
 
     return false;
-  }
-
   }
 
   function isSecureOriginForNotifications() {

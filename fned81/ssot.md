@@ -46,3 +46,7 @@ Editor integration:
 ## Run 82 Note
 
 - On iPhone and iPad, browser notifications are only supported when the dashboard is installed and launched as a Home Screen web app. FNED falls back to toasts in normal browser tabs.
+
+## Run 83 Note
+
+- Fixed fned_notifications.js helper scope so isIOSDevice and related functions are available to notification support checks.

@@ -73,3 +73,8 @@ Run 80 adds a migration step during config sanitise so older saved configs are u
 ## iPhone and iPad
 
 - iOS requires Add to Home Screen for system notifications. In normal browser tabs FNED uses toasts only.
+
+## Run 83 Notes
+
+- iOS browser tabs will use toasts only.
+- isIOSDevice and isStandaloneMode helpers are now correctly in the top level FNED notifications scope.

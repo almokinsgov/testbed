@@ -70,3 +70,9 @@ How to test quickly
 - Issue: iPhone (Chrome on iOS) reports notifications not supported and can throw Notification API errors.
 - Fix: fned_notifications.js now detects iOS and requires standalone mode for browser notifications. Otherwise FNED uses toasts only.
 - Operator: For iOS system notifications, users must Add to Home Screen and open from the icon.
+
+## Run 83 Handover
+
+- Issue: isIOSDevice is not defined error on iPhone test.
+- Cause: Missing brace in fned_notifications.js placed isIOSDevice inside getNotificationCtor, plus an extra stray closing brace.
+- Fix: Closed getNotificationCtor correctly and removed the stray brace. Notification support now correctly falls back to toasts on iOS non standalone.

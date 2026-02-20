@@ -47,3 +47,13 @@ Changes include:
 
 - iOS gating: Treat browser notifications as unavailable unless running in standalone (Add to Home Screen).
 - Hardened Notification constructor usage to avoid platform specific errors.
+
+## Run 83
+
+Fixed a JavaScript scoping bug that caused isIOSDevice to be undefined.
+
+Changes include:
+
+- Fixed a missing closing brace in getNotificationCtor that incorrectly scoped helper functions
+- Removed an extra stray closing brace after isStandaloneMode
+- Bumped fned_notifications.js to 0.1.2
