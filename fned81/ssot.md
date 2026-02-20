@@ -42,3 +42,7 @@ Editor integration:
 ## Run 81 Note
 
 - Browser notifications are only enabled on secure origins (https or localhost). On mobile testing over http local IP the system falls back to toasts only.
+
+## Run 82 Note
+
+- On iPhone and iPad, browser notifications are only supported when the dashboard is installed and launched as a Home Screen web app. FNED falls back to toasts in normal browser tabs.

@@ -1,6 +1,6 @@
 /*
   FNED Notifications and Custom Messages
-  Version: 0.1.0
+  Version: 0.1.1
 
   Goal
   - While the dashboard tab is open, poll for alerts and custom messages
@@ -271,6 +271,38 @@
     } catch (e) {
       return null;
     }
+
+  function isIOSDevice() {
+    try {
+      var ua = (navigator && navigator.userAgent) ? navigator.userAgent : "";
+      var platform = (navigator && navigator.platform) ? navigator.platform : "";
+      var isIOS = /iPad|iPhone|iPod/.test(ua);
+      // iPadOS 13+ can identify as MacIntel
+      var isIPadOS = platform === "MacIntel" && navigator && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 1;
+      return isIOS || isIPadOS;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function isStandaloneMode() {
+    try {
+      // iOS Safari adds navigator.standalone for home screen apps
+      if (typeof navigator !== "undefined" && navigator && navigator.standalone) return true;
+    } catch (e) {
+      // ignore
+    }
+
+    try {
+      // Standard display-mode media query
+      if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return true;
+    } catch (e2) {
+      // ignore
+    }
+
+    return false;
+  }
+
   }
 
   function isSecureOriginForNotifications() {
@@ -304,6 +336,11 @@
     // Some environments define Notification but only allow it in secure contexts.
     if (!isSecureOriginForNotifications()) {
       return { supported: false, reason: "Browser notifications require HTTPS or localhost. Toasts will still work." };
+    }
+
+    // iOS and iPadOS only support web notifications in installed Home Screen web apps.
+    if (isIOSDevice() && !isStandaloneMode()) {
+      return { supported: false, reason: "On iPhone and iPad, browser notifications only work after Add to Home Screen. Toasts will still work." };
     }
 
     // Some browsers can throw when accessing permission in restricted contexts.
@@ -510,7 +547,10 @@
     var url = (opts && opts.url) ? String(opts.url) : "";
 
     try {
-      var n = new window.Notification(title, {
+      var N = getNotificationCtor();
+      if (!N || typeof N !== "function") return;
+
+      var n = new N(title, {
         body: body,
         tag: tag,
         renotify: false

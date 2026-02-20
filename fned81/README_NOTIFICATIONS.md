@@ -100,3 +100,8 @@ This can later be upgraded into:
 
 - A PWA service worker for background sync and push notifications
 
+## iPhone and iPad Notes
+
+- On iOS, browser notifications are not available in normal Safari or Chrome tabs.
+- To enable system notifications on iPhone or iPad, the dashboard must be installed as a Home Screen web app (Add to Home Screen) and then opened from the Home Screen icon.
+- FNED will always fall back to in page toasts when browser notifications are unavailable.

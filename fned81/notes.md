@@ -69,3 +69,7 @@ If you need exact minute scheduling, this same structure still works. You just s
 If you previously saved dashboard settings in this browser, the dashboard loads those values from localStorage.
 
 Run 80 adds a migration step during config sanitise so older saved configs are updated automatically. This ensures the bell CTA becomes "Receive Notifications" and it is wired to the notification permission action.
+
+## iPhone and iPad
+
+- iOS requires Add to Home Screen for system notifications. In normal browser tabs FNED uses toasts only.

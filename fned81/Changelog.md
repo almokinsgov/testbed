@@ -58,3 +58,9 @@ Make the dashboard notification opt in visible for users and make notification s
 - Added secure origin detection (https or localhost) and improved feature detection.
 - CTA now shows "Toasts Only" when browser notifications are unavailable.
 
+
+## Run 82
+
+- Added iPhone and iPad detection so browser notifications are treated as unavailable unless the dashboard is running as an installed Home Screen web app.
+- Updated Notification constructor usage to rely on the detected Notification constructor, reducing edge case errors.
+- Documentation updated with iOS requirements and toast fallback behaviour.

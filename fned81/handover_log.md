@@ -64,3 +64,9 @@ How to test quickly
 1. Open the dashboard on a phone via a local IP address (http). Confirm that toasts still work.
 2. Click the notifications CTA. Confirm it explains the HTTPS requirement and does not throw console errors.
 3. Test on https or localhost and confirm the permission prompt works.
+
+## Run 82 Handover
+
+- Issue: iPhone (Chrome on iOS) reports notifications not supported and can throw Notification API errors.
+- Fix: fned_notifications.js now detects iOS and requires standalone mode for browser notifications. Otherwise FNED uses toasts only.
+- Operator: For iOS system notifications, users must Add to Home Screen and open from the icon.

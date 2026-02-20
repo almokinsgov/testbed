@@ -42,3 +42,8 @@ Changes include:
 - Improved Notification API feature detection to handle edge cases where Notification exists but is unusable
 - Wrapped requestPermission to prevent unhandled promise rejections
 - CTA now shows "Toasts Only" when browser notifications are unavailable and explains why via toast
+
+## Run 82
+
+- iOS gating: Treat browser notifications as unavailable unless running in standalone (Add to Home Screen).
+- Hardened Notification constructor usage to avoid platform specific errors.
