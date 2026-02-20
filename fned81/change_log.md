@@ -57,3 +57,18 @@ Changes include:
 - Fixed a missing closing brace in getNotificationCtor that incorrectly scoped helper functions
 - Removed an extra stray closing brace after isStandaloneMode
 - Bumped fned_notifications.js to 0.1.2
+
+## Run 84
+
+Added PWA support so iPhone users can install FNED and then enable notifications.
+
+Changes include:
+
+- New manifest.webmanifest and icons folder
+- New service-worker.js with app shell caching
+- New fned_pwa.js helper that registers the service worker and provides install guidance
+- Updated HTML head to include manifest, theme color, and apple touch icon
+- Updated script order so fned_pwa.js loads before fned_notifications.js
+- Updated notification CTA behaviour on iPhone: shows Install For Notifications and opens install help
+- Added Install Help button and PWA status line in the editor notification settings
+- Bumped fned_notifications.js to 0.1.3

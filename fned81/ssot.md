@@ -50,3 +50,8 @@ Editor integration:
 ## Run 83 Note
 
 - Fixed fned_notifications.js helper scope so isIOSDevice and related functions are available to notification support checks.
+
+## Run 84 Note
+
+- Added PWA support (manifest, service worker, icons) so the dashboard can be installed to Home Screen.
+- iPhone guidance is now built in: the Receive Notifications CTA and editor can open install steps.

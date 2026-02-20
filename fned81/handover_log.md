@@ -76,3 +76,30 @@ How to test quickly
 - Issue: isIOSDevice is not defined error on iPhone test.
 - Cause: Missing brace in fned_notifications.js placed isIOSDevice inside getNotificationCtor, plus an extra stray closing brace.
 - Fix: Closed getNotificationCtor correctly and removed the stray brace. Notification support now correctly falls back to toasts on iOS non standalone.
+
+## Run 84 Handover
+
+What was delivered
+
+- FNED PWA install support (manifest, icons, service worker)
+- PWA helper module (fned_pwa.js) that registers the service worker and provides install help UI
+- iPhone friendly notification CTA behaviour, plus an Install Help button in the editor
+
+How to test quickly
+
+Desktop
+
+1. Serve the folder with VS Code Live Server
+2. Open v23_v32_split_js_v2.html
+3. In DevTools Application, confirm the service worker is registered and the manifest is detected
+
+iPhone
+
+1. Open the GitHub Pages URL in Safari
+2. Add to Home Screen and open from the icon
+3. Tap Receive Notifications and allow permission
+4. Use editor Notification Settings and click Send Test Notification
+
+Notes
+
+- This run does not include push notifications. It supports notifications while the app is open.

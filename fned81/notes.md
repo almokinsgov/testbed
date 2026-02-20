@@ -78,3 +78,9 @@ Run 80 adds a migration step during config sanitise so older saved configs are u
 
 - iOS browser tabs will use toasts only.
 - isIOSDevice and isStandaloneMode helpers are now correctly in the top level FNED notifications scope.
+
+## Run 84 Notes
+
+- FNED is now a PWA with a manifest, icons, and a service worker.
+- On iPhone, notifications can be enabled after installing to Home Screen and launching in standalone mode.
+- The Receive Notifications CTA will show Install For Notifications on iPhone browser tabs and opens the install steps.

@@ -38,6 +38,33 @@ Make the dashboard notification opt in visible for users and make notification s
 1. CTA notification action
 - Updated the first CTA button to "Receive Notifications"
 - Added action notifications:enable
+
+# Run 84 - PWA Install Support For iPhone Notifications
+Date: 2026-02-21
+
+## Goal
+Allow FNED to be installed as a PWA so iPhone users can enable notifications in standalone mode.
+
+## Changes
+1. Added PWA assets
+- manifest.webmanifest
+- service-worker.js
+- icons folder with 192, 512, and apple touch icon
+
+2. Added PWA helper
+- New fned_pwa.js registers the service worker and provides install guidance
+
+3. Updated page wiring
+- Added manifest and apple touch icon tags to the HTML head
+- Loaded fned_pwa.js before fned_notifications.js
+
+4. Improved iPhone notification UX
+- CTA label becomes Install For Notifications on iPhone browser tabs
+- CTA and editor can open install steps
+
+## Verification
+- Confirmed no JavaScript errors on load.
+- Confirmed notification CTA updates label based on support and permission.
 - CTA label auto updates based on permission state
 
 2. Editor configuration

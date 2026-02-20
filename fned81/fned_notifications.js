@@ -1,6 +1,6 @@
 /*
   FNED Notifications and Custom Messages
-  Version: 0.1.2
+  Version: 0.1.3
 
   Goal
   - While the dashboard tab is open, poll for alerts and custom messages
@@ -19,7 +19,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.1.2";
+  var VERSION = "0.1.3";
 
   var DEFAULT_NOTIFICATIONS_CFG = {
     enabled: true,
@@ -81,8 +81,14 @@
     var perm = notificationPermission();
 
     if (!support.supported) {
-      setCtaButtonLabel(btn, "Toasts Only");
-      btn.setAttribute("aria-disabled", "true");
+      // iOS guidance: keep CTA actionable so it can open install help.
+      if (support.code === "ios-install") {
+        setCtaButtonLabel(btn, "Install For Notifications");
+        btn.removeAttribute("aria-disabled");
+      } else {
+        setCtaButtonLabel(btn, "Toasts Only");
+        btn.setAttribute("aria-disabled", "true");
+      }
       try {
         btn.title = support.reason;
       } catch (e) {
@@ -112,12 +118,31 @@
     var support = browserNotificationSupport();
 
     if (!support.supported) {
-      showToast({
-        title: "Browser Notifications Unavailable",
-        body: support.reason || "Browser notifications are unavailable. Toasts will still work.",
-        meta: "FNED",
-        level: "Warning"
-      });
+      if (support.code === "ios-install") {
+        // Provide install guidance for iPhone and iPad.
+        try {
+          if (window.FNED_PWA_API && typeof window.FNED_PWA_API.showInstallHelp === "function") {
+            window.FNED_PWA_API.showInstallHelp();
+          }
+        } catch (e0) {
+          // ignore
+        }
+
+        showToast({
+          title: "Install To Enable Notifications",
+          body: support.reason || "On iPhone and iPad, notifications work after Add to Home Screen.",
+          meta: "FNED",
+          level: "Info"
+        });
+      } else {
+        showToast({
+          title: "Browser Notifications Unavailable",
+          body: support.reason || "Browser notifications are unavailable. Toasts will still work.",
+          meta: "FNED",
+          level: "Warning"
+        });
+      }
+
       syncNotificationCtaButton();
       return Promise.resolve("unsupported");
     }
@@ -329,27 +354,27 @@
   function browserNotificationSupport() {
     var N = getNotificationCtor();
     if (!N) {
-      return { supported: false, reason: "Notification API is not available on this device or browser." };
+      return { supported: false, code: "no-api", reason: "Notification API is not available on this device or browser." };
     }
 
     // Some environments define Notification but only allow it in secure contexts.
     if (!isSecureOriginForNotifications()) {
-      return { supported: false, reason: "Browser notifications require HTTPS or localhost. Toasts will still work." };
+      return { supported: false, code: "insecure", reason: "Browser notifications require HTTPS or localhost. Toasts will still work." };
     }
 
     // iOS and iPadOS only support web notifications in installed Home Screen web apps.
     if (isIOSDevice() && !isStandaloneMode()) {
-      return { supported: false, reason: "On iPhone and iPad, browser notifications only work after Add to Home Screen. Toasts will still work." };
+      return { supported: false, code: "ios-install", reason: "On iPhone and iPad, notifications work after Add to Home Screen. Open in Safari then install." };
     }
 
     // Some browsers can throw when accessing permission in restricted contexts.
     try {
       void N.permission;
     } catch (e3) {
-      return { supported: false, reason: "Notification permission is unavailable in this environment. Toasts will still work." };
+      return { supported: false, code: "permission-unavailable", reason: "Notification permission is unavailable in this environment. Toasts will still work." };
     }
 
-    return { supported: true, reason: "OK" };
+    return { supported: true, code: "ok", reason: "OK" };
   }
 
   function hasNotificationApi() {
@@ -938,6 +963,12 @@
   // Public helpers for later UI integration
   window.FNED_NOTIFICATIONS_API = {
     version: VERSION,
+    toast: function (opts) {
+      showToast(opts);
+    },
+    getSupport: function () {
+      return browserNotificationSupport();
+    },
     getPermission: notificationPermission,
     requestPermission: function () {
       var support = browserNotificationSupport();

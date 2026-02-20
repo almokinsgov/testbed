@@ -766,10 +766,23 @@
       }
       panel.appendChild(el("p", { class: "editor-note", text: "Browser notification permission: " + perm }));
 
+      // PWA status (useful for iPhone guidance)
+      try {
+        if (window.FNED_PWA_API && typeof window.FNED_PWA_API.getStatus === "function") {
+          var st = window.FNED_PWA_API.getStatus();
+          var installText = (st && st.isStandalone) ? "Installed (standalone)" : "Browser tab";
+          var iosText = (st && st.isIOS) ? "iPhone or iPad" : "Not iPhone or iPad";
+          panel.appendChild(el("p", { class: "editor-note", text: "PWA status: " + installText + " | " + iosText }));
+        }
+      } catch (eStatus) {
+        // ignore
+      }
+
       var notifBtns = buttonRow([
         el("button", { type: "button", class: "editor-btn", text: "Request Permission" }),
         el("button", { type: "button", class: "editor-btn", text: "Send Test Notification" }),
-        el("button", { type: "button", class: "editor-btn", text: "Reload Custom Messages" })
+        el("button", { type: "button", class: "editor-btn", text: "Reload Custom Messages" }),
+        el("button", { type: "button", class: "editor-btn", text: "Install Help" })
       ]);
       notifBtns.children[0].addEventListener("click", function () {
         if (window.FNED_NOTIFICATIONS_API && typeof window.FNED_NOTIFICATIONS_API.requestPermission === "function") {
@@ -784,6 +797,19 @@
       notifBtns.children[2].addEventListener("click", function () {
         if (window.FNED_NOTIFICATIONS_API && typeof window.FNED_NOTIFICATIONS_API.reloadCustomMessages === "function") {
           window.FNED_NOTIFICATIONS_API.reloadCustomMessages();
+        }
+      });
+
+      notifBtns.children[3].addEventListener("click", function () {
+        if (window.FNED_PWA_API && typeof window.FNED_PWA_API.showInstallHelp === "function") {
+          window.FNED_PWA_API.showInstallHelp();
+        } else if (window.FNED_NOTIFICATIONS_API && typeof window.FNED_NOTIFICATIONS_API.toast === "function") {
+          window.FNED_NOTIFICATIONS_API.toast({
+            title: "Install Help",
+            body: "On iPhone, open in Safari then Add to Home Screen.",
+            meta: "FNED",
+            level: "Info"
+          });
         }
       });
       panel.appendChild(notifBtns);
