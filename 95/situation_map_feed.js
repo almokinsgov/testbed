@@ -913,8 +913,8 @@
     // Helper: tide icon with direction arrow
 function makeTideIcon(color, direction) {
   var arrowChar =
-    direction === "rising" ? "â¬†" :
-    direction === "falling" ? "â¬‡" :
+    direction === "rising" ? "\u2191" :
+    direction === "falling" ? "\u2193" :
     "";
 
   var arrowHtml = arrowChar
@@ -1030,8 +1030,8 @@ swimsafe: {
       earthquakes: {
         // Colours by magnitude band
         minor: "#4caf50",      // mag < 2.5
-        light: "#ff9800",      // 2.5 â‰¤ mag < 4
-        moderate: "#f44336",   // mag â‰¥ 4
+        light: "#ff9800",      // 2.5 <= mag < 4
+        moderate: "#f44336",   // mag >= 4
         defaultColor: "#795548"
         },
 		localRoadClosures: {
@@ -1541,12 +1541,12 @@ function nztaEventIsVisible(feature) {
         (currentDesc ? "Now: " + currentDesc + "<br>" : "") +
         "Temperature: " +
         (current.temperature_2m != null
-          ? current.temperature_2m.toFixed(1) + " Â°C"
+          ? current.temperature_2m.toFixed(1) + " \u00B0C"
           : "n/a") +
         "<br>" +
         "Feels like: " +
         (current.apparent_temperature != null
-          ? current.apparent_temperature.toFixed(1) + " Â°C"
+          ? current.apparent_temperature.toFixed(1) + " \u00B0C"
           : "n/a") +
         "<br>" +
         "Humidity: " +
@@ -1559,7 +1559,7 @@ function nztaEventIsVisible(feature) {
           ? current.wind_speed_10m + " km/h"
           : "n/a") +
         (current.wind_direction_10m != null
-          ? " (" + current.wind_direction_10m + "Â°)"
+          ? " (" + current.wind_direction_10m + "\u00B0)"
           : "") +
         "<br>";
 
@@ -1914,9 +1914,9 @@ function nztaEventIsVisible(feature) {
        function addTideMarker(site, summary) {
   var direction = summary.direction;
   var arrowChar =
-    direction === "rising" ? "â¬†" :
-    direction === "falling" ? "â¬‡" :
-    "â€¢";
+    direction === "rising" ? "\u2191" :
+    direction === "falling" ? "\u2193" :
+    "\u2022";
 
   var directionLabel =
     direction === "rising"
@@ -4219,6 +4219,7 @@ function loadLocalRoadClosures() {
 
 // Kick off local road closures load
 loadLocalRoadClosures();
+
 
 
 

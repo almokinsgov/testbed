@@ -700,7 +700,7 @@
         title: "Action Buttons",
         arr: Array.isArray(data.ctaButtons) ? data.ctaButtons : (data.ctaButtons = []),
         getSummary: function (item) { return (item && item.label) ? item.label : "(untitled)"; },
-        addNewItem: function () { return { label: "New Button", url: "#", style: "secondary", external: false, icon: "âž¡ï¸", action: "" }; },
+        addNewItem: function () { return { label: "New Button", url: "#", style: "secondary", external: false, icon: "\u27A1\uFE0F", action: "" }; },
         renderItemFields: function (item) {
           var box = el("div");
           box.appendChild(field("Label", inputText(item.label, function (v) { item.label = v; })));
@@ -1031,7 +1031,7 @@
       function safeText(value, maxLen) {
         var text = String(value || "").replace(/\s+/g, " ").trim();
         if (!maxLen || text.length <= maxLen) return text;
-        return text.slice(0, Math.max(0, maxLen - 1)) + "â€¦";
+        return text.slice(0, Math.max(0, maxLen - 1)) + "...";
       }
       function getElementDescriptor(elm) {
         if (!elm) return "";
@@ -2684,7 +2684,7 @@
       panel.appendChild(renderArrayEditor({
         title: "Paragraphs",
         arr: Array.isArray(summaryPanel.paragraphs) ? summaryPanel.paragraphs : (summaryPanel.paragraphs = []),
-        getSummary: function (item) { return (item || "").slice(0, 48) + ((item && item.length > 48) ? "â€¦" : ""); },
+        getSummary: function (item) { return (item || "").slice(0, 48) + ((item && item.length > 48) ? "..." : ""); },
         addNewItem: function () { return "New paragraph"; },
         renderItemFields: function (item, idx) {
           var box = el("div");
@@ -2742,7 +2742,7 @@
         renderItemFields: function (item) {
           var box = el("div");
           box.appendChild(field("Title", inputText(item.title, function (v) { item.title = v; })));
-          box.appendChild(field("HTML", inputTextarea(item.html, function (v) { item.html = v; }, "<p>â€¦</p>")));
+          box.appendChild(field("HTML", inputTextarea(item.html, function (v) { item.html = v; }, "<p>...</p>")));
           return box;
         },
         onChange: function () { renderModulePanel(data, state); }
@@ -3396,7 +3396,7 @@
             arr: group.tiles,
             getSummary: function (t) { return (t && t.title) ? t.title : "Tile"; },
             addNewItem: function () {
-              return { title: "New Tile", description: "", icon: "âž¡ï¸", colorClass: "neutral", url: "#", external: false, metaTop: "", metaBottom: "" };
+              return { title: "New Tile", description: "", icon: "\u27A1\uFE0F", colorClass: "neutral", url: "#", external: false, metaTop: "", metaBottom: "" };
             },
             renderItemFields: function (tile) {
               var tb = el("div");
@@ -3761,4 +3761,5 @@
     initEditor();
   }
 })();
+
 

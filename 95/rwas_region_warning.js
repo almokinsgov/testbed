@@ -1130,7 +1130,7 @@ function publishRwasAlertSummary() {
   }
 }
 
-  // Order: CD alerts first, then MetService â€” within each group, sort by status   
+  // Order: CD alerts first, then MetService - within each group, sort by status   
 function renderCombinedAlerts() {
   const statusOrder = { "active-now": 1, "upcoming": 2, "expired": 3 };
 
@@ -1234,4 +1234,3 @@ function formatAreaList(areaArray) {
     const el = document.getElementById("floating-alerts-container");
     el.style.display = (el.style.display === "none" || !el.style.display) ? "block" : "none";
   });
-

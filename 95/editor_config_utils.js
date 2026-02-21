@@ -274,7 +274,7 @@
         var icon = (typeof btn.icon === "string") ? btn.icon : "";
         var url = (typeof btn.url === "string") ? btn.url.toLowerCase() : "";
         var looksLikeOldLabel = label.indexOf("sign up") >= 0 && label.indexOf("civil") >= 0 && label.indexOf("alert") >= 0;
-        var looksLikeBell = icon.indexOf("ðŸ””") >= 0;
+        var looksLikeBell = icon.indexOf("\uD83D\uDD14") >= 0;
         var looksLikeOldUrl = url.indexOf("civil") >= 0 && url.indexOf("alert") >= 0;
         return looksLikeOldLabel || (looksLikeBell && (label.indexOf("civil") >= 0 || looksLikeOldUrl));
       }
@@ -282,7 +282,7 @@
       function setToNotifications(btn) {
         if (!btn || typeof btn !== "object") return;
         btn.label = "Receive Notifications";
-        btn.icon = (typeof btn.icon === "string" && btn.icon.trim()) ? btn.icon : "ðŸ””";
+        btn.icon = (typeof btn.icon === "string" && btn.icon.trim()) ? btn.icon : "\uD83D\uDD14";
         btn.url = "#";
         btn.style = (btn.style === "secondary") ? "secondary" : "primary";
         btn.external = false;
@@ -300,7 +300,7 @@
         } else {
           ctas.unshift({
             label: "Receive Notifications",
-            icon: "ðŸ””",
+            icon: "\uD83D\uDD14",
             url: "#",
             style: "primary",
             external: false,
@@ -870,4 +870,5 @@
     formatValidationSummary: formatValidationSummary
   };
 })();
+
 
