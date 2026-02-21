@@ -233,7 +233,7 @@
     }
     data.runtimeConfig.customMessages.url = asString(
       data.runtimeConfig.customMessages.url,
-      "./files/fned_custom_messages_example.json"
+      "https://raw.githubusercontent.com/almokinsgov/FNDC_closures/main/fned_custom_messages_example.json"
     );
     data.runtimeConfig.customMessages.pollIntervalMs = clampInt(
       data.runtimeConfig.customMessages.pollIntervalMs,
