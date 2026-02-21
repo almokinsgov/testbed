@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "source": "FNED custom messages example",
+    "version": "1.0",
+    "timezone": "Pacific/Auckland",
+    "notes": "This file is for testing. Edit start and end times to control when messages appear."
+  },
+  "messages": [
+    {
+      "id": "custom-info-001",
+      "enabled": true,
+      "title": "Dashboard Test Message",
+      "body": "This is a custom message loaded from JSON. It should render in the summary panel and trigger a toast and browser notification if enabled.",
+      "level": "Info",
+      "channels": ["summary", "toast", "notification"],
+      "start": "2026-02-19T00:00:00+13:00",
+      "end": "2026-02-25T00:00:00+13:00",
+      "link": "https://www.civildefence.govt.nz/",
+      "linkLabel": "Civil Defence Website"
+    },
+    {
+      "id": "custom-warning-002",
+      "enabled": true,
+      "title": "Comms Reminder",
+      "body": "If you are using this dashboard for an event, confirm the public message on the home page is current.",
+      "level": "Warning",
+      "channels": ["summary", "toast"],
+      "start": "2026-02-20T00:00:00+13:00",
+      "end": "2026-02-21T23:59:59+13:00"
+    },
+    {
+      "id": "custom-upcoming-003",
+      "enabled": true,
+      "title": "Scheduled Test Message",
+      "body": "This message is in the future so it should not show yet. Change the start time to test scheduling.",
+      "level": "Info",
+      "channels": ["summary"],
+      "start": "2026-03-01T08:00:00+13:00",
+      "end": "2026-03-02T18:00:00+13:00"
+    },
+    {
+      "id": "custom-disabled-004",
+      "enabled": false,
+      "title": "Disabled Message",
+      "body": "This should never show because enabled is false.",
+      "level": "Info",
+      "channels": ["summary", "toast", "notification"],
+      "start": "2026-02-19T00:00:00+13:00",
+      "end": "2026-02-25T00:00:00+13:00"
+    }
+  ]
+}
