@@ -1,0 +1,1984 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>New Zealand Weather Map (Leaflet and OpenWeather Tiles)</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100%; width: 100%; }
+
+    /* Floating buttons */
+    .fabbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 10000;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .fab {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(18, 18, 20, 0.92);
+      color: #f3f3f3;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.30);
+      backdrop-filter: blur(8px);
+    }
+    .fab:hover { background: rgba(28, 28, 32, 0.92); }
+
+    .fab.secondary {
+      font-weight: 650;
+      opacity: 0.95;
+    }
+
+    /* Drawer */
+    .drawer {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 9999;
+      width: 430px;
+      max-width: calc(100vw - 24px);
+      height: calc(100vh - 24px);
+      max-height: 900px;
+      background: rgba(18, 18, 20, 0.92);
+      color: #f3f3f3;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.40);
+      padding: 10px 10px 10px 10px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      backdrop-filter: blur(8px);
+      display: none;
+      overflow: hidden;
+    }
+
+    .drawer.open { display: block; }
+
+    .drawer.right {
+      left: auto;
+      right: 12px;
+    }
+
+    .drawerHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 4px 10px 4px;
+    }
+
+    .drawerTitle {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+
+    .iconBtn {
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .iconBtn:hover { background: rgba(255,255,255,0.14); }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      padding: 0 4px 10px 4px;
+    }
+
+    .tab {
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      border-radius: 12px;
+      padding: 9px 10px;
+      cursor: pointer;
+      font-weight: 750;
+      text-align: center;
+      user-select: none;
+    }
+    .tab.active { background: rgba(255,255,255,0.14); }
+
+    .drawerBody {
+      height: calc(100% - 94px);
+      overflow: auto;
+      padding: 0 4px 4px 4px;
+    }
+
+    .tabPanel { display: none; }
+    .tabPanel.active { display: block; }
+
+    .sectionTitle {
+      margin: 14px 0 8px 0;
+      font-size: 13px;
+      font-weight: 800;
+      opacity: 0.95;
+    }
+
+    .row { margin: 10px 0; }
+    label { display: block; font-size: 12px; opacity: 0.92; margin-bottom: 6px; }
+
+    input[type="password"], input[type="text"], input[type="number"], textarea, select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    select[multiple] {
+      padding: 8px 8px;
+      height: auto;
+    }
+
+    input[type="range"] { width: 100%; }
+
+    .btnRow {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    button.action {
+      flex: 1;
+      min-width: 160px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.10);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 750;
+    }
+    button.action:hover { background: rgba(255,255,255,0.16); }
+
+    .status {
+      margin-top: 10px;
+      font-size: 12px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      line-height: 1.35;
+    }
+
+    .small {
+      font-size: 11px;
+      opacity: 0.88;
+      line-height: 1.35;
+    }
+
+    .toggleRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 10px 10px;
+      margin-top: 8px;
+    }
+
+    .toggleRow .tLabel {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.95;
+    }
+
+    .overlayList {
+      max-height: 250px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      padding: 6px;
+    }
+
+    .overlayItem {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 8px;
+      border-radius: 10px;
+    }
+    .overlayItem:hover { background: rgba(255,255,255,0.06); }
+
+    .overlayItem input { transform: scale(1.05); }
+
+    .leaflet-control-layers { border-radius: 10px; overflow: hidden; }
+
+    /* Legend */
+    .owmLegend {
+      min-width: 220px;
+      max-width: 340px;
+      background: rgba(18, 18, 20, 0.90);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      padding: 10px 10px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.32);
+      backdrop-filter: blur(8px);
+    }
+
+    .owmLegendTitle {
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      opacity: 0.95;
+    }
+
+    .owmLegendList {
+      display: grid;
+      gap: 10px;
+      max-height: 270px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .owmLegendEntry {
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 9px 9px;
+    }
+
+    .owmLegendEntryHeader {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .owmLegendEntryName {
+      font-size: 12px;
+      font-weight: 800;
+      opacity: 0.98;
+    }
+
+    .owmLegendEntryKind {
+      font-size: 11px;
+      opacity: 0.80;
+      white-space: nowrap;
+    }
+
+    .owmLegendBar {
+      height: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .owmLegendTicks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-top: 7px;
+      opacity: 0.92;
+    }
+
+    .owmLegendNote {
+      font-size: 11px;
+      margin-top: 8px;
+      opacity: 0.82;
+      line-height: 1.35;
+    }
+
+    .owmLegendHidden { display: none; }
+
+    .mutedInput {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .miniGrid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      font-size: 11px;
+      font-weight: 800;
+      opacity: 0.95;
+    }
+
+    .warn {
+      border-left: 3px solid rgba(255, 209, 102, 0.85);
+      padding-left: 10px;
+    }
+  </style>
+
+  <script>
+    /*
+      Embedded Default Config Exports
+
+      Paste one or more exported configs into this array.
+      Each item can be either:
+        - { name: "My Preset", export: { version: "...", settings: {...} } }
+        - { name: "My Preset", settings: {...} }
+
+      For security, it is best to keep apiKey empty in embedded presets.
+    */
+    const EMBEDDED_DEFAULT_CONFIG_EXPORTS = [
+      {
+        name: "NZ Starter (No Key)",
+        export: {
+          version: "OWM_NZ_V7",
+          settings: {
+            saveApiKey: false,
+            apiKey: "",
+            mode: "tiles1",
+            opacity: 0.60,
+            autoApply: false,
+            defaultOverlays: ["Wind (New)", "Pressure (New)"],
+            showLegend: true,
+            legendPosition: "bottomright",
+            legendDisplay: "multi",
+            legendMode: "auto",
+            legendLayer: "",
+            basemap: "osm",
+            rememberView: false,
+            boundaryEnabled: true,
+            boundaryShow: true,
+            boundaryClamp: true,
+            boundaryHalfKm: 1000,
+            boundaryViscosity: 0.90,
+            limitOwmTilesToBoundary: true,
+            panelSide: "left",
+            showZoom: true,
+            showScale: true,
+            showLayerControl: true,
+            layerControlCollapsed: true
+          }
+        }
+      }
+    ];
+
+    // If set, and no localStorage exists yet, this preset will be applied on first run.
+    const EMBEDDED_FIRST_RUN_PRESET_NAME = "NZ Starter (No Key)";
+  </script>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <div class="fabbar" id="fabbar">
+    <button class="fab" id="btnOptions">Options</button>
+    <button class="fab secondary" id="btnResetNZ">Reset NZ</button>
+  </div>
+
+  <div class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawerHeader">
+      <div class="drawerTitle">Options</div>
+      <button class="iconBtn" id="btnClose" type="button" title="Close">✕</button>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" type="button" data-tab="ow">OpenWeather</button>
+      <button class="tab" type="button" data-tab="map">Map</button>
+      <button class="tab" type="button" data-tab="ui">Configuration</button>
+    </div>
+
+    <div class="drawerBody">
+      <div class="tabPanel active" id="tab-ow">
+        <div class="sectionTitle">OpenWeather Settings</div>
+
+        <div class="row">
+          <label for="apiKey">API Key</label>
+          <input id="apiKey" type="password" placeholder="Paste your API key" autocomplete="off" />
+
+          <div class="toggleRow">
+            <div class="tLabel">Show Key</div>
+            <input id="showKey" type="checkbox" />
+          </div>
+
+          <div class="toggleRow">
+            <div class="tLabel">Save API Key Locally</div>
+            <input id="saveApiKey" type="checkbox" />
+          </div>
+
+          <div class="btnRow">
+            <button class="action" id="clearSavedKeyBtn" type="button">Clear Saved Key</button>
+            <button class="action" id="clearKeyInputBtn" type="button">Clear Key Input</button>
+          </div>
+
+          <div class="status small warn" id="keyStatus">
+            Saving the key stores it in your browser localStorage for this device and browser profile.
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="mode">Tile Endpoint</label>
+          <select id="mode">
+            <option value="tiles1">Tiles 1.0 (tile.openweathermap.org)</option>
+            <option value="maps2">Maps 2.0 (maps.openweathermap.org)</option>
+          </select>
+          <div class="small" style="margin-top:6px;">
+            Visual legend is built for Tiles 1.0. If you switch to Maps 2.0, legend is hidden by default.
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="opacity">Overlay Opacity: <span id="opacityLabel">0.60</span></label>
+          <input id="opacity" type="range" min="0" max="1" step="0.05" value="0.60" />
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Auto Apply On Change</div>
+          <input id="autoApply" type="checkbox" />
+        </div>
+
+        <div class="row">
+          <label for="defaultOverlays">Default Overlays</label>
+          <select id="defaultOverlays" multiple size="7"></select>
+          <div class="small" style="margin-top:6px;">
+            These overlays will be enabled after Apply. Use Ctrl or Cmd to select multiple.
+          </div>
+        </div>
+
+        <div class="sectionTitle">Legend (Tiles 1.0)</div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Show Legend</div>
+          <input id="showLegend" type="checkbox" />
+        </div>
+
+        <div class="row">
+          <label for="legendPosition">Legend Position</label>
+          <select id="legendPosition">
+            <option value="bottomright">Bottom Right</option>
+            <option value="bottomleft">Bottom Left</option>
+            <option value="topright">Top Right</option>
+            <option value="topleft">Top Left</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="legendDisplay">Legend Display</label>
+          <select id="legendDisplay">
+            <option value="single">Single</option>
+            <option value="multi">Multiple (One Per Enabled Overlay)</option>
+          </select>
+        </div>
+
+        <div class="row" id="rowLegendTarget">
+          <label for="legendMode">Legend Target</label>
+          <select id="legendMode">
+            <option value="auto">Auto (Last Enabled Overlay)</option>
+            <option value="selected">Selected Overlay</option>
+          </select>
+        </div>
+
+        <div class="row" id="rowLegendLayer">
+          <label for="legendLayer">Selected Legend Overlay</label>
+          <select id="legendLayer">
+            <option value="">(None)</option>
+          </select>
+        </div>
+
+        <div class="sectionTitle">Overlay List</div>
+
+        <div class="row">
+          <label for="overlaySearch">Search Overlays</label>
+          <input id="overlaySearch" type="text" placeholder="Type to filter overlays" />
+        </div>
+
+        <div class="row">
+          <div id="overlayList" class="overlayList"></div>
+          <div class="small" style="margin-top:8px;">
+            You can enable multiple overlays at the same time.
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button class="action" id="applyBtn" type="button">Apply</button>
+          <button class="action" id="clearOverlaysBtn" type="button">Clear Overlays</button>
+        </div>
+
+        <div class="status" id="status">
+          Paste your API key then click Apply.
+        </div>
+      </div>
+
+      <div class="tabPanel" id="tab-map">
+        <div class="sectionTitle">Map Options</div>
+
+        <div class="row">
+          <label for="basemap">Basemap</label>
+          <select id="basemap">
+            <option value="osm">OpenStreetMap Standard</option>
+            <option value="osmhot">OpenStreetMap Humanitarian</option>
+            <option value="cartolight">Carto Light</option>
+          </select>
+        </div>
+
+        <div class="sectionTitle">Boundary Limit</div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Limit View To NZ Boundary</div>
+          <input id="boundaryEnabled" type="checkbox" />
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Show Boundary Box</div>
+          <input id="boundaryShow" type="checkbox" />
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Clamp To Dateline</div>
+          <input id="boundaryClamp" type="checkbox" />
+        </div>
+
+        <div class="miniGrid2">
+          <div class="row">
+            <label for="boundaryHalfKm">Boundary Half Width (km)</label>
+            <input id="boundaryHalfKm" type="number" min="100" max="4000" step="50" />
+            <div class="small" style="margin-top:6px;">
+              1000 km means a 2000 km wide square.
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="boundaryViscosity">Boundary Stickiness: <span id="boundaryVisLabel">0.90</span></label>
+            <input id="boundaryViscosity" type="range" min="0" max="1" step="0.05" />
+          </div>
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Limit OpenWeather Tiles To Boundary</div>
+          <input id="limitOwmTilesToBoundary" type="checkbox" />
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Remember Last View</div>
+          <input id="rememberView" type="checkbox" />
+        </div>
+
+        <div class="btnRow">
+          <button class="action" id="locateBtn" type="button">Locate Me</button>
+          <button class="action" id="fitNZBtn" type="button">Fit NZ Bounds</button>
+          <button class="action" id="fitBoundaryBtn" type="button">Fit Boundary Box</button>
+        </div>
+
+        <div class="status small" id="mapStatus">
+          Boundary affects map panning and OpenWeather tile loading.
+        </div>
+      </div>
+
+      <div class="tabPanel" id="tab-ui">
+        <div class="sectionTitle">UI Configuration</div>
+
+        <div class="row">
+          <label for="panelSide">Panel Side</label>
+          <select id="panelSide">
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Show Zoom Buttons</div>
+          <input id="showZoom" type="checkbox" />
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Show Scale Bar</div>
+          <input id="showScale" type="checkbox" />
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Show Leaflet Layer Control</div>
+          <input id="showLayerControl" type="checkbox" />
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Layer Control Collapsed</div>
+          <input id="layerControlCollapsed" type="checkbox" />
+        </div>
+
+        <div class="sectionTitle">Import and Export Settings</div>
+
+        <div class="row">
+          <label for="embeddedPreset">Embedded Presets</label>
+          <select id="embeddedPreset"></select>
+          <div class="btnRow">
+            <button class="action" id="applyPresetBtn" type="button">Apply Preset</button>
+            <button class="action" id="copyPresetBtn" type="button">Copy Preset JSON</button>
+          </div>
+          <div class="small" style="margin-top:6px;">
+            Presets come from EMBEDDED_DEFAULT_CONFIG_EXPORTS in the HTML head.
+          </div>
+        </div>
+
+        <div class="toggleRow">
+          <div class="tLabel">Include API Key In Export</div>
+          <input id="includeKeyInExport" type="checkbox" />
+        </div>
+
+        <div class="row">
+          <label for="settingsJson">Settings JSON</label>
+          <textarea id="settingsJson" placeholder="Export will appear here. Paste JSON here to import."></textarea>
+
+          <div class="btnRow">
+            <button class="action" id="exportBtn" type="button">Export Current Settings</button>
+            <button class="action" id="copyBtn" type="button">Copy JSON</button>
+            <button class="action" id="importBtn" type="button">Import and Apply</button>
+            <button class="action" id="clearJsonBtn" type="button">Clear</button>
+          </div>
+
+          <div class="status small warn" id="jsonStatus">
+            Export and import uses a JSON object. Import replaces known settings keys and keeps anything unknown out.
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button class="action" id="saveUIBtn" type="button">Save Configuration</button>
+          <button class="action" id="resetUIBtn" type="button">Reset Configuration</button>
+        </div>
+
+        <div class="status small">
+          Configuration is stored in your browser (localStorage).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    const NZ_BOUNDS = L.latLngBounds(
+      L.latLng(-47.8, 166.0),
+      L.latLng(-33.5, 179.3)
+    );
+
+    const STORAGE_KEY = "nz_owm_leaflet_settings_v7_overlay_clip_config_io";
+    const EXPORT_VERSION = "OWM_NZ_V7";
+
+    const DEFAULTS = {
+      apiKey: "",
+      saveApiKey: false,
+
+      mode: "tiles1",
+      opacity: 0.60,
+      autoApply: false,
+
+      defaultOverlays: [],
+
+      // Legend
+      showLegend: true,
+      legendPosition: "bottomright",
+      legendDisplay: "single", // single | multi
+      legendMode: "auto",      // auto | selected (single only)
+      legendLayer: "",
+
+      // Map
+      basemap: "osm",
+      rememberView: false,
+      viewCenter: null,
+      viewZoom: null,
+
+      // Boundary limit
+      boundaryEnabled: true,
+      boundaryShow: true,
+      boundaryClamp: true,
+      boundaryHalfKm: 1000,
+      boundaryViscosity: 0.90,
+
+      // Tile limiting
+      limitOwmTilesToBoundary: true,
+
+      // UI
+      panelSide: "left",
+      showZoom: true,
+      showScale: true,
+      showLayerControl: true,
+      layerControlCollapsed: true
+    };
+
+    function safeBool(v, fallback) { return typeof v === "boolean" ? v : fallback; }
+    function safeNum(v, fallback) { return isFinite(v) ? v : fallback; }
+    function safeStr(v, fallback) { return typeof v === "string" ? v : fallback; }
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+    function isObj(v) { return v && typeof v === "object" && !Array.isArray(v); }
+
+    function safeStrArray(v) {
+      if (!Array.isArray(v)) return [];
+      return v.filter((x) => typeof x === "string").map((x) => x.trim()).filter(Boolean);
+    }
+
+    function normalizeSettings(raw) {
+      const parsed = isObj(raw) ? raw : {};
+      const s = { ...DEFAULTS };
+
+      s.saveApiKey = safeBool(parsed.saveApiKey, DEFAULTS.saveApiKey);
+      s.apiKey = s.saveApiKey ? safeStr(parsed.apiKey, DEFAULTS.apiKey) : safeStr(parsed.apiKey, "");
+
+      s.mode = (parsed.mode === "maps2") ? "maps2" : "tiles1";
+      s.opacity = clamp(safeNum(parsed.opacity, DEFAULTS.opacity), 0, 1);
+      s.autoApply = safeBool(parsed.autoApply, DEFAULTS.autoApply);
+
+      const legacyOne = safeStr(parsed.defaultOverlay, "");
+      const arr = safeStrArray(parsed.defaultOverlays);
+      s.defaultOverlays = arr.length ? arr : (legacyOne ? [legacyOne] : []);
+
+      s.showLegend = safeBool(parsed.showLegend, DEFAULTS.showLegend);
+      s.legendPosition = ["bottomright","bottomleft","topright","topleft"].includes(parsed.legendPosition) ? parsed.legendPosition : DEFAULTS.legendPosition;
+      s.legendDisplay = (parsed.legendDisplay === "multi") ? "multi" : "single";
+      s.legendMode = (parsed.legendMode === "selected") ? "selected" : "auto";
+      s.legendLayer = safeStr(parsed.legendLayer, DEFAULTS.legendLayer);
+
+      s.basemap = ["osm", "osmhot", "cartolight"].includes(parsed.basemap) ? parsed.basemap : DEFAULTS.basemap;
+      s.rememberView = safeBool(parsed.rememberView, DEFAULTS.rememberView);
+      s.viewCenter = Array.isArray(parsed.viewCenter) && parsed.viewCenter.length === 2 ? parsed.viewCenter : null;
+      s.viewZoom = isFinite(parsed.viewZoom) ? parsed.viewZoom : null;
+
+      s.boundaryEnabled = safeBool(parsed.boundaryEnabled, DEFAULTS.boundaryEnabled);
+      s.boundaryShow = safeBool(parsed.boundaryShow, DEFAULTS.boundaryShow);
+      s.boundaryClamp = safeBool(parsed.boundaryClamp, DEFAULTS.boundaryClamp);
+      s.boundaryHalfKm = clamp(safeNum(parsed.boundaryHalfKm, DEFAULTS.boundaryHalfKm), 100, 4000);
+      s.boundaryViscosity = clamp(safeNum(parsed.boundaryViscosity, DEFAULTS.boundaryViscosity), 0, 1);
+
+      s.limitOwmTilesToBoundary = safeBool(parsed.limitOwmTilesToBoundary, DEFAULTS.limitOwmTilesToBoundary);
+
+      s.panelSide = (parsed.panelSide === "right") ? "right" : "left";
+      s.showZoom = safeBool(parsed.showZoom, DEFAULTS.showZoom);
+      s.showScale = safeBool(parsed.showScale, DEFAULTS.showScale);
+      s.showLayerControl = safeBool(parsed.showLayerControl, DEFAULTS.showLayerControl);
+      s.layerControlCollapsed = safeBool(parsed.layerControlCollapsed, DEFAULTS.layerControlCollapsed);
+
+      return s;
+    }
+
+    function loadSettingsFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) || {};
+        return normalizeSettings(parsed);
+      } catch {
+        return null;
+      }
+    }
+
+    function saveSettingsToStorage(s) {
+      const toStore = { ...s };
+      if (!toStore.saveApiKey) toStore.apiKey = "";
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+    }
+
+    function extractSettingsForExport(s, includeKey) {
+      const out = normalizeSettings(s);
+      if (!includeKey) {
+        out.apiKey = "";
+        out.saveApiKey = false;
+      }
+      if (!out.rememberView) {
+        out.viewCenter = null;
+        out.viewZoom = null;
+      }
+      return out;
+    }
+
+    function parseImportJson(text) {
+      const t = String(text || "").trim();
+      if (!t) return { ok: false, error: "Empty JSON" };
+      try {
+        const obj = JSON.parse(t);
+        if (isObj(obj) && isObj(obj.settings)) return { ok: true, data: obj.settings };
+        if (isObj(obj)) return { ok: true, data: obj };
+        return { ok: false, error: "JSON must be an object or an export object with a settings field" };
+      } catch (e) {
+        return { ok: false, error: (e && e.message) ? e.message : "Invalid JSON" };
+      }
+    }
+
+    // First run preset logic
+    function getEmbeddedPresetByName(name) {
+      const list = Array.isArray(window.EMBEDDED_DEFAULT_CONFIG_EXPORTS) ? window.EMBEDDED_DEFAULT_CONFIG_EXPORTS : [];
+      return list.find((x) => x && x.name === name) || null;
+    }
+
+    function settingsFromEmbeddedPreset(preset) {
+      if (!preset) return null;
+      if (isObj(preset.settings)) return normalizeSettings(preset.settings);
+      if (isObj(preset.export) && isObj(preset.export.settings)) return normalizeSettings(preset.export.settings);
+      return null;
+    }
+
+    let settings = (function initSettings() {
+      const fromStore = loadSettingsFromStorage();
+      if (fromStore) return fromStore;
+
+      const preset = getEmbeddedPresetByName(window.EMBEDDED_FIRST_RUN_PRESET_NAME);
+      const fromPreset = settingsFromEmbeddedPreset(preset);
+      if (fromPreset) return fromPreset;
+
+      return normalizeSettings(DEFAULTS);
+    })();
+
+    // Map
+    const map = L.map("map", { zoomControl: false });
+
+    // Basemaps
+    const baseMaps = {
+      osm: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }),
+      osmhot: L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors, Humanitarian OpenStreetMap Team"
+      }),
+      cartolight: L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors, &copy; CARTO"
+      })
+    };
+
+    let activeBase = null;
+    function setBasemap(key) {
+      if (activeBase) map.removeLayer(activeBase);
+      const next = baseMaps[key] || baseMaps.osm;
+      next.addTo(map);
+      activeBase = next;
+    }
+
+    // Controls
+    let zoomCtrl = null;
+    let scaleCtrl = null;
+
+    function syncZoomControl(show) {
+      if (show) {
+        if (!zoomCtrl) zoomCtrl = L.control.zoom({ position: "topleft" });
+        zoomCtrl.addTo(map);
+      } else {
+        if (zoomCtrl) zoomCtrl.remove();
+      }
+    }
+
+    function syncScaleControl(show) {
+      if (show) {
+        if (!scaleCtrl) scaleCtrl = L.control.scale({ metric: true, imperial: false });
+        scaleCtrl.addTo(map);
+      } else {
+        if (scaleCtrl) scaleCtrl.remove();
+      }
+    }
+
+    // Boundary limit
+    let boundaryRect = null;
+    let currentBoundaryBounds = null;
+
+    function kmToLatDegrees(km) { return km / 110.574; }
+
+    function kmToLngDegrees(km, latDeg) {
+      const latRad = latDeg * Math.PI / 180;
+      const kmPerDeg = 111.320 * Math.cos(latRad);
+      return kmPerDeg > 0.0001 ? (km / kmPerDeg) : 180;
+    }
+
+    function buildBoundaryBounds() {
+      const c = NZ_BOUNDS.getCenter();
+      const dLat = kmToLatDegrees(settings.boundaryHalfKm);
+      const dLng = kmToLngDegrees(settings.boundaryHalfKm, c.lat);
+
+      let south = c.lat - dLat;
+      let north = c.lat + dLat;
+      let west = c.lng - dLng;
+      let east = c.lng + dLng;
+
+      south = clamp(south, -85, 85);
+      north = clamp(north, -85, 85);
+
+      if (settings.boundaryClamp) {
+        west = clamp(west, -179.9, 179.9);
+        east = clamp(east, -179.9, 179.9);
+        if (east <= west) {
+          west = clamp(west, -179.9, 179.0);
+          east = clamp(west + 0.5, -179.4, 179.9);
+        }
+      } else {
+        const norm = (lng) => {
+          const x = ((lng + 180) % 360 + 360) % 360 - 180;
+          return clamp(x, -179.9, 179.9);
+        };
+        west = norm(west);
+        east = norm(east);
+        if (east <= west) {
+          west = clamp(c.lng - dLng, -179.9, 179.9);
+          east = clamp(c.lng + dLng, -179.9, 179.9);
+          if (east <= west) { west = -179.9; east = 179.9; }
+        }
+      }
+
+      return L.latLngBounds([south, west], [north, east]);
+    }
+
+    function applyBoundarySettings() {
+      const b = settings.boundaryEnabled
+        ? buildBoundaryBounds()
+        : L.latLngBounds(L.latLng(-85, -179.9), L.latLng(85, 179.9));
+
+      currentBoundaryBounds = b;
+
+      map.setMaxBounds(b);
+      map.options.maxBoundsViscosity = clamp(settings.boundaryViscosity, 0, 1);
+
+      if (settings.boundaryEnabled && settings.boundaryShow) {
+        if (!boundaryRect) {
+          boundaryRect = L.rectangle(b, { weight: 2, fill: false });
+          boundaryRect.addTo(map);
+        } else {
+          boundaryRect.setBounds(b);
+          if (!map.hasLayer(boundaryRect)) boundaryRect.addTo(map);
+        }
+      } else {
+        if (boundaryRect && map.hasLayer(boundaryRect)) map.removeLayer(boundaryRect);
+      }
+
+      return b;
+    }
+
+    function getOwmTileBounds() {
+      if (!settings.limitOwmTilesToBoundary) return null;
+      if (!settings.boundaryEnabled) return null;
+      return currentBoundaryBounds || buildBoundaryBounds();
+    }
+
+    function fitNZBounds() {
+      map.fitBounds(NZ_BOUNDS, { padding: [10, 10] });
+    }
+
+    function fitBoundaryBounds() {
+      const b = applyBoundarySettings();
+      map.fitBounds(b, { padding: [10, 10] });
+    }
+
+    function setInitialView() {
+      if (settings.rememberView && settings.viewCenter && isFinite(settings.viewZoom)) {
+        map.setView(settings.viewCenter, settings.viewZoom);
+      } else {
+        fitNZBounds();
+      }
+    }
+
+    function attachRememberViewListener() {
+      map.off("moveend", onMoveEndRemember);
+      if (settings.rememberView) map.on("moveend", onMoveEndRemember);
+    }
+
+    function onMoveEndRemember() {
+      if (!settings.rememberView) return;
+      const c = map.getCenter();
+      settings.viewCenter = [Number(c.lat.toFixed(6)), Number(c.lng.toFixed(6))];
+      settings.viewZoom = map.getZoom();
+      saveSettingsToStorage(settings);
+    }
+
+    // Legend
+    let legendCtrl = null;
+    let legendEl = null;
+    let lastLegendOverlayName = "";
+
+    const LEGEND_SPECS_V1 = {
+      rain_mm: { title: "Rain (mm)", unit: "mm", stops: [
+        { v: 0, color: "rgba(225,200,100,0)" }, { v: 0.1, color: "rgba(200,150,150,0)" },
+        { v: 0.2, color: "rgba(150,150,170,0)" }, { v: 0.5, color: "rgba(120,120,190,0)" },
+        { v: 1, color: "rgba(110,110,205,0.3)" }, { v: 10, color: "rgba(80,80,225,0.7)" },
+        { v: 140, color: "rgba(20,20,255,0.9)" }
+      ]},
+      snow_mm: { title: "Snow (mm)", unit: "mm", stops: [
+        { v: 0, color: "rgba(0,0,0,0)" }, { v: 5, color: "#00d8ff" },
+        { v: 10, color: "#00b6ff" }, { v: 25.076, color: "#9549ff" }
+      ]},
+      clouds_pct: { title: "Clouds (0-100%)", unit: "%", stops: [
+        { v: 0, color: "rgba(255,255,255,0.0)" }, { v: 10, color: "rgba(253,253,255,0.1)" },
+        { v: 20, color: "rgba(252,251,255,0.2)" }, { v: 30, color: "rgba(250,250,255,0.3)" },
+        { v: 40, color: "rgba(249,248,255,0.4)" }, { v: 50, color: "rgba(247,247,255,0.5)" },
+        { v: 60, color: "rgba(246,245,255,0.75)" }, { v: 70, color: "rgba(244,244,255,1)" },
+        { v: 80, color: "rgba(243,242,255,1)" }, { v: 90, color: "rgba(242,241,255,1)" },
+        { v: 100, color: "rgba(240,240,255,1)" }
+      ]},
+      temp_c: { title: "Temperature (°C)", unit: "°C", stops: [
+        { v: -65, color: "rgba(130,22,146,1)" }, { v: -30, color: "rgba(130,87,219,1)" },
+        { v: -20, color: "rgba(32,140,236,1)" }, { v: -10, color: "rgba(32,196,232,1)" },
+        { v: 0, color: "rgba(35,221,221,1)" }, { v: 10, color: "rgba(194,255,40,1)" },
+        { v: 20, color: "rgba(255,240,40,1)" }, { v: 25, color: "rgba(255,194,40,1)" },
+        { v: 30, color: "rgba(252,128,20,1)" }
+      ]},
+      pressure_pa: { title: "Pressure (Pa)", unit: "Pa", stops: [
+        { v: 94000, color: "rgba(0,115,255,1)" }, { v: 96000, color: "rgba(0,170,255,1)" },
+        { v: 98000, color: "rgba(75,208,214,1)" }, { v: 100000, color: "rgba(141,231,199,1)" },
+        { v: 101000, color: "rgba(176,247,32,1)" }, { v: 102000, color: "rgba(240,184,0,1)" },
+        { v: 104000, color: "rgba(251,85,21,1)" }, { v: 106000, color: "rgba(243,54,59,1)" },
+        { v: 108000, color: "rgba(198,0,0,1)" }
+      ]},
+      wind_ms: { title: "Wind (m/s)", unit: "m/s", stops: [
+        { v: 1, color: "rgba(255,255,255,0)" }, { v: 5, color: "rgba(238,206,206,0.4)" },
+        { v: 15, color: "rgba(179,100,188,0.7)" }, { v: 25, color: "rgba(63,33,59,0.8)" },
+        { v: 50, color: "rgba(116,76,172,0.9)" }, { v: 100, color: "rgba(70,0,175,1)" },
+        { v: 200, color: "rgba(13,17,38,1)" }
+      ]}
+    };
+
+    function specForV1OverlayName(name) {
+      const n = String(name || "").toLowerCase();
+      if (n.includes("precipitation")) return LEGEND_SPECS_V1.rain_mm;
+      if (n.includes("rain")) return LEGEND_SPECS_V1.rain_mm;
+      if (n.includes("snow")) return LEGEND_SPECS_V1.snow_mm;
+      if (n.includes("cloud")) return LEGEND_SPECS_V1.clouds_pct;
+      if (n.includes("pressure")) return LEGEND_SPECS_V1.pressure_pa;
+      if (n.includes("temp") || n.includes("temperature")) return LEGEND_SPECS_V1.temp_c;
+      if (n.includes("wind")) return LEGEND_SPECS_V1.wind_ms;
+      return null;
+    }
+
+    function makeGradient(spec) {
+      const stops = (spec && spec.stops) ? spec.stops.slice() : [];
+      if (!stops.length) return "rgba(255,255,255,0.10)";
+      const minV = stops[0].v;
+      const maxV = stops[stops.length - 1].v;
+      const range = (maxV - minV) || 1;
+      const parts = stops.map((s) => {
+        const pct = Math.max(0, Math.min(100, ((s.v - minV) / range) * 100));
+        return `${s.color} ${pct.toFixed(2)}%`;
+      });
+      return `linear-gradient(to right, ${parts.join(", ")})`;
+    }
+
+    function formatTick(v) {
+      if (!isFinite(v)) return "";
+      const abs = Math.abs(v);
+      if (abs >= 1000) return String(Math.round(v));
+      if (abs >= 100) return String(Math.round(v));
+      if (abs >= 10) return String(Math.round(v));
+      if (abs >= 1) return String(Number(v.toFixed(1)));
+      return String(Number(v.toFixed(2)));
+    }
+
+    function legendEntryHtml(spec, overlayName) {
+      const stops = spec.stops || [];
+      const minV = stops.length ? stops[0].v : 0;
+      const maxV = stops.length ? stops[stops.length - 1].v : 1;
+      const midV = minV + ((maxV - minV) / 2);
+      const gradient = makeGradient(spec);
+
+      return `
+        <div class="owmLegendEntry">
+          <div class="owmLegendEntryHeader">
+            <div class="owmLegendEntryName">${overlayName}</div>
+            <div class="owmLegendEntryKind">${spec.title}</div>
+          </div>
+          <div class="owmLegendBar" style="background:${gradient};"></div>
+          <div class="owmLegendTicks">
+            <span>${formatTick(minV)}</span>
+            <span>${formatTick(midV)}</span>
+            <span>${formatTick(maxV)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function computeLegendTargetNameSingle() {
+      if (settings.mode !== "tiles1") return "";
+      if (settings.legendMode === "selected" && settings.legendLayer) return settings.legendLayer;
+
+      if (lastLegendOverlayName && activeOverlays[lastLegendOverlayName] && map.hasLayer(activeOverlays[lastLegendOverlayName])) {
+        return lastLegendOverlayName;
+      }
+
+      for (const name of Object.keys(activeOverlays)) {
+        const layer = activeOverlays[name];
+        if (layer && map.hasLayer(layer)) return name;
+      }
+
+      return "";
+    }
+
+    function updateLegend() {
+      if (!legendEl) return;
+
+      if (settings.mode !== "tiles1") {
+        legendEl.classList.add("owmLegendHidden");
+        return;
+      }
+      legendEl.classList.remove("owmLegendHidden");
+
+      if (settings.legendDisplay === "multi") {
+        const enabled = Object.keys(activeOverlays).filter((name) => map.hasLayer(activeOverlays[name]));
+        const supported = enabled
+          .map((name) => ({ name, spec: specForV1OverlayName(name) }))
+          .filter((x) => !!x.spec);
+
+        if (!supported.length) {
+          legendEl.innerHTML = `
+            <div class="owmLegendTitle">Legends</div>
+            <div class="owmLegendNote">Enable Tiles 1.0 overlays to show legends. Supported: rain, snow, clouds, temperature, pressure, wind.</div>
+          `;
+          return;
+        }
+
+        const items = supported.map((x) => legendEntryHtml(x.spec, x.name)).join("");
+        legendEl.innerHTML = `
+          <div class="owmLegendTitle">Legends</div>
+          <div class="owmLegendList">${items}</div>
+          <div class="owmLegendNote">Showing ${supported.length} legend item(s).</div>
+        `;
+        return;
+      }
+
+      const targetName = computeLegendTargetNameSingle();
+      if (!targetName) {
+        legendEl.innerHTML = `
+          <div class="owmLegendTitle">Legend</div>
+          <div class="owmLegendNote">Enable a Tiles 1.0 overlay to show a legend.</div>
+        `;
+        return;
+      }
+
+      const spec = specForV1OverlayName(targetName);
+      if (!spec) {
+        legendEl.innerHTML = `
+          <div class="owmLegendTitle">Legend</div>
+          <div class="owmLegendNote">Overlay: ${targetName}. No palette available for this overlay.</div>
+        `;
+        return;
+      }
+
+      legendEl.innerHTML = `
+        <div class="owmLegendTitle">Legend</div>
+        ${legendEntryHtml(spec, targetName)}
+        <div class="owmLegendNote">Overlay: ${targetName}</div>
+      `;
+    }
+
+    function syncLegendControl() {
+      const shouldShow = !!settings.showLegend && (settings.mode === "tiles1");
+      if (!shouldShow) {
+        if (legendCtrl) legendCtrl.remove();
+        legendCtrl = null;
+        legendEl = null;
+        return;
+      }
+
+      const desiredPos = settings.legendPosition || "bottomright";
+      if (legendCtrl && legendCtrl._position !== desiredPos) {
+        legendCtrl.remove();
+        legendCtrl = null;
+        legendEl = null;
+      }
+
+      if (!legendCtrl) {
+        legendCtrl = L.control({ position: desiredPos });
+        legendCtrl.onAdd = function() {
+          legendEl = L.DomUtil.create("div", "owmLegend");
+          L.DomEvent.disableClickPropagation(legendEl);
+          return legendEl;
+        };
+        legendCtrl.addTo(map);
+      }
+
+      updateLegend();
+    }
+
+    // Overlays
+    let layerControl = null;
+    let activeOverlays = {};
+    let layerToName = new Map();
+
+    function buildOverlayOptions(opacity, bounds) {
+      const opts = {
+        opacity,
+        attribution: "&copy; OpenWeather",
+        maxZoom: 19,
+        keepBuffer: 1,
+        noWrap: true
+      };
+      if (bounds) opts.bounds = bounds;
+      return opts;
+    }
+
+    function buildOverlays(apiKey, mode, opacity, bounds) {
+      const overlays = {};
+      if (!apiKey) return overlays;
+
+      if (mode === "tiles1") {
+        const tile1 = (layerName) =>
+          `https://tile.openweathermap.org/map/${layerName}/{z}/{x}/{y}.png?appid=${encodeURIComponent(apiKey)}`;
+
+        const o = buildOverlayOptions(opacity, bounds);
+        overlays["Clouds (New)"] = L.tileLayer(tile1("clouds_new"), o);
+        overlays["Precipitation (New)"] = L.tileLayer(tile1("precipitation_new"), o);
+        overlays["Pressure (New)"] = L.tileLayer(tile1("pressure_new"), o);
+        overlays["Wind (New)"] = L.tileLayer(tile1("wind_new"), o);
+        overlays["Temperature (New)"] = L.tileLayer(tile1("temp_new"), o);
+
+        overlays["Clouds (Classic)"] = L.tileLayer(tile1("clouds"), o);
+        overlays["Clouds (Classic Grey)"] = L.tileLayer(tile1("clouds_cls"), o);
+        overlays["Precipitation (Classic)"] = L.tileLayer(tile1("precipitation"), o);
+        overlays["Precipitation (Classic Grey)"] = L.tileLayer(tile1("precipitation_cls"), o);
+        overlays["Rain"] = L.tileLayer(tile1("rain"), o);
+        overlays["Rain (Classic Grey)"] = L.tileLayer(tile1("rain_cls"), o);
+        overlays["Snow"] = L.tileLayer(tile1("snow"), o);
+        overlays["Pressure (Classic)"] = L.tileLayer(tile1("pressure"), o);
+        overlays["Pressure Contours"] = L.tileLayer(tile1("pressure_cntr"), o);
+        overlays["Wind (Classic)"] = L.tileLayer(tile1("wind"), o);
+        overlays["Temperature (Classic)"] = L.tileLayer(tile1("temp"), o);
+
+      } else {
+        const base2 = (op) =>
+          `https://maps.openweathermap.org/maps/2.0/weather/${op}/{z}/{x}/{y}?appid=${encodeURIComponent(apiKey)}&opacity=${encodeURIComponent(opacity)}`;
+
+        const o2 = buildOverlayOptions(1, bounds);
+        overlays["Precipitation: Convective (PAC0)"] = L.tileLayer(base2("PAC0"), o2);
+        overlays["Precipitation: Intensity (PR0)"] = L.tileLayer(base2("PR0"), o2);
+        overlays["Precipitation: Accumulated (PA0)"] = L.tileLayer(base2("PA0"), o2);
+        overlays["Precipitation: Accumulated Rain (PAR0)"] = L.tileLayer(base2("PAR0"), o2);
+        overlays["Precipitation: Accumulated Snow (PAS0)"] = L.tileLayer(base2("PAS0"), o2);
+
+        overlays["Snow: Depth (SD0)"] = L.tileLayer(base2("SD0"), o2);
+
+        overlays["Wind: Speed 10m (WS10)"] = L.tileLayer(base2("WS10"), o2);
+        overlays["Wind: Speed and Direction (WND)"] = L.tileLayer(base2("WND"), o2);
+
+        overlays["Pressure: Mean Sea Level (APM)"] = L.tileLayer(base2("APM"), o2);
+        overlays["Humidity: Relative (HRD0)"] = L.tileLayer(base2("HRD0"), o2);
+
+        overlays["Temperature: Air 2m (TA2)"] = L.tileLayer(base2("TA2"), o2);
+        overlays["Temperature: Dew Point (TD2)"] = L.tileLayer(base2("TD2"), o2);
+        overlays["Temperature: Soil 0-10cm (TS0)"] = L.tileLayer(base2("TS0"), o2);
+        overlays["Temperature: Soil 10cm+ (TS10)"] = L.tileLayer(base2("TS10"), o2);
+
+        overlays["Cloudiness (CL)"] = L.tileLayer(base2("CL"), o2);
+      }
+
+      return overlays;
+    }
+
+    function removeLayerControl() {
+      if (layerControl) {
+        map.removeControl(layerControl);
+        layerControl = null;
+      }
+    }
+
+    function renderDefaultOverlaysSelect(overlays) {
+      const el = document.getElementById("defaultOverlays");
+      const selected = new Set(settings.defaultOverlays || []);
+      el.innerHTML = "";
+
+      Object.keys(overlays).sort().forEach((name) => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        opt.selected = selected.has(name);
+        el.appendChild(opt);
+      });
+    }
+
+    function renderLegendLayerSelect(overlays) {
+      const el = document.getElementById("legendLayer");
+      const current = settings.legendLayer || "";
+
+      el.innerHTML = "";
+      const noneOpt = document.createElement("option");
+      noneOpt.value = "";
+      noneOpt.textContent = "(None)";
+      el.appendChild(noneOpt);
+
+      Object.keys(overlays).sort().forEach((name) => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        el.appendChild(opt);
+      });
+
+      el.value = (current && overlays[current]) ? current : "";
+    }
+
+    function renderOverlayChecklist(overlays) {
+      const list = document.getElementById("overlayList");
+      const filter = (document.getElementById("overlaySearch").value || "").trim().toLowerCase();
+
+      list.innerHTML = "";
+
+      const names = Object.keys(overlays).sort();
+      if (!names.length) {
+        const empty = document.createElement("div");
+        empty.className = "small";
+        empty.style.padding = "10px";
+        empty.textContent = "No overlays yet. Add an API key then click Apply.";
+        list.appendChild(empty);
+        return;
+      }
+
+      const visibleNames = names.filter((n) => !filter || n.toLowerCase().includes(filter));
+      if (!visibleNames.length) {
+        const none = document.createElement("div");
+        none.className = "small";
+        none.style.padding = "10px";
+        none.textContent = "No overlays match your filter.";
+        list.appendChild(none);
+        return;
+      }
+
+      visibleNames.forEach((name) => {
+        const row = document.createElement("label");
+        row.className = "overlayItem";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = map.hasLayer(overlays[name]);
+
+        cb.addEventListener("change", () => {
+          if (cb.checked) overlays[name].addTo(map);
+          else map.removeLayer(overlays[name]);
+        });
+
+        const text = document.createElement("span");
+        text.textContent = name;
+        text.style.fontSize = "12px";
+        text.style.fontWeight = "700";
+        text.style.opacity = "0.95";
+
+        row.appendChild(cb);
+        row.appendChild(text);
+        list.appendChild(row);
+      });
+    }
+
+    function clearCurrentOverlays() {
+      Object.values(activeOverlays).forEach((layer) => {
+        if (map.hasLayer(layer)) map.removeLayer(layer);
+      });
+      activeOverlays = {};
+      layerToName = new Map();
+      removeLayerControl();
+      renderOverlayChecklist({});
+      renderDefaultOverlaysSelect({});
+      renderLegendLayerSelect({});
+      lastLegendOverlayName = "";
+      updateLegend();
+    }
+
+    function applyOpenWeather(nextSettings) {
+      clearCurrentOverlays();
+
+      applyBoundarySettings();
+      const owmBounds = getOwmTileBounds();
+
+      const overlays = buildOverlays(nextSettings.apiKey, nextSettings.mode, nextSettings.opacity, owmBounds);
+      activeOverlays = overlays;
+
+      layerToName = new Map();
+      Object.keys(overlays).forEach((name) => layerToName.set(overlays[name], name));
+
+      if (nextSettings.showLayerControl) {
+        const baseLayersForControl = {
+          "OpenStreetMap Standard": baseMaps.osm,
+          "OpenStreetMap Humanitarian": baseMaps.osmhot,
+          "Carto Light": baseMaps.cartolight
+        };
+
+        layerControl = L.control.layers(baseLayersForControl, overlays, {
+          collapsed: !!nextSettings.layerControlCollapsed
+        }).addTo(map);
+      }
+
+      renderDefaultOverlaysSelect(overlays);
+      renderLegendLayerSelect(overlays);
+      renderOverlayChecklist(overlays);
+
+      const defaults = (nextSettings.defaultOverlays || []).filter(Boolean);
+      defaults.forEach((name) => {
+        if (overlays[name]) overlays[name].addTo(map);
+      });
+
+      const status = document.getElementById("status");
+      if (!nextSettings.apiKey) {
+        status.textContent = "No API key set. Paste your API key then click Apply.";
+      } else {
+        status.textContent = "Overlays ready (" + Object.keys(overlays).length + "). Defaults enabled: " + (defaults.length || 0) + ".";
+      }
+
+      syncLegendControl();
+      updateLegend();
+    }
+
+    map.on("layeradd", (e) => {
+      const name = layerToName.get(e.layer);
+      if (!name) return;
+      lastLegendOverlayName = name;
+      updateLegend();
+      renderOverlayChecklist(activeOverlays);
+    });
+
+    map.on("layerremove", (e) => {
+      const name = layerToName.get(e.layer);
+      if (!name) return;
+      updateLegend();
+      renderOverlayChecklist(activeOverlays);
+    });
+
+    // Drawer and tabs
+    const drawer = document.getElementById("drawer");
+    document.getElementById("btnOptions").addEventListener("click", () => {
+      const open = !drawer.classList.contains("open");
+      drawer.classList.toggle("open", open);
+      drawer.setAttribute("aria-hidden", open ? "false" : "true");
+    });
+    document.getElementById("btnClose").addEventListener("click", () => {
+      drawer.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+    });
+
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const id = btn.getAttribute("data-tab");
+        document.querySelectorAll(".tabPanel").forEach((p) => p.classList.remove("active"));
+        const panel = document.getElementById("tab-" + id);
+        if (panel) panel.classList.add("active");
+      });
+    });
+
+    // Inputs
+    const apiKeyEl = document.getElementById("apiKey");
+    const showKeyEl = document.getElementById("showKey");
+    const saveApiKeyEl = document.getElementById("saveApiKey");
+    const clearSavedKeyBtn = document.getElementById("clearSavedKeyBtn");
+    const clearKeyInputBtn = document.getElementById("clearKeyInputBtn");
+    const keyStatusEl = document.getElementById("keyStatus");
+
+    const modeEl = document.getElementById("mode");
+    const opacityEl = document.getElementById("opacity");
+    const opacityLabelEl = document.getElementById("opacityLabel");
+    const autoApplyEl = document.getElementById("autoApply");
+    const defaultOverlaysEl = document.getElementById("defaultOverlays");
+    const overlaySearchEl = document.getElementById("overlaySearch");
+
+    const showLegendEl = document.getElementById("showLegend");
+    const legendPositionEl = document.getElementById("legendPosition");
+    const legendDisplayEl = document.getElementById("legendDisplay");
+    const legendModeEl = document.getElementById("legendMode");
+    const legendLayerEl = document.getElementById("legendLayer");
+    const rowLegendTarget = document.getElementById("rowLegendTarget");
+    const rowLegendLayer = document.getElementById("rowLegendLayer");
+
+    const basemapEl = document.getElementById("basemap");
+    const rememberViewEl = document.getElementById("rememberView");
+
+    const boundaryEnabledEl = document.getElementById("boundaryEnabled");
+    const boundaryShowEl = document.getElementById("boundaryShow");
+    const boundaryClampEl = document.getElementById("boundaryClamp");
+    const boundaryHalfKmEl = document.getElementById("boundaryHalfKm");
+    const boundaryViscosityEl = document.getElementById("boundaryViscosity");
+    const boundaryVisLabelEl = document.getElementById("boundaryVisLabel");
+    const limitOwmTilesToBoundaryEl = document.getElementById("limitOwmTilesToBoundary");
+
+    const panelSideEl = document.getElementById("panelSide");
+    const showZoomEl = document.getElementById("showZoom");
+    const showScaleEl = document.getElementById("showScale");
+    const showLayerControlEl = document.getElementById("showLayerControl");
+    const layerControlCollapsedEl = document.getElementById("layerControlCollapsed");
+
+    // Import Export
+    const embeddedPresetEl = document.getElementById("embeddedPreset");
+    const applyPresetBtn = document.getElementById("applyPresetBtn");
+    const copyPresetBtn = document.getElementById("copyPresetBtn");
+    const includeKeyInExportEl = document.getElementById("includeKeyInExport");
+    const settingsJsonEl = document.getElementById("settingsJson");
+    const exportBtn = document.getElementById("exportBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const importBtn = document.getElementById("importBtn");
+    const clearJsonBtn = document.getElementById("clearJsonBtn");
+    const jsonStatusEl = document.getElementById("jsonStatus");
+
+    function selectedOptionsValues(selectEl) {
+      return Array.from(selectEl.selectedOptions || []).map((o) => o.value).filter(Boolean);
+    }
+
+    function syncLegendModeUI() {
+      const multi = (settings.legendDisplay === "multi");
+      if (multi) {
+        rowLegendTarget.classList.add("mutedInput");
+        rowLegendLayer.classList.add("mutedInput");
+      } else {
+        rowLegendTarget.classList.remove("mutedInput");
+        rowLegendLayer.classList.remove("mutedInput");
+      }
+    }
+
+    function refreshKeyStatus() {
+      if (settings.saveApiKey) {
+        keyStatusEl.innerHTML = `Key storage is <span class="badge">ON</span>. Your API key will be saved locally in this browser.`;
+      } else {
+        keyStatusEl.innerHTML = `Key storage is <span class="badge">OFF</span>. Your API key will not persist after refresh.`;
+      }
+    }
+
+    function paintSettingsToUI() {
+      apiKeyEl.value = settings.apiKey;
+      modeEl.value = settings.mode;
+      opacityEl.value = String(settings.opacity);
+      opacityLabelEl.textContent = Number(settings.opacity).toFixed(2);
+      autoApplyEl.checked = !!settings.autoApply;
+
+      saveApiKeyEl.checked = !!settings.saveApiKey;
+
+      showLegendEl.checked = !!settings.showLegend;
+      legendPositionEl.value = settings.legendPosition;
+      legendDisplayEl.value = settings.legendDisplay;
+      legendModeEl.value = settings.legendMode;
+      legendLayerEl.value = settings.legendLayer || "";
+
+      basemapEl.value = settings.basemap;
+      rememberViewEl.checked = !!settings.rememberView;
+
+      boundaryEnabledEl.checked = !!settings.boundaryEnabled;
+      boundaryShowEl.checked = !!settings.boundaryShow;
+      boundaryClampEl.checked = !!settings.boundaryClamp;
+      boundaryHalfKmEl.value = String(settings.boundaryHalfKm);
+      boundaryViscosityEl.value = String(settings.boundaryViscosity);
+      boundaryVisLabelEl.textContent = Number(settings.boundaryViscosity).toFixed(2);
+      limitOwmTilesToBoundaryEl.checked = !!settings.limitOwmTilesToBoundary;
+
+      panelSideEl.value = settings.panelSide;
+      showZoomEl.checked = !!settings.showZoom;
+      showScaleEl.checked = !!settings.showScale;
+      showLayerControlEl.checked = !!settings.showLayerControl;
+      layerControlCollapsedEl.checked = !!settings.layerControlCollapsed;
+
+      drawer.classList.toggle("right", settings.panelSide === "right");
+      syncLegendModeUI();
+      refreshKeyStatus();
+    }
+
+    function readOWFromUI() {
+      settings.apiKey = apiKeyEl.value.trim();
+      settings.saveApiKey = !!saveApiKeyEl.checked;
+
+      settings.mode = (modeEl.value === "maps2") ? "maps2" : "tiles1";
+      settings.opacity = clamp(Number(opacityEl.value), 0, 1);
+      settings.autoApply = !!autoApplyEl.checked;
+
+      settings.defaultOverlays = selectedOptionsValues(defaultOverlaysEl);
+
+      settings.showLegend = !!showLegendEl.checked;
+      settings.legendPosition = legendPositionEl.value || "bottomright";
+      settings.legendDisplay = (legendDisplayEl.value === "multi") ? "multi" : "single";
+      settings.legendMode = (legendModeEl.value === "selected") ? "selected" : "auto";
+      settings.legendLayer = legendLayerEl.value || "";
+
+      saveSettingsToStorage(settings);
+      syncLegendModeUI();
+      refreshKeyStatus();
+    }
+
+    function readMapFromUI() {
+      settings.basemap = ["osm", "osmhot", "cartolight"].includes(basemapEl.value) ? basemapEl.value : "osm";
+      settings.rememberView = !!rememberViewEl.checked;
+
+      settings.boundaryEnabled = !!boundaryEnabledEl.checked;
+      settings.boundaryShow = !!boundaryShowEl.checked;
+      settings.boundaryClamp = !!boundaryClampEl.checked;
+      settings.boundaryHalfKm = clamp(Number(boundaryHalfKmEl.value || 1000), 100, 4000);
+      settings.boundaryViscosity = clamp(Number(boundaryViscosityEl.value), 0, 1);
+      settings.limitOwmTilesToBoundary = !!limitOwmTilesToBoundaryEl.checked;
+
+      saveSettingsToStorage(settings);
+    }
+
+    function readUIFromUI() {
+      settings.panelSide = (panelSideEl.value === "right") ? "right" : "left";
+      settings.showZoom = !!showZoomEl.checked;
+      settings.showScale = !!showScaleEl.checked;
+      settings.showLayerControl = !!showLayerControlEl.checked;
+      settings.layerControlCollapsed = !!layerControlCollapsedEl.checked;
+      saveSettingsToStorage(settings);
+    }
+
+    // Key UI
+    showKeyEl.addEventListener("change", () => {
+      apiKeyEl.type = showKeyEl.checked ? "text" : "password";
+    });
+
+    saveApiKeyEl.addEventListener("change", () => {
+      readOWFromUI();
+      if (!settings.saveApiKey) {
+        const keep = apiKeyEl.value.trim();
+        settings.apiKey = keep;
+        saveSettingsToStorage(settings);
+        refreshKeyStatus();
+      } else {
+        saveSettingsToStorage(settings);
+        refreshKeyStatus();
+      }
+    });
+
+    clearSavedKeyBtn.addEventListener("click", () => {
+      settings.apiKey = "";
+      apiKeyEl.value = "";
+      settings.saveApiKey = false;
+      saveApiKeyEl.checked = false;
+      saveSettingsToStorage(settings);
+      refreshKeyStatus();
+      document.getElementById("status").textContent = "Saved key cleared.";
+    });
+
+    clearKeyInputBtn.addEventListener("click", () => {
+      apiKeyEl.value = "";
+      settings.apiKey = "";
+      saveSettingsToStorage(settings);
+      refreshKeyStatus();
+      document.getElementById("status").textContent = "Key input cleared (saved key unchanged unless storage is on).";
+    });
+
+    // OW UI events
+    opacityEl.addEventListener("input", () => {
+      opacityLabelEl.textContent = Number(opacityEl.value).toFixed(2);
+      if (autoApplyEl.checked) {
+        readOWFromUI();
+        applyOpenWeather(settings);
+      }
+    });
+
+    function maybeAutoApply() {
+      if (!autoApplyEl.checked) return;
+      readOWFromUI();
+      applyOpenWeather(settings);
+    }
+
+    apiKeyEl.addEventListener("change", maybeAutoApply);
+
+    modeEl.addEventListener("change", () => {
+      if (modeEl.value === "maps2") showLegendEl.checked = false;
+      maybeAutoApply();
+    });
+
+    autoApplyEl.addEventListener("change", () => {
+      readOWFromUI();
+      saveSettingsToStorage(settings);
+    });
+
+    defaultOverlaysEl.addEventListener("change", () => {
+      readOWFromUI();
+      if (autoApplyEl.checked) applyOpenWeather(settings);
+    });
+
+    overlaySearchEl.addEventListener("input", () => renderOverlayChecklist(activeOverlays));
+
+    showLegendEl.addEventListener("change", () => {
+      readOWFromUI();
+      syncLegendControl();
+    });
+
+    legendPositionEl.addEventListener("change", () => {
+      readOWFromUI();
+      syncLegendControl();
+    });
+
+    legendDisplayEl.addEventListener("change", () => {
+      readOWFromUI();
+      updateLegend();
+    });
+
+    legendModeEl.addEventListener("change", () => {
+      readOWFromUI();
+      updateLegend();
+    });
+
+    legendLayerEl.addEventListener("change", () => {
+      readOWFromUI();
+      updateLegend();
+    });
+
+    // Map tab UI
+    basemapEl.addEventListener("change", () => {
+      readMapFromUI();
+      setBasemap(settings.basemap);
+    });
+
+    rememberViewEl.addEventListener("change", () => {
+      readMapFromUI();
+      attachRememberViewListener();
+      document.getElementById("mapStatus").textContent = settings.rememberView
+        ? "Remember view is on. Pan and zoom to save your view."
+        : "Remember view is off. The map will start on NZ bounds.";
+    });
+
+    function applyBoundaryFromUIAndRefresh() {
+      readMapFromUI();
+      boundaryHalfKmEl.value = String(settings.boundaryHalfKm);
+      boundaryVisLabelEl.textContent = Number(settings.boundaryViscosity).toFixed(2);
+      applyBoundarySettings();
+      if (Object.keys(activeOverlays).length) applyOpenWeather(settings);
+    }
+
+    boundaryEnabledEl.addEventListener("change", applyBoundaryFromUIAndRefresh);
+    boundaryShowEl.addEventListener("change", applyBoundaryFromUIAndRefresh);
+    boundaryClampEl.addEventListener("change", applyBoundaryFromUIAndRefresh);
+    boundaryHalfKmEl.addEventListener("change", applyBoundaryFromUIAndRefresh);
+
+    boundaryViscosityEl.addEventListener("input", () => {
+      boundaryVisLabelEl.textContent = Number(boundaryViscosityEl.value).toFixed(2);
+      applyBoundaryFromUIAndRefresh();
+    });
+
+    limitOwmTilesToBoundaryEl.addEventListener("change", applyBoundaryFromUIAndRefresh);
+
+    // Import Export
+    function getEmbeddedList() {
+      return Array.isArray(window.EMBEDDED_DEFAULT_CONFIG_EXPORTS) ? window.EMBEDDED_DEFAULT_CONFIG_EXPORTS : [];
+    }
+
+    function renderEmbeddedPresets() {
+      const list = getEmbeddedList();
+      embeddedPresetEl.innerHTML = "";
+      if (!list.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "(No embedded presets)";
+        embeddedPresetEl.appendChild(opt);
+        embeddedPresetEl.disabled = true;
+        applyPresetBtn.disabled = true;
+        copyPresetBtn.disabled = true;
+        return;
+      }
+
+      embeddedPresetEl.disabled = false;
+      applyPresetBtn.disabled = false;
+      copyPresetBtn.disabled = false;
+
+      list.forEach((p, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = p.name || ("Preset " + (idx + 1));
+        embeddedPresetEl.appendChild(opt);
+      });
+    }
+
+    function presetToExportObject(preset) {
+      if (!preset) return null;
+      if (isObj(preset.export) && isObj(preset.export.settings)) return preset.export;
+      if (isObj(preset.settings)) return { version: EXPORT_VERSION, settings: preset.settings };
+      return null;
+    }
+
+    function exportCurrentToTextarea() {
+      const includeKey = !!includeKeyInExportEl.checked;
+      const exported = {
+        version: EXPORT_VERSION,
+        exportedAt: new Date().toISOString(),
+        settings: extractSettingsForExport(settings, includeKey)
+      };
+      settingsJsonEl.value = JSON.stringify(exported, null, 2);
+      jsonStatusEl.textContent = includeKey
+        ? "Exported with API key included."
+        : "Exported without API key.";
+    }
+
+    async function copyTextToClipboard(text) {
+      const t = String(text || "");
+      if (!t.trim()) return false;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(t);
+          return true;
+        }
+      } catch {}
+      try {
+        settingsJsonEl.focus();
+        settingsJsonEl.select();
+        document.execCommand("copy");
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function importFromTextareaAndApply() {
+      const parsed = parseImportJson(settingsJsonEl.value);
+      if (!parsed.ok) {
+        jsonStatusEl.textContent = "Import failed: " + parsed.error;
+        return;
+      }
+
+      const next = normalizeSettings({ ...settings, ...parsed.data });
+      settings = next;
+
+      saveSettingsToStorage(settings);
+      paintSettingsToUI();
+
+      applyUIConfiguration(true);
+      jsonStatusEl.textContent = "Import applied.";
+    }
+
+    exportBtn.addEventListener("click", () => exportCurrentToTextarea());
+
+    copyBtn.addEventListener("click", async () => {
+      const ok = await copyTextToClipboard(settingsJsonEl.value);
+      jsonStatusEl.textContent = ok ? "Copied to clipboard." : "Copy failed. Select and copy manually.";
+    });
+
+    clearJsonBtn.addEventListener("click", () => {
+      settingsJsonEl.value = "";
+      jsonStatusEl.textContent = "Cleared.";
+    });
+
+    importBtn.addEventListener("click", () => importFromTextareaAndApply());
+
+    applyPresetBtn.addEventListener("click", () => {
+      const list = getEmbeddedList();
+      const idx = Number(embeddedPresetEl.value);
+      const preset = list[idx];
+      const exp = presetToExportObject(preset);
+      if (!exp || !isObj(exp.settings)) {
+        jsonStatusEl.textContent = "Preset is invalid.";
+        return;
+      }
+      settingsJsonEl.value = JSON.stringify(exp, null, 2);
+      importFromTextareaAndApply();
+    });
+
+    copyPresetBtn.addEventListener("click", async () => {
+      const list = getEmbeddedList();
+      const idx = Number(embeddedPresetEl.value);
+      const preset = list[idx];
+      const exp = presetToExportObject(preset);
+      if (!exp) {
+        jsonStatusEl.textContent = "Preset is invalid.";
+        return;
+      }
+      const ok = await copyTextToClipboard(JSON.stringify(exp, null, 2));
+      jsonStatusEl.textContent = ok ? "Preset copied." : "Copy failed. Select and copy manually.";
+    });
+
+    // Buttons
+    document.getElementById("applyBtn").addEventListener("click", () => {
+      readOWFromUI();
+      applyOpenWeather(settings);
+    });
+
+    document.getElementById("clearOverlaysBtn").addEventListener("click", () => {
+      Object.values(activeOverlays).forEach((layer) => {
+        if (map.hasLayer(layer)) map.removeLayer(layer);
+      });
+      renderOverlayChecklist(activeOverlays);
+      updateLegend();
+    });
+
+    document.getElementById("btnResetNZ").addEventListener("click", fitNZBounds);
+    document.getElementById("fitNZBtn").addEventListener("click", fitNZBounds);
+    document.getElementById("fitBoundaryBtn").addEventListener("click", fitBoundaryBounds);
+
+    document.getElementById("locateBtn").addEventListener("click", () => {
+      const out = document.getElementById("mapStatus");
+      if (!navigator.geolocation) {
+        out.textContent = "Geolocation is not available in this browser.";
+        return;
+      }
+      out.textContent = "Locating…";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          map.setView([lat, lng], Math.max(map.getZoom(), 9));
+          out.textContent = "Location found and centered.";
+        },
+        (err) => {
+          out.textContent = "Location failed: " + (err && err.message ? err.message : "Unknown error");
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    });
+
+    function applyUIConfiguration(rebuildOverlays) {
+      drawer.classList.toggle("right", settings.panelSide === "right");
+      syncZoomControl(settings.showZoom);
+      syncScaleControl(settings.showScale);
+      applyBoundarySettings();
+
+      if (rebuildOverlays !== false) applyOpenWeather(settings);
+      else updateLegend();
+    }
+
+    document.getElementById("saveUIBtn").addEventListener("click", () => {
+      readUIFromUI();
+      applyUIConfiguration(true);
+    });
+
+    document.getElementById("resetUIBtn").addEventListener("click", () => {
+      settings = normalizeSettings(DEFAULTS);
+      saveSettingsToStorage(settings);
+      paintSettingsToUI();
+      setBasemap(settings.basemap);
+      setInitialView();
+      attachRememberViewListener();
+      syncZoomControl(settings.showZoom);
+      syncScaleControl(settings.showScale);
+      applyBoundarySettings();
+      applyOpenWeather(settings);
+      jsonStatusEl.textContent = "Reset to defaults.";
+    });
+
+    // Final bootstrap
+    renderEmbeddedPresets();
+    paintSettingsToUI();
+    setBasemap(settings.basemap);
+    applyBoundarySettings();
+    setInitialView();
+    attachRememberViewListener();
+    syncZoomControl(settings.showZoom);
+    syncScaleControl(settings.showScale);
+    applyOpenWeather(settings);
+    saveSettingsToStorage(settings);
+  </script>
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>New Zealand Weather Map (Leaflet + OpenWeather Tiles)</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100%; width: 100%; }
+
+    .panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 9999;
+      width: 340px;
+      max-width: calc(100vw - 24px);
+      background: rgba(18, 18, 20, 0.92);
+      color: #f3f3f3;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      padding: 12px 12px 10px 12px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      backdrop-filter: blur(8px);
+    }
+
+    .panel h2 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .row { margin: 8px 0; }
+    label { display: block; font-size: 12px; opacity: 0.9; margin-bottom: 6px; }
+
+    input[type="password"], input[type="text"], select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      outline: none;
+    }
+
+    input[type="range"] { width: 100%; }
+
+    .btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.10);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 650;
+    }
+
+    button:hover { background: rgba(255,255,255,0.16); }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.35;
+      opacity: 0.9;
+    }
+
+    .status {
+      margin-top: 8px;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .small {
+      font-size: 11px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <div class="panel" id="panel">
+    <h2>NZ OpenWeather Tile Overlays</h2>
+
+    <div class="row">
+      <label for="apiKey">OpenWeather API Key</label>
+      <input id="apiKey" type="password" placeholder="Paste your API key" autocomplete="off" />
+      <div class="small" style="margin-top:6px;">
+        <label style="display:flex; gap:8px; align-items:center; margin:0;">
+          <input id="showKey" type="checkbox" />
+          Show Key
+        </label>
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="mode">Tile Endpoint</label>
+      <select id="mode">
+        <option value="tiles1">Tiles 1.0 (tile.openweathermap.org)</option>
+        <option value="maps2">Maps 2.0 (maps.openweathermap.org)</option>
+      </select>
+      <div class="small" style="margin-top:6px;">
+        If one mode shows blanks, switch mode. Your plan may affect access.
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="opacity">Overlay Opacity: <span id="opacityLabel">0.60</span></label>
+      <input id="opacity" type="range" min="0" max="1" step="0.05" value="0.60" />
+    </div>
+
+    <div class="btns">
+      <button id="applyBtn" type="button">Apply</button>
+      <button id="resetBtn" type="button">Reset NZ View</button>
+    </div>
+
+    <div class="status" id="status">
+      Paste your API key, click Apply, then use the layer control on the map.
+    </div>
+
+    <div class="hint">
+      Tip: On the map, top right has the layer switcher.
+    </div>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // NZ bounds (roughly covers the main islands)
+    const NZ_BOUNDS = L.latLngBounds(
+      L.latLng(-47.8, 166.0),
+      L.latLng(-33.5, 179.3)
+    );
+
+    const STORAGE_KEY = "nz_owm_leaflet_settings_v2_more_layers";
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { apiKey: "", mode: "tiles1", opacity: 0.60 };
+        const parsed = JSON.parse(raw);
+        return {
+          apiKey: typeof parsed.apiKey === "string" ? parsed.apiKey : "",
+          mode: parsed.mode === "maps2" ? "maps2" : "tiles1",
+          opacity: isFinite(parsed.opacity) ? Math.min(1, Math.max(0, parsed.opacity)) : 0.60
+        };
+      } catch {
+        return { apiKey: "", mode: "tiles1", opacity: 0.60 };
+      }
+    }
+
+    function saveSettings(s) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    }
+
+    const settings = loadSettings();
+
+    const map = L.map("map", { zoomControl: true });
+
+    // Base map
+    const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    L.control.scale({ metric: true, imperial: false }).addTo(map);
+    map.fitBounds(NZ_BOUNDS, { padding: [10, 10] });
+
+    // Layer control handle so we can rebuild overlays when key or mode changes
+    let layerControl = null;
+    let activeOverlays = {};
+
+    function buildOverlays(apiKey, mode, opacity) {
+      const overlays = {};
+      if (!apiKey) return overlays;
+
+      if (mode === "tiles1") {
+        // Tiles 1.0 endpoint
+        // Official examples include layers like: clouds_new, precipitation_new, pressure_new, wind_new, temp_new.
+        // Many installs also use legacy layers such as rain, snow, and pressure_cntr.
+        const tile1 = (layerName) =>
+          `https://tile.openweathermap.org/map/${layerName}/{z}/{x}/{y}.png?appid=${encodeURIComponent(apiKey)}`;
+
+        // New styled layers (recommended where available)
+        overlays["Clouds (New)"] = L.tileLayer(tile1("clouds_new"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Precipitation (New)"] = L.tileLayer(tile1("precipitation_new"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Pressure (New)"] = L.tileLayer(tile1("pressure_new"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Wind (New)"] = L.tileLayer(tile1("wind_new"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Temperature (New)"] = L.tileLayer(tile1("temp_new"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+
+        // Legacy / classic layers (often still usable, useful for extra options)
+        overlays["Clouds (Classic)"] = L.tileLayer(tile1("clouds"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Clouds (Classic Grey)"] = L.tileLayer(tile1("clouds_cls"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Precipitation (Classic)"] = L.tileLayer(tile1("precipitation"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Precipitation (Classic Grey)"] = L.tileLayer(tile1("precipitation_cls"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Rain"] = L.tileLayer(tile1("rain"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Rain (Classic Grey)"] = L.tileLayer(tile1("rain_cls"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Snow"] = L.tileLayer(tile1("snow"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Pressure (Classic)"] = L.tileLayer(tile1("pressure"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Pressure Contours"] = L.tileLayer(tile1("pressure_cntr"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Wind (Classic)"] = L.tileLayer(tile1("wind"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+        overlays["Temperature (Classic)"] = L.tileLayer(tile1("temp"), {
+          opacity, attribution: "&copy; OpenWeather", maxZoom: 19
+        });
+
+      } else {
+        // Maps 2.0 endpoint with 15 weather layers (op codes)
+        const base2 = (op) =>
+          `https://maps.openweathermap.org/maps/2.0/weather/${op}/{z}/{x}/{y}?appid=${encodeURIComponent(apiKey)}&opacity=${encodeURIComponent(opacity)}`;
+
+        // Precipitation
+        overlays["Precipitation: Convective (PAC0)"] = L.tileLayer(base2("PAC0"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Precipitation: Intensity (PR0)"] = L.tileLayer(base2("PR0"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Precipitation: Accumulated (PA0)"] = L.tileLayer(base2("PA0"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Precipitation: Accumulated Rain (PAR0)"] = L.tileLayer(base2("PAR0"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Precipitation: Accumulated Snow (PAS0)"] = L.tileLayer(base2("PAS0"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+
+        // Snow and ice
+        overlays["Snow: Depth (SD0)"] = L.tileLayer(base2("SD0"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+
+        // Wind
+        overlays["Wind: Speed 10m (WS10)"] = L.tileLayer(base2("WS10"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Wind: Speed and Direction (WND)"] = L.tileLayer(base2("WND"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+
+        // Pressure and humidity
+        overlays["Pressure: Mean Sea Level (APM)"] = L.tileLayer(base2("APM"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Humidity: Relative (HRD0)"] = L.tileLayer(base2("HRD0"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+
+        // Temperatures
+        overlays["Temperature: Air 2m (TA2)"] = L.tileLayer(base2("TA2"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Temperature: Dew Point (TD2)"] = L.tileLayer(base2("TD2"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Temperature: Soil 0-10cm (TS0)"] = L.tileLayer(base2("TS0"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+        overlays["Temperature: Soil 10cm+ (TS10)"] = L.tileLayer(base2("TS10"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+
+        // Clouds
+        overlays["Cloudiness (CL)"] = L.tileLayer(base2("CL"), { opacity: 1, attribution: "&copy; OpenWeather", maxZoom: 19 });
+      }
+
+      return overlays;
+    }
+
+    function clearCurrentOverlays() {
+      Object.values(activeOverlays).forEach((layer) => {
+        if (map.hasLayer(layer)) map.removeLayer(layer);
+      });
+      activeOverlays = {};
+      if (layerControl) {
+        map.removeControl(layerControl);
+        layerControl = null;
+      }
+    }
+
+    function applySettings(newSettings) {
+      clearCurrentOverlays();
+
+      const baseLayers = { "OpenStreetMap": osm };
+      const overlays = buildOverlays(newSettings.apiKey, newSettings.mode, newSettings.opacity);
+      activeOverlays = overlays;
+
+      layerControl = L.control.layers(baseLayers, overlays, { collapsed: true }).addTo(map);
+
+      // Default overlay: Precipitation (best chance of immediate usefulness)
+      const preferred = [
+        "Precipitation (New)",
+        "Precipitation: Intensity (PR0)",
+        "Clouds (New)",
+        "Cloudiness (CL)"
+      ];
+      const defaultName = preferred.find((name) => overlays[name]);
+      if (defaultName) overlays[defaultName].addTo(map);
+
+      const status = document.getElementById("status");
+      if (!newSettings.apiKey) {
+        status.textContent = "No API key set. Paste your key and click Apply.";
+      } else {
+        const overlayCount = Object.keys(overlays).length;
+        status.textContent = "Overlays ready (" + overlayCount + "). Use the layer control on the map (top right).";
+      }
+
+      saveSettings(newSettings);
+    }
+
+    // Wire up UI
+    const apiKeyEl = document.getElementById("apiKey");
+    const showKeyEl = document.getElementById("showKey");
+    const modeEl = document.getElementById("mode");
+    const opacityEl = document.getElementById("opacity");
+    const opacityLabelEl = document.getElementById("opacityLabel");
+
+    apiKeyEl.value = settings.apiKey;
+    modeEl.value = settings.mode;
+    opacityEl.value = String(settings.opacity);
+    opacityLabelEl.textContent = Number(settings.opacity).toFixed(2);
+
+    showKeyEl.addEventListener("change", () => {
+      apiKeyEl.type = showKeyEl.checked ? "text" : "password";
+    });
+
+    opacityEl.addEventListener("input", () => {
+      opacityLabelEl.textContent = Number(opacityEl.value).toFixed(2);
+    });
+
+    document.getElementById("applyBtn").addEventListener("click", () => {
+      const s = {
+        apiKey: apiKeyEl.value.trim(),
+        mode: modeEl.value === "maps2" ? "maps2" : "tiles1",
+        opacity: Number(opacityEl.value)
+      };
+      applySettings(s);
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      map.fitBounds(NZ_BOUNDS, { padding: [10, 10] });
+    });
+
+    // Initial apply on load
+    applySettings(settings);
+  </script>
+</body>
+</html>
