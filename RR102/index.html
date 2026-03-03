@@ -1,0 +1,1859 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Te Reo Maori Segmenter V12 Regression Suite v38</title>
+  <style>
+    :root{
+      --bg:#f3f7fc;
+      --bgGlow1:rgba(45,108,223,.12);
+      --bgGlow2:rgba(61,220,151,.08);
+      --panel:#ffffff;
+      --panel2:#f8fbff;
+      --text:#172335;
+      --muted:#5d6c82;
+      --border:#cfdae7;
+      --accent:#2d6cdf;
+      --headerBg:rgba(243,247,252,.90);
+      --surfaceStrong:rgba(255,255,255,.92);
+      --surfaceSoft:rgba(255,255,255,.78);
+      --surfaceInput:rgba(255,255,255,.94);
+      --surfaceTable:rgba(248,251,255,.96);
+      --surfaceHover:rgba(45,108,223,.06);
+      --surfaceSelected:rgba(45,108,223,.10);
+      --focusRing:rgba(45,108,223,.14);
+      --dropHover:rgba(231,239,252,.98);
+      --good:#3ddc97;
+      --bad:#ff6b6b;
+      --warn:#ffd166;
+      --shadow: 0 10px 28px rgba(31,56,88,.10);
+      --radius: 14px;
+    }
+
+    :root[data-theme="dark"]{
+      --bg:#0b0d10;
+      --bgGlow1:rgba(106,169,255,.18);
+      --bgGlow2:rgba(61,220,151,.12);
+      --panel:#12161b;
+      --panel2:#0f1318;
+      --text:#e7eef7;
+      --muted:#a8b3c2;
+      --border:#222a33;
+      --accent:#6aa9ff;
+      --headerBg:rgba(11,13,16,.72);
+      --surfaceStrong:rgba(18,22,27,.85);
+      --surfaceSoft:rgba(0,0,0,.15);
+      --surfaceInput:rgba(0,0,0,.22);
+      --surfaceTable:rgba(18,22,27,.96);
+      --surfaceHover:rgba(106,169,255,.06);
+      --surfaceSelected:rgba(106,169,255,.10);
+      --focusRing:rgba(106,169,255,.14);
+      --dropHover:rgba(18,22,27,.55);
+      --shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      background:radial-gradient(1200px 700px at 18% -10%, var(--bgGlow1), transparent 60%),
+                 radial-gradient(900px 600px at 100% 18%, var(--bgGlow2), transparent 55%),
+                 var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      line-height:1.45;
+    }
+
+    header{
+      padding:18px 18px 10px 18px;
+      position:sticky;
+      top:0;
+      backdrop-filter: blur(10px);
+      background: var(--headerBg);
+      border-bottom:1px solid var(--border);
+      z-index:10;
+    }
+
+    .wrap{ max-width:1180px; margin:0 auto; }
+
+    .titleRow{ display:flex; gap:12px; align-items:flex-start; justify-content:space-between; }
+
+    h1{ font-size:18px; margin:0; letter-spacing:.2px; }
+
+    .sub{ margin:4px 0 0 0; color:var(--muted); font-size:12px; }
+
+    nav{ display:flex; gap:8px; flex-wrap:wrap; }
+
+    .tab{
+      border:1px solid var(--border);
+      background: var(--surfaceStrong);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:12px;
+    }
+
+    .tab.active{ border-color: rgba(106,169,255,.55); box-shadow: 0 0 0 3px var(--focusRing); }
+
+    main{ padding:16px 18px 32px 18px; }
+
+    .card{
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px 14px;
+    }
+
+    .stack{ display:flex; flex-direction:column; gap:12px; }
+
+    h2{ font-size:14px; margin:0 0 6px 0; }
+    h3{ font-size:13px; margin:10px 0 6px 0; }
+
+    p{ margin:6px 0; color:var(--muted); font-size:12px; }
+
+    .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+    .tag{
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:12px;
+      color:var(--text);
+      background: var(--surfaceSoft);
+    }
+
+    button.tag{ cursor:pointer; }
+
+    .tag.good{ border-color: rgba(61,220,151,.45); }
+    .tag.bad{ border-color: rgba(255,107,107,.45); }
+    .tag.warn{ border-color: rgba(255,209,102,.45); }
+
+    .btn{
+      border:1px solid var(--border);
+      background: var(--surfaceStrong);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:12px;
+    }
+
+    .btn.primary{ border-color: rgba(106,169,255,.55); }
+
+    .btn.small{ padding:4px 8px; font-size:11px; border-radius:8px; }
+    .btn.danger{ border-color: rgba(255,107,107,.55); }
+
+    .btn:active{ transform: translateY(1px); }
+
+    input[type="text"], input[type="search"], textarea{
+      width:100%;
+      background: var(--surfaceInput);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:10px 10px;
+      outline:none;
+      font-size:12px;
+    }
+
+    textarea{ min-height: 200px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .controls{
+      display:grid;
+      grid-template-columns: 1fr auto auto auto auto;
+      gap:8px;
+      align-items:center;
+    }
+
+    @media (max-width: 900px){
+      .controls{ grid-template-columns: 1fr 1fr; }
+      .titleRow{ flex-direction:column; align-items:flex-start; }
+    }
+
+    .split{
+      display:grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap:12px;
+      align-items:start;
+    }
+
+    @media (max-width: 980px){
+      .split{ grid-template-columns: 1fr; }
+    }
+
+    table{ width:100%; border-collapse: collapse; overflow:hidden; border-radius: 12px; }
+    th, td{ padding:10px 10px; border-bottom:1px solid var(--border); vertical-align: top; font-size:12px; }
+    th{ text-align:left; color:var(--muted); font-weight:600; position:sticky; top:0; background: var(--surfaceTable); }
+    tr:hover td{ background: var(--surfaceHover); }
+    tr.selected td{ background: var(--surfaceSelected); }
+
+    pre{ margin:0; white-space: pre-wrap; word-break: break-word; background: var(--surfaceTable); border:1px solid var(--border); border-radius: 10px; padding:10px; font-size:12px; }
+    code{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .twoCol{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+
+    @media (max-width: 780px){
+      .twoCol{ grid-template-columns: 1fr; }
+    }
+
+    .muted{ color:var(--muted); }
+
+    .checkbox{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      font-size:12px;
+      color:var(--muted);
+      padding:7px 10px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background: var(--surfaceSoft);
+    }
+
+    .checkbox input{ transform: translateY(1px); }
+
+    .hidden{ display:none !important; }
+
+    .pillGrid{ display:flex; flex-wrap:wrap; gap:8px; }
+
+    .ruleLayout{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      align-items:start;
+    }
+
+    @media (max-width: 980px){
+      .ruleLayout{ grid-template-columns: 1fr; }
+    }
+
+    .ruleTitle{ font-size:13px; margin:0; }
+
+    .divider{ height:1px; background: var(--border); margin:10px 0; }
+
+    .miniTable td{ padding:8px 10px; }
+
+    .scorePill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surfaceStrong); font-size:12px; }
+    .scoreDot{ width:10px; height:10px; border-radius:999px; background:var(--muted); }
+    .scoreDot.good{ background: var(--good); }
+    .scoreDot.warn{ background: var(--warn); }
+    .scoreDot.bad{ background: var(--bad); }
+
+    .tokenTable{ width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px; border:1px solid var(--border); }
+    .tokenTable th, .tokenTable td{ padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+    .tokenTable th{ text-align:left; font-size:12px; color:var(--muted); background:var(--surfaceTable); }
+    .tokenTable tr:last-child td{ border-bottom:none; }
+
+    .listEditor{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    @media (max-width: 980px){ .listEditor{ grid-template-columns:1fr; } }
+    .listEditor textarea{ min-height:72px; }
+
+    details.tokenDetails{ margin-top:8px; }
+    details.tokenDetails summary{ cursor:pointer; color:var(--muted); }
+    details.tokenDetails pre{ white-space:pre-wrap; }
+
+    .signalLayout{ display:grid; grid-template-columns: 1fr 1.2fr; gap:12px; }
+    @media (max-width: 980px){ .signalLayout{ grid-template-columns:1fr; } }
+
+  
+    .hlText{ padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surfaceTable); line-height:1.7; white-space:pre-wrap; }
+    .hlTok{ display:inline-block; padding:2px 6px; margin:1px 1px; border-radius:10px; border:1px solid transparent; cursor:pointer; user-select:none; }
+    .hlTok.good{ background:rgba(61,220,151,.18); border-color:rgba(61,220,151,.25); }
+    .hlTok.warn{ background:rgba(244,187,90,.18); border-color:rgba(244,187,90,.25); }
+    .hlTok.bad{ background:rgba(255,83,112,.14); border-color:rgba(255,83,112,.22); }
+    .hlTok.sel{ outline:2px solid rgba(106,169,255,.55); }
+    
+    .hlTok.inc{ box-shadow: inset 0 -2px 0 rgba(61,220,151,.30); }
+    .hlTok.inc::after{ content:"•"; font-size:10px; opacity:.55; margin-left:4px; vertical-align:middle; }
+    .hlTok.ovr{ border-style:dashed; }
+    .hlTok.ovr::before{ content:"↻"; font-size:10px; opacity:.45; margin-right:4px; vertical-align:middle; }
+.detectBlockLayout{ display:grid; grid-template-columns: 1.3fr .9fr; gap:12px; }
+    @media (max-width: 980px){ .detectBlockLayout{ grid-template-columns: 1fr; } }
+
+
+    /* STT Included Token Indicator */
+    .hlTok.incl{ box-shadow: inset 0 -2px 0 rgba(106,169,255,.35); }
+    .hlTok.manual{ outline: 1px dashed rgba(244,181,67,.35); outline-offset: -1px; }
+    .hlTok.sel{ border-color: rgba(106,169,255,.65) !important; }
+    
+    .hlTok.included{ border-color: rgba(106,169,255,.55); }
+
+    .publicDemoHero{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:12px;
+      align-items:start;
+    }
+
+    @media (max-width: 980px){
+      .publicDemoHero{ grid-template-columns:1fr; }
+    }
+
+    .publicDemoIntro h2{ font-size:16px; margin-bottom:8px; }
+    .publicDemoIntro p{ font-size:13px; max-width:70ch; }
+
+    .publicDemoQuick{
+      background: var(--surfaceTable);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+    }
+
+    .publicDemoQuick h3{ margin-top:0; }
+
+    .publicDemoSteps{
+      margin:8px 0 0 0;
+      padding-left:18px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .publicDemoExamples{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+
+    @media (max-width: 980px){
+      .publicDemoExamples{ grid-template-columns:1fr; }
+    }
+
+    .publicDemoExampleCard{
+      border:1px solid var(--border);
+      border-radius:12px;
+      background: var(--surfaceTable);
+      padding:12px;
+    }
+
+    .publicDemoExampleCard h3{ margin-top:0; }
+
+    .publicDemoInputLabel{
+      display:block;
+      margin:12px 0 6px 0;
+      font-size:12px;
+      font-weight:600;
+      color:var(--text);
+    }
+
+    .publicDemoHint{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: var(--surfaceTable);
+    }
+
+    .publicSimplePage{
+      width:min(100%, 980px);
+      margin:0 auto;
+      gap:20px;
+    }
+
+    .publicSimpleHeroCard{
+      padding:24px 24px 22px 24px;
+    }
+
+    .publicSimpleHero{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:18px;
+      text-align:center;
+    }
+
+    .publicSimpleHero .publicDemoIntro h2{
+      font-size:28px;
+      margin:0 0 10px 0;
+    }
+
+    .publicSimpleHero .publicDemoIntro p{
+      font-size:14px;
+      margin:0 auto;
+      max-width:64ch;
+    }
+
+    .publicSimpleHero .row{
+      justify-content:center;
+    }
+
+    .publicSimpleQuick{
+      width:min(100%, 720px);
+      padding:16px 18px;
+      text-align:left;
+    }
+
+    .publicSimpleFieldBlock{
+      width:min(100%, 760px);
+      margin:18px auto 0 auto;
+    }
+
+    .publicSimpleControls{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap:10px;
+      align-items:stretch;
+    }
+
+    .publicSimpleControls .btn,
+    .publicSimpleControls .checkbox,
+    .publicSimpleControls select,
+    .publicSimpleControls input[type="number"]{
+      width:100%;
+    }
+
+    .publicSimpleControls .checkbox{
+      justify-content:center;
+    }
+
+    .publicSimpleSectionIntro{
+      text-align:center;
+      padding:20px 24px;
+    }
+
+    .publicSimpleSectionIntro h2{
+      font-size:24px;
+      margin-bottom:8px;
+    }
+
+    .publicSimpleWordCard{
+      padding:22px 24px;
+      width:min(100%, 760px);
+      margin:0 auto;
+    }
+
+    .publicSimpleMeta{
+      justify-content:center;
+      margin-bottom:4px;
+    }
+
+    .publicSimpleOutputGroup{
+      margin-top:14px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:var(--surfaceTable);
+      padding:14px;
+      width:100%;
+    }
+
+    .publicSimpleOutputGroup h3{
+      font-size:14px;
+      margin:0 0 12px 0;
+    }
+
+    .publicSimpleOutputGrid{
+      display:grid;
+      gap:12px;
+    }
+
+    .publicSimpleActionBar{
+      margin-top:12px;
+      justify-content:flex-start;
+    }
+
+    .publicSimpleMappingWrap{
+      margin-top:16px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:var(--surfaceTable);
+      padding:12px;
+      width:100%;
+    }
+
+    .publicSimpleMappingWrap details.tokenDetails{
+      margin-top:0;
+    }
+
+    .publicSimpleMappingWrap details.tokenDetails summary{
+      font-weight:600;
+      color:var(--text);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="titleRow">
+        <div>
+          <h1>Te Reo Maori Segmenter V12 With Regression Suite v38</h1>
+          <div class="sub">Standalone file. Segmenter logic and regression runner in one place. Includes rules pills and word history.</div>
+        </div>
+        <nav>
+          <button class="tab active" id="tabRegression" type="button">Regression</button>
+          <button class="tab" id="tabDemo" type="button">Demo</button>
+          <button class="tab" id="tabG2P" type="button">G2P</button>
+          <button class="tab" id="tabG2PV4Lexicon" type="button">G2P V4 Lexicon</button>
+        <button class="tab" id="tabPublicDemo" type="button">Public Demo</button>
+        <button class="tab" id="tabPublicDemoSimple" type="button">Public Demo Simple</button>
+        <button class="tab" id="tabG2PAwsTts" type="button">G2P - AWS TTS</button>
+                    <button class="tab" id="tabIpaLookupKeyboard" type="button">IPA Lookup And Keyboard</button>
+          <button class="tab" id="tabSTT" type="button">Speech To Text</button>
+<button class="tab" id="tabDetect" type="button">Te Reo Detect</button>
+          <button class="tab" id="tabDetectBlock" type="button">Detect Text Block</button>
+          <button class="tab" id="tabSegmentStatsHistory" type="button">Segment Stats History</button>
+          <button class="tab" id="tabRules" type="button">Rules</button>
+          <button class="tab" id="themeToggle" type="button">Dark Mode</button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section id="pageRegression" class="stack"></section>
+      <section id="pageDemo" class="stack hidden"></section>
+      <section id="pageG2P" class="stack hidden"></section>
+      <section id="pageG2PV4Lexicon" class="stack hidden"></section>
+    <section id="pagePublicDemo" class="stack hidden"></section>
+    <section id="pagePublicDemoSimple" class="stack hidden"></section>
+    <section id="pageG2PAwsTts" class="stack hidden"></section>
+            <section id="pageIpaLookupKeyboard" class="stack hidden"></section>
+      <section id="pageSTT" class="stack hidden"></section>
+<section id="pageDetect" class="stack hidden"></section>
+      <section id="pageDetectBlock" class="stack hidden"></section>
+      <section id="pageSegmentStatsHistory" class="stack hidden"></section>
+      <section id="pageRules" class="stack hidden"></section>
+    </div>
+  </main>
+
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1545.0.min.js"></script>
+<script src="./app_shared.js"></script>
+<script src="./segmenter_core.js"></script>
+<script src="./segmenter_rules_ui.js"></script>
+<script src="./regression_tools.js"></script>
+<script src="./g2p_v5_lexicon.js"></script>
+<script src="./g2p_v4_lexicon.js"></script>
+<script src="./g2p_tools.js"></script>
+<script src="./detect_tools.js"></script>
+<script src="./speech_tools.js"></script>
+<script src="./segment_stats.js"></script>
+
+<script>
+  // Extracted first-pass shared helpers and segmenter core load above.
+
+  // UI State
+  const state = {
+    page: 'regression',
+    results: null,
+    selected: null,
+    query: '',
+    showTrace: true,
+    showOnlyFails: false,
+    selectedRuleId: 'V8-R04'
+  };
+
+
+  function renderRegression(){
+    const root = document.getElementById('pageRegression');
+    root.innerHTML = '';
+
+    const testsText = loadFromStorage(STORAGE_KEYS.tests);
+    const initialTests = testsText ? testsText : JSON.stringify(makeDefaultTestsPayload(), null, 2);
+
+    const header = el('div', {class:'card'});
+    header.appendChild(el('h2', {}, ['Regression (V12 Run)']));
+    header.appendChild(el('p', {}, ['Edit tests, run them against the live v12 segmenter, then inspect failures with trace. Rule pills show what fired for the selected result.']));
+
+    const tagsRow = el('div', {class:'row'});
+    tagsRow.appendChild(el('span', {class:'tag'}, ['segmenter: v12']));
+    tagsRow.appendChild(el('span', {class:'tag'}, ['trace: enabled']));
+    tagsRow.appendChild(el('span', {class:'tag'}, ['history: demo + regression']));
+    header.appendChild(tagsRow);
+
+    root.appendChild(header);
+
+    const quickRulesCard = el('div', {class:'card'});
+    quickRulesCard.appendChild(el('h3', {}, ['Rules Quick View']));
+    quickRulesCard.appendChild(el('p', {}, ['All rules are available in the Rules tab. Click any pill here to open its explanation.']));
+
+    const quickPills = el('div', {class:'pillGrid'});
+    for(const r of RULES){
+      const b = el('button', {type:'button', class:'tag', title: `${r.title}`, onclick: ()=> openRule(r.id) }, [r.id]);
+      quickPills.appendChild(b);
+    }
+    quickRulesCard.appendChild(quickPills);
+    root.appendChild(quickRulesCard);
+
+    const testsCard = el('div', {class:'card'});
+    testsCard.appendChild(el('h3', {}, ['Tests JSON']));
+
+    const testsArea = el('textarea', {id:'testsJson', name:'testsJson', spellcheck:'false', 'aria-label':'Regression tests JSON editor'});
+    testsArea.value = initialTests;
+
+    const summary = el('div', {class:'row', id:'runSummary'});
+
+    const btnLoad = el('button', {class:'btn', type:'button', onclick:()=>{
+      testsArea.value = JSON.stringify(makeDefaultTestsPayload(), null, 2);
+      saveToStorage(STORAGE_KEYS.tests, testsArea.value);
+      summary.innerHTML = `<span class="tag">Baseline Loaded</span> <span class="muted">Ready to run tests</span>`;
+      state.results = null;
+      state.selected = null;
+      drawListAndDetails();
+      if(window.__drawTestsList) window.__drawTestsList();
+    }}, ['Load Baseline']);
+
+    const btnSave = el('button', {class:'btn', type:'button', onclick:()=>{
+      const ok = saveToStorage(STORAGE_KEYS.tests, testsArea.value);
+      summary.innerHTML = ok
+        ? `<span class="tag good">Saved</span> <span class="muted">Saved tests to localStorage</span>`
+        : `<span class="tag bad">Not Saved</span> <span class="muted">Could not access localStorage</span>`;
+    }}, ['Save Tests']);
+
+    const btnRun = el('button', {class:'btn primary', type:'button', onclick:()=>{
+      saveToStorage(STORAGE_KEYS.tests, testsArea.value);
+      const res = runTestsFromTextarea(testsArea, summary);
+      if(res){
+        const total = res.tests.length;
+        const pass = res.tests.filter(t=>t.pass).length;
+        const fail = total - pass;
+        summary.innerHTML = `${fail ? '<span class="tag bad">Fail</span>' : '<span class="tag good">Pass</span>'} ` +
+          `<span class="tag">${pass} passed</span> <span class="tag ${fail ? 'bad' : 'good'}">${fail} failed</span> ` +
+          `<span class="tag">${total} total</span> <span class="tag">${res.runtimeMs} ms</span>`;
+        // Record run history (manual runs only)
+        try{
+          const testsSig = simpleHash(String(testsArea.value || ''));
+          const failures = res.tests.filter(t=>!t.pass).map(t=>({
+            word: t.word,
+            name: t.name,
+            expectedStr: segmentsToString(t.expected || []),
+            actualStr: segmentsToString(t.actual || []),
+            diff: t.diff || ''
+          }));
+          addRegressionRunHistoryEntry({
+            tsIso: new Date().toISOString(),
+            total: total,
+            passCount: pass,
+            failCount: fail,
+            runtimeMs: res.runtimeMs,
+            testsSig: testsSig,
+            failures: failures.slice(0, 200)
+          });
+          if(window.__drawRegressionRunHistory) window.__drawRegressionRunHistory();
+        }catch(_){ /* ignore */ }
+
+        drawListAndDetails();
+      if(window.__drawTestsList) window.__drawTestsList();
+      }
+    }}, ['Run Tests']);
+
+    const btnDownload = el('button', {class:'btn', type:'button', onclick:()=>{
+      const data = state.results || { error: 'No results yet. Run tests first.' };
+      downloadText('segmenter_v12_regression_results.json', JSON.stringify(data, null, 2), 'application/json');
+    }}, ['Download Results']);
+
+    const btnImport = el('button', {class:'btn', type:'button', onclick:()=>{ fileInput.click(); }}, ['Import Results']);
+
+    const fileInput = el('input', {type:'file', accept:'application/json', class:'hidden'});
+    fileInput.addEventListener('change', async (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const txt = await f.text();
+      const parsed = safeJsonParse(txt);
+      if(!parsed.ok){
+        summary.innerHTML = `<span class="tag bad">Invalid JSON</span> <span class="muted">${escapeHtml(parsed.error)}</span>`;
+        return;
+      }
+      state.results = parsed.value;
+      state.selected = (state.results && state.results.tests && state.results.tests[0]) ? state.results.tests[0] : null;
+      const total = (state.results.tests || []).length;
+      const pass = (state.results.tests || []).filter(t=>t.pass).length;
+      const fail = total - pass;
+      summary.innerHTML = `<span class="tag">Imported</span> <span class="tag">${pass} passed</span> <span class="tag ${fail ? 'bad' : 'good'}">${fail} failed</span> <span class="tag">${total} total</span>`;
+      drawListAndDetails();
+      if(window.__drawTestsList) window.__drawTestsList();
+      fileInput.value = '';
+    });
+
+    const traceToggle = el('button', {class:'btn', type:'button', onclick:()=>{
+      state.showTrace = !state.showTrace;
+      traceToggle.textContent = state.showTrace ? 'Trace On' : 'Trace Off';
+      drawDetails();
+    }}, ['Trace On']);
+
+    const onlyFailsToggle = el('button', {class:'btn', type:'button', onclick:()=>{
+      state.showOnlyFails = !state.showOnlyFails;
+      onlyFailsToggle.textContent = state.showOnlyFails ? 'Fails Only' : 'All Tests';
+      drawList();
+    }}, ['All Tests']);
+
+    const search = el('input', {type:'search', name:'regressionSearch', placeholder:'Search word or name...', value: state.query, 'aria-label':'Search regression tests'});
+    search.addEventListener('input', (e)=>{ state.query = e.target.value; drawList(); });
+
+    const check = el('label', {class:'checkbox'});
+    const checkInput = el('input', {type:'checkbox', name:'showTrace', 'aria-label':'Show trace output'});
+    checkInput.checked = true;
+    checkInput.addEventListener('change', ()=>{
+      state.showTrace = checkInput.checked;
+      traceToggle.textContent = state.showTrace ? 'Trace On' : 'Trace Off';
+      drawDetails();
+    });
+    check.appendChild(checkInput);
+    check.appendChild(document.createTextNode('Show Trace'));
+
+    const controls = el('div', {class:'controls'});
+    controls.appendChild(search);
+    controls.appendChild(btnLoad);
+    controls.appendChild(btnSave);
+    controls.appendChild(btnRun);
+    controls.appendChild(btnDownload);
+
+    const controls2 = el('div', {class:'row', style:'margin-top:10px; gap:8px;'});
+    controls2.appendChild(btnImport);
+    controls2.appendChild(traceToggle);
+    controls2.appendChild(onlyFailsToggle);
+    controls2.appendChild(check);
+    controls2.appendChild(fileInput);
+
+    testsCard.appendChild(controls);
+    testsCard.appendChild(controls2);
+    testsCard.appendChild(el('div', {style:'margin-top:10px;'}));
+    testsCard.appendChild(testsArea);
+    testsCard.appendChild(el('div', {style:'margin-top:10px;'}));
+    testsCard.appendChild(summary);
+
+    root.appendChild(testsCard);
+
+    // Regression run history
+    const runHistCard = el('div', {class:'card'});
+    runHistCard.appendChild(el('h3', {}, ['Regression Run History']));
+    runHistCard.appendChild(el('p', {}, ['Tracks manual test runs (not auto-runs). Click a row to view details.']));
+
+    const runHistControls = el('div', {class:'row', style:'gap:8px; flex-wrap:wrap;'});
+
+    const btnRunHistClear = el('button', {class:'btn', type:'button', onclick:()=>{
+      saveRegressionRunHistory([]);
+      drawRegressionRunHistory();
+    }}, ['Clear Run History']);
+
+    const btnRunHistExport = el('button', {class:'btn', type:'button', onclick:()=>{
+      const items = loadRegressionRunHistory();
+      downloadText('segmenter_v12_regression_run_history.json', JSON.stringify(items, null, 2), 'application/json');
+    }}, ['Export Run History']);
+
+    const runHistFile = el('input', {type:'file', accept:'application/json', class:'hidden'});
+
+    const btnRunHistImport = el('button', {class:'btn', type:'button', onclick:()=> runHistFile.click() }, ['Import Run History']);
+
+    runHistFile.addEventListener('change', async (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const txt = await f.text();
+      const parsed = safeJsonParse(txt);
+      if(!parsed.ok || !Array.isArray(parsed.value)) return;
+      saveRegressionRunHistory(parsed.value);
+      drawRegressionRunHistory();
+      runHistFile.value = '';
+    });
+
+    runHistControls.appendChild(btnRunHistClear);
+    runHistControls.appendChild(btnRunHistExport);
+    runHistControls.appendChild(btnRunHistImport);
+    runHistControls.appendChild(runHistFile);
+
+    const runHistWrap = el('div', {style:'margin-top:10px;'});
+    const runHistDetail = el('div', {style:'margin-top:10px;'});
+
+    function drawRegressionRunHistory(){
+      runHistWrap.innerHTML = '';
+      runHistDetail.innerHTML = '';
+      const items = loadRegressionRunHistory();
+      if(!items.length){
+        runHistWrap.appendChild(el('p', {}, ['No run history yet. Click Run Tests to record a run.']));
+        return;
+      }
+
+      const tbl = el('table');
+      const thead = el('thead');
+      thead.appendChild(el('tr', {}, [
+        el('th', {}, ['When']),
+        el('th', {}, ['Status']),
+        el('th', {}, ['Pass']),
+        el('th', {}, ['Fail']),
+        el('th', {}, ['Ms']),
+        el('th', {}, ['Suite'])
+      ]));
+      tbl.appendChild(thead);
+
+      const tbody = el('tbody');
+      for(const it of items){
+        const tr = el('tr');
+        tr.addEventListener('click', ()=>{
+          // Render details
+          const failList = Array.isArray(it.failures) ? it.failures : [];
+          let html = '';
+          html += `<div class="card">`;
+          html += `<div class="row">` +
+            `${it.failCount ? '<span class="tag bad">Fail</span>' : '<span class="tag good">Pass</span>'}` +
+            `<span class="tag">${escapeHtml(it.tsIso || '')}</span>` +
+            `<span class="tag">total: ${escapeHtml(String(it.total ?? ''))}</span>` +
+            `<span class="tag good">pass: ${escapeHtml(String(it.passCount ?? ''))}</span>` +
+            `<span class="tag ${it.failCount ? 'bad' : 'good'}">fail: ${escapeHtml(String(it.failCount ?? ''))}</span>` +
+            `<span class="tag">${escapeHtml(String(it.runtimeMs ?? ''))} ms</span>` +
+            `<span class="tag">suite: ${escapeHtml(it.testsSig || '')}</span>` +
+          `</div>`;
+
+          if(it.note){
+            html += `<p class="muted">${escapeHtml(it.note)}</p>`;
+          }
+
+          if(!failList.length){
+            html += `<p>No failures recorded for this run.</p>`;
+          } else {
+            html += `<h3>Failures</h3>`;
+            html += `<table><thead><tr><th>Word</th><th>Name</th><th>Expected</th><th>Actual</th></tr></thead><tbody>`;
+            for(const f of failList.slice(0, 100)){
+              html += `<tr>` +
+                `<td class="mono">${escapeHtml(f.word || '')}</td>` +
+                `<td>${escapeHtml(f.name || '')}</td>` +
+                `<td class="mono">${escapeHtml(f.expectedStr || '')}</td>` +
+                `<td class="mono">${escapeHtml(f.actualStr || '')}</td>` +
+              `</tr>`;
+            }
+            html += `</tbody></table>`;
+          }
+
+          html += `</div>`;
+          runHistDetail.innerHTML = html;
+        });
+
+        const when = (it.tsIso || '').replace('T',' ').replace('Z','');
+        tr.appendChild(el('td', {class:'mono'}, [when]));
+        tr.appendChild(el('td', {}, [it.failCount ? 'fail' : 'pass']));
+        tr.appendChild(el('td', {}, [String(it.passCount ?? '')]));
+        tr.appendChild(el('td', {}, [String(it.failCount ?? '')]));
+        tr.appendChild(el('td', {}, [String(it.runtimeMs ?? '')]));
+        tr.appendChild(el('td', {class:'mono'}, [it.testsSig || '']));
+        tbody.appendChild(tr);
+      }
+
+      tbl.appendChild(tbody);
+      runHistWrap.appendChild(tbl);
+    }
+
+    // Expose and init
+    window.__drawRegressionRunHistory = drawRegressionRunHistory;
+
+    runHistCard.appendChild(runHistControls);
+    runHistCard.appendChild(runHistWrap);
+    runHistCard.appendChild(runHistDetail);
+
+    root.appendChild(runHistCard);
+
+    // initial draw
+    drawRegressionRunHistory();
+
+    // Add tests + history
+    // Add tests + history
+    const addCard = el('div', {class:'card'});
+    addCard.appendChild(el('h3', {}, ['Add Test Word']));
+    addCard.appendChild(el('p', {}, ['Add or update a single test entry without manually editing JSON. You can auto-fill expected segments from the live segmenter, then lock them into the suite.']));
+
+    const addRow1 = el('div', {class:'controls'});
+    const addWord = el('input', {type:'text', name:'addTestWord', placeholder:'Word (e.g., mangataiore)', value:'', 'aria-label':'Test word'});
+    const addName = el('input', {type:'text', name:'addTestName', placeholder:'Name (optional)', value:'', 'aria-label':'Test name'});
+    addRow1.appendChild(addWord);
+    addRow1.appendChild(addName);
+
+    const addRow2 = el('div', {class:'controls', style:'margin-top:10px;'});
+    const addExpected = el('input', {type:'text', name:'addExpectedSegments', placeholder:'Expected segments (use +). Example: ma + nga + tai + o + re', value:'', 'aria-label':'Expected segments'});
+    addRow2.appendChild(addExpected);
+
+    const addSummary = el('div', {class:'row', style:'margin-top:10px;'});
+    addSummary.innerHTML = '<span class="tag">Tip</span> <span class="muted">Use “Fill From Segmenter” to capture the current v12 output as the expected baseline.</span>';
+
+    let lastFillWasAuto = false;
+
+    const addBtns = el('div', {class:'row', style:'margin-top:10px; gap:8px; flex-wrap:wrap;'});
+
+    const btnFillExpected = el('button', {class:'btn', type:'button', onclick:()=>{
+      const w = normalizeWord(addWord.value || '');
+      if(!w){
+        addSummary.innerHTML = '<span class="tag bad">Missing Word</span> <span class="muted">Enter a word to segment.</span>';
+        return;
+      }
+      const out = segmentWordCore(w, { trace:false });
+      addExpected.value = segmentsToString(out.segments || []);
+      lastFillWasAuto = true;
+      addSummary.innerHTML = '<span class="tag good">Filled</span> <span class="muted">Expected segments set from v12 output.</span>';
+    }}, ['Fill From Segmenter']);
+
+    const btnAddTest = el('button', {class:'btn primary', type:'button', onclick:()=>{
+      const w = normalizeWord(addWord.value || '');
+      if(!w){
+        addSummary.innerHTML = '<span class="tag bad">Missing Word</span> <span class="muted">Enter a word.</span>';
+        return;
+      }
+      const expStr = String(addExpected.value || '').trim();
+      if(!expStr){
+        addSummary.innerHTML = '<span class="tag bad">Missing Expected</span> <span class="muted">Fill or type expected segments.</span>';
+        return;
+      }
+      const expected = normalizeSegments(expStr.split('+'));
+      const name = String(addName.value || '').trim() || w;
+
+      const parsed = safeJsonParse(testsArea.value.trim() || '[]');
+      if(!parsed.ok){
+        addSummary.innerHTML = '<span class="tag bad">Invalid Tests JSON</span> <span class="muted">Fix the Tests JSON area before adding.</span>';
+        return;
+      }
+      const arr = Array.isArray(parsed.value) ? parsed.value : [];
+      const idx = arr.findIndex(t => normalizeWord(t.word || '') === w);
+      const entry = { name, word: w, expected };
+      const action = idx >= 0 ? 'update' : 'add';
+      if(idx >= 0) arr[idx] = entry; else arr.push(entry);
+
+      testsArea.value = JSON.stringify(arr, null, 2);
+      saveToStorage(STORAGE_KEYS.tests, testsArea.value);
+
+      // Save history
+      const actualNow = segmentWordCore(w, { trace:false }).segments || [];
+      addRegressionHistoryEntry({
+        tsIso: new Date().toISOString(),
+        action,
+        word: w,
+        name,
+        expected,
+        expectedStr: segmentsToString(expected),
+        actualAtAdd: normalizeSegments(actualNow),
+        source: lastFillWasAuto ? 'auto-fill' : 'manual'
+      });
+      lastFillWasAuto = false;
+
+      addSummary.innerHTML = '<span class="tag good">' + (action === 'add' ? 'Added' : 'Updated') + '</span> <span class="muted">Saved to Tests JSON and history.</span>';
+      drawRegressionHistory();
+      if(window.__drawTestsList) window.__drawTestsList();
+    }}, ['Add Or Update Test']);
+
+    const btnClearAdd = el('button', {class:'btn', type:'button', onclick:()=>{
+      addWord.value = '';
+      addName.value = '';
+      addExpected.value = '';
+      lastFillWasAuto = false;
+      addSummary.innerHTML = '<span class="tag">Tip</span> <span class="muted">Use “Fill From Segmenter” to capture the current v12 output as the expected baseline.</span>';
+    }}, ['Clear']);
+
+    addBtns.appendChild(btnFillExpected);
+    addBtns.appendChild(btnAddTest);
+    addBtns.appendChild(btnClearAdd);
+
+    addCard.appendChild(addRow1);
+    addCard.appendChild(addRow2);
+    addCard.appendChild(addBtns);
+    addCard.appendChild(addSummary);
+
+
+    // Bulk add tests
+    const bulkCard = el('div', {class:'card'});
+    bulkCard.appendChild(el('h3', {}, ['Bulk Add Words']));
+    bulkCard.appendChild(el('p', {}, ['Paste many words to add tests quickly. Bulk add captures the current v12 segmentation output as the expected baseline for each word.']));
+
+    const bulkArea = el('textarea', {name:'bulkAddWords', spellcheck:'false', placeholder:'One word per line, or paste a space separated list.\n\nExample:\nwhakapapa\nmangataiore\nwhaungaatia', 'aria-label':'Bulk add words input'});
+    bulkArea.style.minHeight = '140px';
+
+    const bulkControls = el('div', {class:'row', style:'gap:8px; flex-wrap:wrap; margin-top:10px;'});
+    const bulkUpdateLabel = el('label', {class:'checkbox'});
+    const bulkUpdateExisting = el('input', {type:'checkbox', name:'bulkUpdateExisting', 'aria-label':'Update existing tests'});
+    bulkUpdateExisting.checked = false;
+    bulkUpdateLabel.appendChild(bulkUpdateExisting);
+    bulkUpdateLabel.appendChild(document.createTextNode('Update existing tests'));
+
+    const bulkKeepDuplicatesLabel = el('label', {class:'checkbox'});
+    const bulkAllowDupInPaste = el('input', {type:'checkbox', name:'bulkAllowDuplicates', 'aria-label':'Allow duplicates in paste'});
+    bulkAllowDupInPaste.checked = false;
+    bulkKeepDuplicatesLabel.appendChild(bulkAllowDupInPaste);
+    bulkKeepDuplicatesLabel.appendChild(document.createTextNode('Allow duplicates in paste'));
+
+    const bulkSummary = el('div', {class:'row', style:'margin-top:10px;'});
+    bulkSummary.innerHTML = '<span class="tag">Tip</span> <span class="muted">Bulk add uses the segmenter output as expected segments. Use the list editor to refine expected segments later.</span>';
+
+    function extractBulkWords(raw){
+      const txt = String(raw || '');
+      const tokens = txt
+        .split(/[\n\r]+/)
+        .flatMap(line => line.split(/[\s,]+/));
+      const out = [];
+      for(const tok of tokens){
+        // Keep letters/macrons and strip leading/trailing punctuation
+        const w = normalizeWord(tok).replace(/^[^a-zāēīōū]+|[^a-zāēīōū]+$/g,'');
+        if(w) out.push(w);
+      }
+      return out;
+    }
+
+const btnBulkAdd = el('button', {class:'btn primary', type:'button', onclick:()=>{
+      const parsed = safeJsonParse(String(testsArea.value || '').trim() || '[]');
+      if(!parsed.ok){
+        bulkSummary.innerHTML = '<span class="tag bad">Invalid Tests JSON</span> <span class="muted">Fix the Tests JSON area before bulk adding.</span>';
+        return;
+      }
+      const arr = Array.isArray(parsed.value) ? parsed.value : [];
+
+      const wordsRaw = extractBulkWords(bulkArea.value || '');
+      if(!wordsRaw.length){
+        bulkSummary.innerHTML = '<span class="tag bad">No Words</span> <span class="muted">Paste one or more words first.</span>';
+        return;
+      }
+
+      const seen = new Set();
+      let added = 0;
+      let updated = 0;
+      let skipped = 0;
+      let dupPaste = 0;
+
+      for(const w0 of wordsRaw){
+        const w = normalizeWord(w0);
+        if(!w) continue;
+        if(seen.has(w) && !bulkAllowDupInPaste.checked){
+          dupPaste += 1;
+          continue;
+        }
+        seen.add(w);
+
+        const idx = arr.findIndex(t => normalizeWord(t.word || '') === w);
+        if(idx >= 0 && !bulkUpdateExisting.checked){
+          skipped += 1;
+          continue;
+        }
+
+        const outSeg = segmentWordCore(w, {trace:false});
+        const expected = normalizeSegments(outSeg.segments || []);
+        const entry = { name: w, word: w, expected };
+
+        const action = (idx >= 0) ? 'update' : 'add';
+        if(idx >= 0) {
+          arr[idx] = entry;
+          updated += 1;
+        } else {
+          arr.push(entry);
+          added += 1;
+        }
+
+        // History
+        addRegressionHistoryEntry({
+          tsIso: new Date().toISOString(),
+          action,
+          word: w,
+          name: w,
+          expected,
+          expectedStr: segmentsToString(expected),
+          actualAtAdd: normalizeSegments((segmentWordCore(w, {trace:false}).segments || [])),
+          source: 'bulk'
+        });
+      }
+
+      testsArea.value = JSON.stringify(arr, null, 2);
+      saveToStorage(STORAGE_KEYS.tests, testsArea.value);
+
+      bulkSummary.innerHTML = '<span class="tag good">Bulk Done</span> ' +
+        '<span class="tag">added: ' + added + '</span> ' +
+        '<span class="tag">updated: ' + updated + '</span> ' +
+        '<span class="tag">skipped: ' + skipped + '</span> ' +
+        (dupPaste ? '<span class="tag">dupe-in-paste: ' + dupPaste + '</span> ' : '') +
+        '<span class="muted">Saved suite and added history entries.</span>';
+
+      if(window.__drawRegressionHistory) window.__drawRegressionHistory();
+      if(window.__drawTestsList) window.__drawTestsList();
+    }}, ['Bulk Add From Segmenter']);
+
+    const btnBulkClear = el('button', {class:'btn', type:'button', onclick:()=>{
+      bulkArea.value = '';
+      bulkSummary.innerHTML = '<span class="tag">Tip</span> <span class="muted">Bulk add uses the segmenter output as expected segments. Use the list editor to refine expected segments later.</span>';
+    }}, ['Clear']);
+
+    bulkControls.appendChild(btnBulkAdd);
+    bulkControls.appendChild(btnBulkClear);
+    bulkControls.appendChild(bulkUpdateLabel);
+    bulkControls.appendChild(bulkKeepDuplicatesLabel);
+
+    bulkCard.appendChild(bulkArea);
+    bulkCard.appendChild(bulkControls);
+    bulkCard.appendChild(bulkSummary);
+
+    // Tests list editor
+    const testsListCard = el('div', {class:'card'});
+    testsListCard.appendChild(el('h3', {}, ['Edit Tests List']));
+    testsListCard.appendChild(el('p', {}, ['Edit and delete test entries without touching JSON. Click a row to load it into the Add Test Word form.']));
+
+    const testsListControls = el('div', {class:'row', style:'gap:8px; flex-wrap:wrap;'});
+    const btnRefreshList = el('button', {class:'btn', type:'button', onclick:()=> drawTestsList() }, ['Refresh List']);
+    const btnSortList = el('button', {class:'btn', type:'button', onclick:()=>{ state.__testsListSort = state.__testsListSort === 'word' ? 'none' : 'word'; drawTestsList(); }}, ['Sort By Word']);
+    testsListControls.appendChild(btnRefreshList);
+    testsListControls.appendChild(btnSortList);
+
+    const testsListWrap = el('div', {style:'margin-top:10px;'});
+
+    function drawTestsList(){
+      testsListWrap.innerHTML = '';
+      const parsed = safeJsonParse(String(testsArea.value || '').trim() || '[]');
+      if(!parsed.ok){
+        testsListWrap.appendChild(el('p', {}, ['Tests JSON is invalid. Fix the JSON before editing the list.']));
+        return;
+      }
+      const arr = Array.isArray(parsed.value) ? parsed.value : [];
+      if(!arr.length){
+        testsListWrap.appendChild(el('p', {}, ['No tests found. Load baseline or add a test.']));
+        return;
+      }
+
+      let list = arr.slice();
+      if(state.__testsListSort === 'word'){
+        list.sort((a,b)=> String(a.word||'').localeCompare(String(b.word||'')));
+      }
+
+      const tbl = el('table');
+      const thead = el('thead');
+      thead.appendChild(el('tr', {}, [
+        el('th', {}, ['Word']),
+        el('th', {}, ['Name']),
+        el('th', {}, ['Expected']),
+        el('th', {}, ['Actions'])
+      ]));
+      tbl.appendChild(thead);
+
+      const tbody = el('tbody');
+      for(const t of list){
+        const word = normalizeWord(t.word || '');
+        const name = String(t.name || word || '').trim() || word;
+        const expectedArr = Array.isArray(t.expected) ? t.expected : (Array.isArray(t.expectedSegments) ? t.expectedSegments : []);
+        const expectedStr = segmentsToString(normalizeSegments(expectedArr));
+
+        const tr = el('tr');
+        tr.addEventListener('click', ()=>{
+          addWord.value = word;
+          addName.value = name;
+          addExpected.value = expectedStr;
+          addSummary.innerHTML = '<span class="tag">Loaded</span> <span class="muted">Loaded from list. Edit fields then click Add Or Update Test.</span>';
+        });
+
+        const wordInput = el('input', {type:'text', value: word});
+        wordInput.className = 'mono';
+        wordInput.addEventListener('click', (e)=> e.stopPropagation());
+        const wordCell = el('td');
+        wordCell.appendChild(wordInput);
+        tr.appendChild(wordCell);
+
+        const nameInput = el('input', {type:'text', value: name});
+        nameInput.addEventListener('click', (e)=> e.stopPropagation());
+        const nameCell = el('td');
+        nameCell.appendChild(nameInput);
+        tr.appendChild(nameCell);
+
+        const expInput = el('input', {type:'text', value: expectedStr});
+        expInput.addEventListener('click', (e)=> e.stopPropagation());
+        const expCell = el('td');
+        expCell.appendChild(expInput);
+        tr.appendChild(expCell);
+
+        const actions = el('td');
+        actions.addEventListener('click', (e)=> e.stopPropagation());
+
+        const btnRowSave = el('button', {class:'btn', type:'button', onclick:()=>{
+          // Update this entry by original word key, optionally rename with duplicate protection
+          const parsed2 = safeJsonParse(String(testsArea.value || '').trim() || '[]');
+          if(!parsed2.ok) return;
+          const arr2 = Array.isArray(parsed2.value) ? parsed2.value : [];
+          const idx = arr2.findIndex(x => normalizeWord(x.word || '') === word);
+          if(idx < 0) return;
+
+          const newWord = normalizeWord(wordInput.value || '');
+          if(!newWord){
+            addSummary.innerHTML = '<span class="tag bad">Missing Word</span> <span class="muted">Word cannot be empty.</span>';
+            return;
+          }
+
+          // Duplicate protection (case-normalized)
+          const dup = arr2.some((x,i)=> i !== idx && normalizeWord(x.word || '') === newWord);
+          if(dup){
+            addSummary.innerHTML = '<span class="tag bad">Duplicate Word</span> <span class="muted">A test for "' + escapeHtml(newWord) + '" already exists. Choose a different word.</span>';
+            return;
+          }
+
+          const newName = String(nameInput.value || '').trim() || newWord;
+          const newExpStr = String(expInput.value || '').trim();
+          if(!newExpStr){
+            addSummary.innerHTML = '<span class="tag bad">Missing Expected</span> <span class="muted">Expected cannot be empty.</span>';
+            return;
+          }
+          const newExpected = normalizeSegments(newExpStr.split('+'));
+
+          const action = (newWord !== word) ? 'rename' : 'update';
+          arr2[idx] = { name: newName, word: newWord, expected: newExpected };
+          testsArea.value = JSON.stringify(arr2, null, 2);
+          saveToStorage(STORAGE_KEYS.tests, testsArea.value);
+
+          addRegressionHistoryEntry({
+            tsIso: new Date().toISOString(),
+            action,
+            word: newWord,
+            fromWord: (newWord !== word) ? word : undefined,
+            name: newName,
+            expected: newExpected,
+            expectedStr: segmentsToString(newExpected),
+            actualAtAdd: normalizeSegments((segmentWordCore(newWord, {trace:false}).segments || [])),
+            source: 'tests-list'
+          });
+          if(window.__drawRegressionHistory) window.__drawRegressionHistory();
+
+          addSummary.innerHTML = (action === 'rename')
+            ? '<span class="tag good">Renamed</span> <span class="muted">Updated word and saved changes.</span>'
+            : '<span class="tag good">Updated</span> <span class="muted">Saved changes.</span>';
+
+          drawTestsList();
+        }}, ['Save']);
+
+        const btnRowDelete = el('button', {class:'btn', type:'button', onclick:()=>{
+          const cur = normalizeWord(wordInput.value || '') || word;
+          if(!confirm('Delete test for: ' + cur + ' ?')) return;
+          const parsed2 = safeJsonParse(String(testsArea.value || '').trim() || '[]');
+          if(!parsed2.ok) return;
+          const arr2 = Array.isArray(parsed2.value) ? parsed2.value : [];
+          const next = arr2.filter(x => normalizeWord(x.word || '') !== word);
+          testsArea.value = JSON.stringify(next, null, 2);
+          saveToStorage(STORAGE_KEYS.tests, testsArea.value);
+
+          addRegressionHistoryEntry({
+            tsIso: new Date().toISOString(),
+            action: 'delete',
+            word: word,
+            name: String(nameInput.value || '').trim() || name,
+            expected: normalizeSegments(String(expInput.value || '').split('+')),
+            expectedStr: String(expInput.value || '').trim(),
+            actualAtAdd: normalizeSegments((segmentWordCore(word, {trace:false}).segments || [])),
+            source: 'tests-list'
+          });
+          if(window.__drawRegressionHistory) window.__drawRegressionHistory();
+          addSummary.innerHTML = '<span class="tag">Deleted</span> <span class="muted">Removed from suite.</span>';
+          drawTestsList();
+        }}, ['Delete']);
+
+        actions.appendChild(btnRowSave);
+        actions.appendChild(btnRowDelete);
+        tr.appendChild(actions);
+
+        tbody.appendChild(tr);
+      }
+
+      tbl.appendChild(tbody);
+      testsListWrap.appendChild(tbl);
+    }
+
+    // Keep list in sync
+    let __testsListTimer = null;
+    testsArea.addEventListener('input', ()=>{
+      if(__testsListTimer) clearTimeout(__testsListTimer);
+      __testsListTimer = setTimeout(drawTestsList, 250);
+    });
+
+    testsListCard.appendChild(testsListControls);
+    testsListCard.appendChild(testsListWrap);
+
+    // Expose for handlers
+    window.__drawTestsList = drawTestsList;
+
+    root.appendChild(testsListCard);
+
+    // History UI
+    const histCard = el('div', {class:'card'});
+    histCard.appendChild(el('h3', {}, ['Regression Add History']));
+    histCard.appendChild(el('p', {}, ['Tracks additions and updates you make using the Add Test Word form.']));
+
+    const histControls = el('div', {class:'row', style:'gap:8px; flex-wrap:wrap;'});
+
+    const btnHistClear = el('button', {class:'btn', type:'button', onclick:()=>{
+      saveRegressionHistory([]);
+      drawRegressionHistory();
+    }}, ['Clear History']);
+
+    const btnHistExport = el('button', {class:'btn', type:'button', onclick:()=>{
+      const items = loadRegressionHistory();
+      downloadText('segmenter_v12_regression_add_history.json', JSON.stringify(items, null, 2), 'application/json');
+    }}, ['Export History']);
+
+    const histFile = el('input', {type:'file', accept:'application/json', class:'hidden'});
+
+    const btnHistImport = el('button', {class:'btn', type:'button', onclick:()=> histFile.click() }, ['Import History']);
+
+    histFile.addEventListener('change', async (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const txt = await f.text();
+      const parsed = safeJsonParse(txt);
+      if(!parsed.ok || !Array.isArray(parsed.value)){
+        addSummary.innerHTML = '<span class="tag bad">Invalid History JSON</span> <span class="muted">Expected an array.</span>';
+        return;
+      }
+      saveRegressionHistory(parsed.value);
+      drawRegressionHistory();
+      histFile.value = '';
+      addSummary.innerHTML = '<span class="tag good">History Imported</span> <span class="muted">Loaded ' + parsed.value.length + ' entries.</span>';
+    });
+
+    histControls.appendChild(btnHistClear);
+    histControls.appendChild(btnHistExport);
+    histControls.appendChild(btnHistImport);
+    histControls.appendChild(histFile);
+
+    const histWrap = el('div', {style:'margin-top:10px;'});
+
+    function drawRegressionHistory(){
+      histWrap.innerHTML = '';
+      const items = loadRegressionHistory();
+      if(!items.length){
+        histWrap.appendChild(el('p', {}, ['No history yet. Add or update a test to start tracking.']));
+        return;
+      }
+      const tbl = el('table');
+      const thead = el('thead');
+      thead.appendChild(el('tr', {}, [
+        el('th', {}, ['When']),
+        el('th', {}, ['Action']),
+        el('th', {}, ['Word']),
+        el('th', {}, ['Expected'])
+      ]));
+      tbl.appendChild(thead);
+
+      const tbody = el('tbody');
+      for(const it of items){
+        const tr = el('tr');
+        tr.addEventListener('click', ()=>{
+          addWord.value = it.word || '';
+          addName.value = it.name || '';
+          addExpected.value = it.expectedStr || segmentsToString(it.expected || []);
+          addSummary.innerHTML = '<span class="tag">Loaded</span> <span class="muted">Loaded from history. Click Add Or Update Test to write into Tests JSON.</span>';
+        });
+        const when = (it.tsIso || '').replace('T',' ').replace('Z','');
+        tr.appendChild(el('td', {class:'mono'}, [when]));
+        tr.appendChild(el('td', {}, [it.action || '']));
+        tr.appendChild(el('td', {class:'mono'}, [it.word || '']));
+        tr.appendChild(el('td', {class:'mono'}, [it.expectedStr || segmentsToString(it.expected || [])]));
+        tbody.appendChild(tr);
+      }
+      tbl.appendChild(tbody);
+      histWrap.appendChild(tbl);
+    }
+
+    // Expose for Add handler
+    window.__drawRegressionHistory = drawRegressionHistory;
+
+    histCard.appendChild(histControls);
+    histCard.appendChild(histWrap);
+
+    root.appendChild(addCard);
+    root.appendChild(bulkCard);
+    root.appendChild(histCard);
+
+    // initial draw
+    drawRegressionHistory();
+    if(window.__drawTestsList) window.__drawTestsList();
+
+    const listCard = el('div', {class:'card'});
+    listCard.appendChild(el('h3', {}, ['Results']));
+
+    const split = el('div', {class:'split'});
+    const listWrap = el('div');
+    const detailsWrap = el('div');
+    split.appendChild(listWrap);
+    split.appendChild(detailsWrap);
+    listCard.appendChild(split);
+    root.appendChild(listCard);
+
+    function getTests(){
+      const tests = (state.results && state.results.tests) ? state.results.tests : [];
+      let out = tests;
+      const q = (state.query || '').trim().toLowerCase();
+      if(q){
+        out = out.filter(t => (t.word||'').toLowerCase().includes(q) || (t.name||'').toLowerCase().includes(q));
+      }
+      if(state.showOnlyFails){
+        out = out.filter(t => !t.pass);
+      }
+      return out;
+    }
+
+    function drawList(){
+      listWrap.innerHTML = '';
+
+      const tests = getTests();
+      if(!tests.length){
+        listWrap.appendChild(el('p', {}, ['No results to show. Run tests first, or import results.']));
+        detailsWrap.innerHTML = '';
+        return;
+      }
+
+      if(!state.selected || !tests.includes(state.selected)){
+        state.selected = tests[0];
+      }
+
+      const tbl = el('table');
+      const thead = el('thead');
+      thead.appendChild(el('tr', {}, [
+        el('th', {}, ['Pass']),
+        el('th', {}, ['Word']),
+        el('th', {}, ['Name'])
+      ]));
+      tbl.appendChild(thead);
+
+      const tbody = el('tbody');
+      for(const t of tests){
+        const ok = !!t.pass;
+        const tr = el('tr', {class: (t === state.selected) ? 'selected' : ''});
+        tr.addEventListener('click', ()=>{ state.selected = t; drawList(); drawDetails(); });
+
+        tr.appendChild(el('td', {html:`<span class="tag ${ok ? 'good' : 'bad'}">${ok ? 'pass' : 'fail'}</span>`}));
+        tr.appendChild(el('td', {class:'mono'}, [t.word || '']));
+        tr.appendChild(el('td', {}, [t.name || '']));
+        tbody.appendChild(tr);
+      }
+      tbl.appendChild(tbody);
+      listWrap.appendChild(tbl);
+
+      drawDetails();
+    }
+
+    function drawDetails(){
+      const t = state.selected;
+      if(!t){ detailsWrap.innerHTML = ''; return; }
+
+      const ok = !!t.pass;
+      const exp = (t.expected || []).map(s=>String(s));
+      const act = (t.actual || []).map(s=>String(s));
+
+      const ruleIds = Array.isArray(t.ruleIds) ? t.ruleIds : [];
+
+      let htmlOut = '';
+      htmlOut += `<div class="card">`;
+      htmlOut += `<div class="row"><span class="tag ${ok ? 'good' : 'bad'}">${ok ? 'pass' : 'fail'}</span>`;
+      htmlOut += `<span class="tag">${escapeHtml(t.word || '')}</span>`;
+      htmlOut += `<span class="tag">${escapeHtml(t.name || '')}</span></div>`;
+
+      htmlOut += `<div class="twoCol" style="margin-top:10px;">`;
+      htmlOut += `<div><h3>Expected</h3><pre>${escapeHtml(segmentsToString(exp))}</pre></div>`;
+      htmlOut += `<div><h3>Actual</h3><pre>${escapeHtml(segmentsToString(act))}</pre></div>`;
+      htmlOut += `</div>`;
+
+      if(t.diff){
+        htmlOut += `<h3>Diff</h3><pre>${escapeHtml(String(t.diff))}</pre>`;
+      }
+
+      htmlOut += `<h3>Internal Split</h3>`;
+      htmlOut += `<pre>prefix: ${escapeHtml(t.prefix ?? '')}\nmiddle: ${escapeHtml(t.middle ?? '')}\nsuffix: ${escapeHtml(t.suffix ?? '')}</pre>`;
+
+      htmlOut += `<h3>Rules Used</h3>`;
+      htmlOut += `<div id="selectedRulePills"></div>`;
+      htmlOut += `</div>`;
+
+      if(state.showTrace){
+        const trace = t.trace || [];
+        htmlOut += `<div class="card"><h3>Trace</h3>`;
+        if(!trace.length){
+          htmlOut += `<p>No trace recorded.</p>`;
+        } else {
+          htmlOut += `<table><thead><tr><th>Step</th><th>Fields</th></tr></thead><tbody>`;
+          for(const step of trace){
+            const fields = Object.entries(step)
+              .filter(([k])=>k !== 'step')
+              .map(([k,v])=>`${escapeHtml(k)}: ${escapeHtml(typeof v === 'string' ? v : JSON.stringify(v))}`)
+              .join('<br>');
+            htmlOut += `<tr><td><code>${escapeHtml(step.step || '')}</code></td><td>${fields}</td></tr>`;
+          }
+          htmlOut += `</tbody></table>`;
+        }
+        htmlOut += `</div>`;
+      }
+
+      if(state.results){
+        const total = (state.results.tests || []).length;
+        const passCount = (state.results.tests || []).filter(x=>x.pass).length;
+        const failCount = total - passCount;
+        htmlOut += `<div class="card"><h3>Run Metadata</h3>`;
+        htmlOut += `<div class="row">`;
+        htmlOut += `<span class="tag">ranAtIso: ${escapeHtml(state.results.ranAtIso || '')}</span>`;
+        htmlOut += `<span class="tag">runtimeMs: ${escapeHtml(state.results.runtimeMs || '')}</span>`;
+        htmlOut += `<span class="tag good">pass: ${passCount}</span>`;
+        htmlOut += `<span class="tag ${failCount ? 'bad' : 'good'}">fail: ${failCount}</span>`;
+        htmlOut += `</div></div>`;
+      }
+
+      detailsWrap.innerHTML = htmlOut;
+
+      const holder = detailsWrap.querySelector('#selectedRulePills');
+      if(holder){
+        holder.appendChild(renderRulePills(ruleIds, {max: 16}));
+      }
+    }
+
+    function drawListAndDetails(){
+      drawList();
+    }
+
+    window.__drawRegressionList = drawList;
+    window.__drawRegressionDetails = drawDetails;
+    window.__drawRegressionAll = drawListAndDetails;
+
+    summary.innerHTML = `<span class="tag">Ready</span> <span class="muted">Load baseline or run tests</span>`;
+
+    if(testsText){
+      const auto = runTestsFromTextarea(testsArea, summary);
+      if(auto){
+        const total = auto.tests.length;
+        const pass = auto.tests.filter(t=>t.pass).length;
+        const fail = total - pass;
+        summary.innerHTML = `${fail ? '<span class="tag bad">Fail</span>' : '<span class="tag good">Pass</span>'} ` +
+          `<span class="tag">${pass} passed</span> <span class="tag ${fail ? 'bad' : 'good'}">${fail} failed</span> ` +
+          `<span class="tag">${total} total</span> <span class="tag">${auto.runtimeMs} ms</span>`;
+      }
+    }
+
+    drawListAndDetails();
+  }
+
+  function drawList(){
+    if(window.__drawRegressionList) window.__drawRegressionList();
+  }
+
+  function drawDetails(){
+    if(window.__drawRegressionDetails) window.__drawRegressionDetails();
+  }
+
+  function drawListAndDetails(){
+    if(window.__drawRegressionAll) window.__drawRegressionAll();
+  }
+
+  function renderDemo(){
+    const root = document.getElementById('pageDemo');
+    root.innerHTML = '';
+
+    const card = el('div', {class:'card'});
+    card.appendChild(el('h2', {}, ['Demo']));
+    card.appendChild(el('p', {}, ['Enter a word and see the current v12 split. Segmented words are saved into Word History with rule pills for what fired.']));
+
+    const input = el('input', {type:'text', placeholder:'e.g. haititaimarangai'});
+    const runBtn = el('button', {class:'btn primary', type:'button'}, ['Segment']);
+
+    const traceCheck = el('label', {class:'checkbox'});
+    const traceInput = el('input', {type:'checkbox'});
+    traceInput.checked = false;
+    traceCheck.appendChild(traceInput);
+    traceCheck.appendChild(document.createTextNode('Include Trace'));
+
+    const outWrap = el('div', {class:'stack', style:'margin-top:12px;'});
+
+    const historyCard = el('div', {class:'card'});
+    historyCard.appendChild(el('h2', {}, ['Word History']));
+    historyCard.appendChild(el('p', {}, ['Most recent first. Click a word row to load it back into the demo input.']));
+
+    const historyControls = el('div', {class:'row'});
+    const btnClear = el('button', {class:'btn', type:'button', onclick:()=>{ saveHistory([]); drawHistory(); }}, ['Clear History']);
+    const btnExport = el('button', {class:'btn', type:'button', onclick:()=>{
+      const data = loadHistory();
+      downloadText('segmenter_v12_word_history.json', JSON.stringify(data, null, 2), 'application/json');
+    }}, ['Export History']);
+
+    const btnImport = el('button', {class:'btn', type:'button'}, ['Import History']);
+    const fileInput = el('input', {type:'file', accept:'application/json', class:'hidden'});
+    btnImport.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', async (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const txt = await f.text();
+      const parsed = safeJsonParse(txt);
+      if(!parsed.ok || !Array.isArray(parsed.value)) return;
+      saveHistory(parsed.value);
+      drawHistory();
+      fileInput.value = '';
+    });
+
+    historyControls.appendChild(btnClear);
+    historyControls.appendChild(btnExport);
+    historyControls.appendChild(btnImport);
+    historyControls.appendChild(fileInput);
+
+    const historyWrap = el('div', {id:'historyWrap'});
+    historyCard.appendChild(historyControls);
+    historyCard.appendChild(el('div', {class:'divider'}));
+    historyCard.appendChild(historyWrap);
+
+    function drawHistory(){
+      const items = loadHistory();
+      historyWrap.innerHTML = '';
+
+      if(!items.length){
+        historyWrap.appendChild(el('p', {}, ['No history yet. Segment a word to add it here.']));
+        return;
+      }
+
+      const tbl = el('table');
+      const thead = el('thead');
+      thead.appendChild(el('tr', {}, [
+        el('th', {}, ['Time']),
+        el('th', {}, ['Word']),
+        el('th', {}, ['Segments']),
+        el('th', {}, ['Rules'])
+      ]));
+      tbl.appendChild(thead);
+
+      const tbody = el('tbody');
+      for(const item of items){
+        const tr = el('tr');
+        tr.addEventListener('click', ()=>{
+          input.value = item.word;
+          runBtn.click();
+        });
+
+        const dt = item.ts ? new Date(item.ts) : null;
+        tr.appendChild(el('td', {}, [dt ? dt.toLocaleString() : '']));
+        tr.appendChild(el('td', {class:'mono'}, [item.word || '']));
+        tr.appendChild(el('td', {class:'mono'}, [segmentsToString(item.segments || [])]));
+
+        const rulesCell = el('td');
+        rulesCell.appendChild(renderRulePills(item.ruleIds || [], {max: 8}));
+        tr.appendChild(rulesCell);
+
+        tbody.appendChild(tr);
+      }
+      tbl.appendChild(tbody);
+      historyWrap.appendChild(tbl);
+    }
+
+    runBtn.addEventListener('click', ()=>{
+      const word = normalizeWord(input.value);
+      if(!word){
+        outWrap.innerHTML = `<div class="card"><span class="tag bad">Empty</span> <span class="muted">Enter a word</span></div>`;
+        return;
+      }
+
+      const res = segmentWordCore(word, { trace: traceInput.checked });
+
+      let htmlOut = '';
+      htmlOut += `<div class="card">`;
+      htmlOut += `<div class="row"><span class="tag">word: ${escapeHtml(res.word)}</span></div>`;
+      htmlOut += `<div class="twoCol" style="margin-top:10px;">`;
+      htmlOut += `<div><h3>Prefix</h3><pre>${escapeHtml(res.prefix)}</pre></div>`;
+      htmlOut += `<div><h3>Segments</h3><pre>${escapeHtml(segmentsToString(res.segments))}</pre></div>`;
+      htmlOut += `</div>`;
+      htmlOut += `<div class="twoCol" style="margin-top:10px;">`;
+      htmlOut += `<div><h3>Middle Segments</h3><pre>${escapeHtml(segmentsToString(res.middleSegments))}</pre></div>`;
+      htmlOut += `<div><h3>Suffix Segments</h3><pre>${escapeHtml(segmentsToString(res.suffixSegments))}</pre></div>`;
+      htmlOut += `</div>`;
+      htmlOut += `<h3>Internal Split</h3><pre>middle: ${escapeHtml(res.middle)}\nsuffix: ${escapeHtml(res.suffix)}</pre>`;
+      htmlOut += `<h3>Rules Used</h3><div id="demoRulePills"></div>`;
+      htmlOut += `</div>`;
+
+      if(traceInput.checked){
+        const trace = res.trace || [];
+        htmlOut += `<div class="card"><h3>Trace</h3>`;
+        if(!trace.length){ htmlOut += `<p>No trace recorded.</p>`; }
+        else {
+          htmlOut += `<table><thead><tr><th>Step</th><th>Fields</th></tr></thead><tbody>`;
+          for(const step of trace){
+            const fields = Object.entries(step)
+              .filter(([k])=>k !== 'step')
+              .map(([k,v])=>`${escapeHtml(k)}: ${escapeHtml(typeof v === 'string' ? v : JSON.stringify(v))}`)
+              .join('<br>');
+            htmlOut += `<tr><td><code>${escapeHtml(step.step || '')}</code></td><td>${fields}</td></tr>`;
+          }
+          htmlOut += `</tbody></table>`;
+        }
+        htmlOut += `</div>`;
+      }
+
+      outWrap.innerHTML = htmlOut;
+      const pillHolder = outWrap.querySelector('#demoRulePills');
+      if(pillHolder){
+        pillHolder.appendChild(renderRulePills(res.ruleIds || [], {max: 16}));
+      }
+
+      addHistoryEntry({
+        ts: new Date().toISOString(),
+        word: res.word,
+        segments: res.segments,
+        ruleIds: res.ruleIds,
+        prefix: res.prefix,
+        middle: res.middle,
+        suffix: res.suffix
+      });
+
+      drawHistory();
+    });
+
+    const inputWrap = el('div', {style:'flex:1; min-width:260px;'});
+    inputWrap.appendChild(input);
+
+    const btnWrap = el('div', {style:'display:flex; gap:8px; flex-wrap:wrap;'});
+    btnWrap.appendChild(runBtn);
+    btnWrap.appendChild(traceCheck);
+
+    const controlRow = el('div', {class:'row'});
+    controlRow.appendChild(inputWrap);
+    controlRow.appendChild(btnWrap);
+
+    card.appendChild(controlRow);
+    root.appendChild(card);
+    root.appendChild(outWrap);
+    root.appendChild(historyCard);
+
+    drawHistory();
+  }
+
+
+
+
+  
+
+  // ------------------------------------------------------------
+
+
+
+
+
+  // Te Reo Detect
+
+    
+  // Segment Stats Buckets (v32)
+  // This replaces the v23 flat history array to avoid localStorage quota blowouts.
+  // Core idea: keep per-entry segment counts in a compact encoding and keep bucket-level aggregates for fast overall stats.
+
+
+
+function renderRules(){
+    const root = document.getElementById('pageRules');
+    root.innerHTML = '';
+
+    const card = el('div', {class:'card'});
+    card.appendChild(el('h2', {}, ['Rules']));
+    card.appendChild(el('p', {}, ['Click a rule pill to view its explanation. Rule pills appear in regression results and demo history, and clicking them brings you here.']));
+
+    const layout = el('div', {class:'ruleLayout'});
+    const left = el('div', {class:'card'});
+    const right = el('div', {class:'card'});
+
+    left.appendChild(el('h3', {}, ['All Rules']));
+
+    const search = el('input', {type:'search', placeholder:'Search rules by id, title, or category...'});
+
+    const pills = el('div', {class:'pillGrid', id:'allRulePills', style:'margin-top:10px;'});
+
+    left.appendChild(search);
+    left.appendChild(pills);
+
+    function filteredRules(q){
+      const s = (q || '').trim().toLowerCase();
+      if(!s) return RULES;
+      return RULES.filter(r =>
+        r.id.toLowerCase().includes(s) ||
+        r.title.toLowerCase().includes(s) ||
+        r.cat.toLowerCase().includes(s) ||
+        r.desc.toLowerCase().includes(s)
+      );
+    }
+
+    function drawPills(q){
+      pills.innerHTML = '';
+      const list = filteredRules(q);
+      for(const r of list){
+        const isSel = r.id === state.selectedRuleId;
+        const cls = isSel ? 'tag good' : 'tag';
+        const b = el('button', {type:'button', class: cls, title: `${r.title}`, onclick: ()=>{ state.selectedRuleId = r.id; drawDetails(); drawPills(search.value); }}, [r.id]);
+        pills.appendChild(b);
+      }
+      if(!list.length){
+        pills.appendChild(el('span', {class:'tag warn'}, ['no matches']));
+      }
+    }
+
+    function drawDetails(){
+      right.innerHTML = '';
+      const r = RULE_BY_ID.get(state.selectedRuleId);
+      if(!r){
+        right.appendChild(el('h3', {}, ['Rule Details']));
+        right.appendChild(el('p', {}, ['Select a rule to view details.']));
+        return;
+      }
+
+      right.appendChild(el('h3', {}, ['Rule Details']));
+      right.appendChild(el('div', {class:'row'}, [
+        el('span', {class:'tag'}, [r.id]),
+        el('span', {class:'tag'}, [`category: ${r.cat}`]),
+        el('span', {class:'tag'}, [r.title])
+      ]));
+
+      right.appendChild(el('div', {class:'divider'}));
+
+      right.appendChild(el('h3', {}, ['Explanation']));
+
+      // Use <pre> to preserve multi-line formatting from the logic document
+      right.appendChild(el('pre', {}, [r.desc]));
+
+      if(r.example){
+        right.appendChild(el('h3', {}, ['Example']));
+        right.appendChild(el('pre', {}, [r.example]));
+      }
+
+      const btnRow = el('div', {class:'row', style:'margin-top:10px;'});
+      btnRow.appendChild(el('button', {class:'btn', type:'button', onclick:()=>{
+        navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(r.id) : null;
+      }}, ['Copy Rule Id']));
+
+      btnRow.appendChild(el('button', {class:'btn', type:'button', onclick:()=>{
+        setActiveTab('regression');
+      }}, ['Back To Regression']));
+
+      right.appendChild(btnRow);
+    }
+
+    search.addEventListener('input', ()=> drawPills(search.value));
+
+    drawDetails();
+    drawPills(search.value);
+
+    layout.appendChild(left);
+    layout.appendChild(right);
+
+    card.appendChild(layout);
+    root.appendChild(card);
+  }
+
+
+
+  // Init
+  document.getElementById('tabRegression').addEventListener('click', ()=>{ renderRegression(); setActiveTab('regression'); });
+  document.getElementById('tabDemo').addEventListener('click', ()=>{ renderDemo(); setActiveTab('demo'); });
+  document.getElementById('tabG2P').addEventListener('click', ()=>{ renderG2P(); setActiveTab('g2p'); });
+document.getElementById('tabG2PV4Lexicon').addEventListener('click', ()=>{ renderG2PV4Lexicon(); setActiveTab('g2pV4Lexicon'); });
+document.getElementById('tabPublicDemo').addEventListener('click', ()=>{ renderPublicDemoTab(); setActiveTab('publicDemo'); });
+document.getElementById('tabPublicDemoSimple').addEventListener('click', ()=>{ renderPublicDemoSimpleTab(); setActiveTab('publicDemoSimple'); });
+document.getElementById('tabG2PAwsTts').addEventListener('click', ()=>{ renderG2PAwsTts(); setActiveTab('g2pAwsTts'); });
+  document.getElementById('tabIpaLookupKeyboard').addEventListener('click', ()=>{ renderIpaLookupKeyboard(); setActiveTab('ipaLookupKeyboard'); });
+  document.getElementById('tabSTT').addEventListener('click', ()=>{ renderSpeechToText(); setActiveTab('stt'); });
+  document.getElementById('tabDetect').addEventListener('click', ()=>{ renderDetect(); setActiveTab('detect'); });
+  document.getElementById('tabDetectBlock').addEventListener('click', ()=>{ renderDetectBlock(); setActiveTab('detectBlock'); });
+  document.getElementById('tabSegmentStatsHistory').addEventListener('click', ()=>{ renderSegmentStatsHistory(); setActiveTab('segmentStatsHistory'); });
+  document.getElementById('tabRules').addEventListener('click', ()=>{ renderRules(); setActiveTab('rules'); });
+  document.getElementById('themeToggle').addEventListener('click', ()=>{ toggleThemePreference(); });
+
+  applyTheme(loadThemePreference());
+
+  window.addEventListener('DOMContentLoaded', ()=>{
+    renderRegression();
+    renderDemo();
+    renderG2P();
+    renderDetect();
+    renderRules();
+    setActiveTab('regression');
+  });
+</script>
+</body>
+</html>
