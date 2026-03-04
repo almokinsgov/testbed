@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b5296">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon-180.png">
+  <title>Far North Disaster And Emergency Dashboard</title>
+  <script>
+    // Keep a stable start_url for PWA installs.
+    // Redirect to the current versioned entry page.
+    (function(){
+      var target = './v23_v32_split_js_v2.html';
+      try {
+        if (location && location.pathname && location.pathname.endsWith('v23_v32_split_js_v2.html')) return;
+      } catch (e) {}
+      try { location.replace(target); } catch (e2) { location.href = target; }
+    })();
+  </script>
+</head>
+<body>
+  <noscript>
+    <p>This dashboard requires JavaScript. Open <a href="./v23_v32_split_js_v2.html">the dashboard</a>.</p>
+  </noscript>
+</body>
+</html>

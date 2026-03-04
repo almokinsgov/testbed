@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "source": "FNED custom messages example",
+    "version": "1.0",
+    "timezone": "Pacific/Auckland",
+    "notes": "This file is for testing. Edit start and end times to control when messages appear."
+  },
+  "messages": [
+    {
+      "id": "custom-info-001",
+      "enabled": true,
+      "title": "Dashboard Test Message",
+      "body": "This is a custom message loaded from JSON. It should render in the summary panel and trigger a toast and browser notification if enabled.",
+      "level": "Info",
+      "channels": ["summary", "toast", "notification"],
+      "start": "2026-02-19T00:00:00+13:00",
+      "end": "2026-02-25T00:00:00+13:00",
+      "link": "https://www.civildefence.govt.nz/",
+      "linkLabel": "Civil Defence Website"
+    },
+    {
+      "id": "custom-warning-002",
+      "enabled": true,
+      "title": "Comms Reminder",
+      "body": "If you are using this dashboard for an event, confirm the public message on the home page is current.",
+      "level": "Warning",
+      "channels": ["summary", "toast"],
+      "start": "2026-02-20T00:00:00+13:00",
+      "end": "2026-02-21T23:59:59+13:00"
+    },
+    {
+      "id": "custom-upcoming-003",
+      "enabled": true,
+      "title": "Scheduled Test Message",
+      "body": "This message is in the future so it should not show yet. Change the start time to test scheduling.",
+      "level": "Info",
+      "channels": ["summary"],
+      "start": "2026-03-01T08:00:00+13:00",
+      "end": "2026-03-02T18:00:00+13:00"
+    },
+    {
+      "id": "custom-disabled-004",
+      "enabled": false,
+      "title": "Disabled Message",
+      "body": "This should never show because enabled is false.",
+      "level": "Info",
+      "channels": ["summary", "toast", "notification"],
+      "start": "2026-02-19T00:00:00+13:00",
+      "end": "2026-02-25T00:00:00+13:00"
+    },
+    {
+      "id": "custom-geo-point-005",
+      "enabled": true,
+      "title": "Point Message - Kaitaia CBD",
+      "body": "Operational update for Kaitaia township. Use this example to test point-based custom message handling.",
+      "level": "Info",
+      "channels": ["summary", "toast", "notification"],
+      "start": "2026-02-20T00:00:00+13:00",
+      "end": "2026-03-20T23:59:59+13:00",
+      "link": "https://www.fndc.govt.nz/",
+      "linkLabel": "FNDC Home",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "areaName": "Kaitaia CBD",
+          "messageType": "point",
+          "priority": "normal"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [173.2642, -35.1120]
+        }
+      }
+    },
+    {
+      "id": "custom-geo-point-006",
+      "enabled": true,
+      "title": "Point Message - Kerikeri Hub",
+      "body": "Service notice for Kerikeri township. This message includes point geometry and metadata.",
+      "level": "Warning",
+      "channels": ["summary", "toast"],
+      "start": "2026-02-20T00:00:00+13:00",
+      "end": "2026-03-25T23:59:59+13:00",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "areaName": "Kerikeri Hub",
+          "messageType": "point",
+          "priority": "elevated"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [173.9486, -35.2267]
+        }
+      }
+    },
+    {
+      "id": "custom-geo-polygon-007",
+      "enabled": true,
+      "title": "Polygon Message - Bay Of Islands Area",
+      "body": "Area-level advisory for Bay Of Islands. Use this polygon message to test map area matching logic.",
+      "level": "Warning",
+      "channels": ["summary", "toast", "notification"],
+      "start": "2026-02-20T00:00:00+13:00",
+      "end": "2026-03-30T23:59:59+13:00",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "areaName": "Bay Of Islands Area",
+          "messageType": "polygon",
+          "priority": "high"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [174.01, -35.39],
+              [174.29, -35.39],
+              [174.29, -35.10],
+              [174.01, -35.10],
+              [174.01, -35.39]
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "custom-geo-polygon-008",
+      "enabled": true,
+      "title": "Polygon Message - West Coast Corridor",
+      "body": "Preparedness notice for selected west coast localities. Polygon geometry can be used for area inclusion tests.",
+      "level": "Info",
+      "channels": ["summary"],
+      "start": "2026-02-20T00:00:00+13:00",
+      "end": "2026-04-01T23:59:59+13:00",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "areaName": "West Coast Corridor",
+          "messageType": "polygon",
+          "priority": "normal"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [172.96, -35.55],
+              [173.27, -35.55],
+              [173.27, -35.20],
+              [172.96, -35.20],
+              [172.96, -35.55]
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "custom-geo-point-009",
+      "enabled": true,
+      "title": "Point Message - Kaikohe Service Area",
+      "body": "Example point message for inland service area updates, ready for map-point matching tests.",
+      "level": "Info",
+      "channels": ["summary", "toast"],
+      "start": "2026-02-20T00:00:00+13:00",
+      "end": "2026-03-31T23:59:59+13:00",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "areaName": "Kaikohe Service Area",
+          "messageType": "point",
+          "priority": "normal"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [173.7980, -35.4079]
+        }
+      }
+    }
+  ]
+}
