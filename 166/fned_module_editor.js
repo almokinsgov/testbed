@@ -4533,7 +4533,7 @@
         timingBlock.appendChild(field("Proxy URL Prefix", inputText(
           data.runtimeConfig.regionWarnings.proxy || "",
           function (v) { data.runtimeConfig.regionWarnings.proxy = v; },
-          "Example: https://corsproxy.io/?"
+          "Example: https://proxy.corsfix.com/?"
         )));
 
         feedsBlock.appendChild(el("h4", { text: "Feed Sources" }));

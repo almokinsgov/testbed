@@ -129,7 +129,7 @@ async function rwasFetchJsonTracked(feedKey, url) {
   let SHOW_NON_FAR_NORTH_ALERTS = cfgBool(FNED_RWAS_CFG.showNonFarNorthAlerts, false); //show all alerts in the feed
   let REQUIRE_ONSET_WITHIN_WINDOW = cfgBool(FNED_RWAS_CFG.requireOnsetWithinWindow, true); //filter results based on how long to start time
   let HOUR_WINDOW = cfgNum(FNED_RWAS_CFG.hourWindow, 24); //Amount of hours between the alert start time and date and the current time and date
-  let proxy = cfgStr(FNED_RWAS_CFG.proxy, cfgStr(RWAS_ENDPOINTS.proxyPrefix, "https://corsproxy.io/?")); //cors proxy url
+  let proxy = cfgStr(FNED_RWAS_CFG.proxy, cfgStr(RWAS_ENDPOINTS.proxyPrefix, "https://proxy.corsfix.com/?")); //cors proxy url
   //Met service feed url with proxy add in, this should be a github url, we dont want to overload metservices infrastructure in an emergency
   const metServiceSourceUrl = cfgStr(FNED_RWAS_CFG.metServiceSourceUrl, cfgStr(RWAS_ENDPOINTS.metServiceSourceUrl, "https://raw.githubusercontent.com/almokinsgov/NZSHAPE/refs/heads/main/alerts/latest.xml"));
   const METSERVICE_ATOM_URL_OVERRIDE = cfgStr(FNED_RWAS_CFG.metServiceAtomUrl, "");
@@ -1032,7 +1032,7 @@ function applyRegionWarningAreaConfigFromRuntime() {
   SHOW_NON_FAR_NORTH_ALERTS = cfgBool(cfg.showNonFarNorthAlerts, false);
   REQUIRE_ONSET_WITHIN_WINDOW = cfgBool(cfg.requireOnsetWithinWindow, true);
   HOUR_WINDOW = cfgNum(cfg.hourWindow, 24);
-  proxy = cfgStr(cfg.proxy, cfgStr(RWAS_ENDPOINTS.proxyPrefix, "https://corsproxy.io/?"));
+  proxy = cfgStr(cfg.proxy, cfgStr(RWAS_ENDPOINTS.proxyPrefix, "https://proxy.corsfix.com/?"));
   SHOW_CUSTOM_GEOJSON_ALERTS = cfgBool(cfg.showCustomGeoJsonAlerts, false);
   USE_PROXY_FOR_CUSTOM_GEOJSON = cfgBool(cfg.useProxyForCustomGeoJson, true);
   USE_LINZ_AREAS = cfgBool(cfg.useLinzAreas, false);

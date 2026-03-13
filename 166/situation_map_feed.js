@@ -4490,7 +4490,7 @@ loadTopEnergyOutages();
     <!-- 6. Water Outages from Asset Listing Code -->
     <!-- FNDC water outages asset listing feed, proxied for CORS -->
     var WATER_OUTAGES_URL =
-      "https://corsproxy.io/?" +
+      "https://proxy.corsfix.com/?" +
       encodeURIComponent("https://www.fndc.govt.nz/services/water/Water-outage-updates/wateroutagesassetlistingfeed");
 
     // Which statuses to show on the map, configurable in runtimeConfig.map.waterOutageStatusFilter.
