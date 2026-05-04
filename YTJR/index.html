@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YouTube Junkyard Roulette</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --panel: #111827;
+  --panel2: #1f2937;
+  --text: #f8fafc;
+  --muted: #cbd5e1;
+  --soft: #94a3b8;
+  --border: rgba(148,163,184,.24);
+  --accent: #38bdf8;
+  --accent2: #22c55e;
+  --warn: #f59e0b;
+  --danger: #fb7185;
+  --input: #020617;
+  --shadow: 0 24px 60px rgba(0,0,0,.35);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at top left, rgba(56,189,248,.22), transparent 32rem), var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.45;
+}
+header {
+  padding: 28px clamp(16px, 4vw, 48px) 18px;
+}
+h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.6rem, 3vw, 2.7rem);
+  letter-spacing: -.03em;
+}
+header p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 960px;
+}
+main {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  gap: 18px;
+  padding: 0 clamp(16px, 4vw, 48px) 40px;
+}
+.panel {
+  background: rgba(17,24,39,.92);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+.controls { padding: 18px; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+.content { padding: 18px; min-width: 0; }
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 10px;
+}
+h2, h3 { margin: 0; }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1rem; color: var(--muted); }
+label {
+  display: block;
+  font-weight: 700;
+  margin: 14px 0 6px;
+  color: #e5e7eb;
+}
+.help { color: var(--soft); font-size: .88rem; margin-top: 4px; }
+input, select, textarea, button { font: inherit; }
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+  width: 100%;
+  background: var(--input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 11px;
+  outline: none;
+}
+textarea { min-height: 220px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .83rem; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,.16); }
+.checkrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0;
+  color: var(--muted);
+}
+.checkrow input { width: auto; margin-top: 3px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.btns { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: var(--accent);
+  color: #07111f;
+  font-weight: 800;
+  cursor: pointer;
+}
+button.secondary { background: #334155; color: #f8fafc; }
+button.good { background: var(--accent2); color: #052e16; }
+button.warn { background: var(--warn); color: #111827; }
+button.danger { background: var(--danger); color: #111827; }
+button.small { padding: 6px 10px; font-size: .82rem; }
+button:hover { filter: brightness(1.07); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.stat {
+  background: linear-gradient(180deg, rgba(31,41,55,.95), rgba(15,23,42,.95));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 13px;
+}
+.stat strong { display: block; font-size: 1.35rem; }
+.stat span { color: var(--soft); font-size: .86rem; }
+.result-box {
+  background: rgba(2,6,23,.74);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.result-title { color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+.generated-url {
+  word-break: break-all;
+  color: #bae6fd;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.table-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 14px; }
+table { width: 100%; border-collapse: collapse; min-width: 900px; }
+th, td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { position: sticky; top: 0; background: #111827; color: #e2e8f0; text-align: left; z-index: 1; }
+td { color: #e5e7eb; }
+tr:hover td { background: rgba(56,189,248,.06); }
+.code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; color: #bfdbfe; }
+.pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(148,163,184,.16);
+  color: #dbeafe;
+  font-size: .78rem;
+  white-space: nowrap;
+}
+.pill.warn { background: rgba(245,158,11,.18); color: #fde68a; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin: 14px 0; }
+.toolbar > div { min-width: 190px; flex: 1; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.tab { background: #334155; color: #f8fafc; }
+.tab.active { background: var(--accent); color: #07111f; }
+.hidden { display: none !important; }
+a { color: #7dd3fc; }
+footer { padding: 0 clamp(16px, 4vw, 48px) 28px; color: var(--soft); }
+
+.landing-wrap {
+  min-height: 100vh;
+  padding: 36px clamp(16px, 5vw, 64px);
+  display: grid;
+  align-items: center;
+}
+.landing-card {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  background: rgba(17,24,39,.94);
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  box-shadow: var(--shadow);
+  padding: clamp(22px, 4vw, 42px);
+}
+.landing-kicker {
+  color: #7dd3fc;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .78rem;
+  margin-bottom: 10px;
+}
+.landing-title {
+  font-size: clamp(2rem, 5vw, 4.2rem);
+  line-height: 1.02;
+  margin: 0 0 14px;
+  letter-spacing: -.05em;
+}
+.landing-subtitle {
+  color: var(--muted);
+  max-width: 780px;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  margin: 0 0 24px;
+}
+.simple-generator {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) auto auto;
+  gap: 12px;
+  align-items: end;
+  margin: 22px 0 12px;
+}
+.simple-generator label { margin-top: 0; }
+.simple-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+.simple-results {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+.simple-results-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.url-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.url-item {
+  background: rgba(2,6,23,.72);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+}
+.url-item a {
+  display: inline-block;
+  word-break: break-all;
+  font-weight: 700;
+}
+.url-meta {
+  margin-top: 6px;
+  color: var(--soft);
+  font-size: .88rem;
+}
+.advanced-bar {
+  position: fixed;
+  right: 16px;
+  top: 14px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+.advanced-shell {
+  border-top: 1px solid var(--border);
+}
+.notice-soft {
+  color: var(--soft);
+  font-size: .92rem;
+}
+@media (max-width: 720px) {
+  .simple-generator { grid-template-columns: 1fr; }
+  .landing-wrap { padding-top: 64px; }
+  .advanced-bar { left: 12px; right: 12px; }
+}
+
+@media (max-width: 920px) {
+  main { grid-template-columns: 1fr; }
+  .controls { position: static; max-height: none; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="advanced-bar">
+  <button id="advancedToggleBtn" class="small secondary hidden" type="button">Advanced Mode</button>
+  <button id="landingToggleBtn" class="small secondary hidden" type="button">Simple Mode</button>
+</div>
+
+<section id="landingPage" class="landing-wrap">
+  <div class="landing-card">
+    <div class="landing-kicker">Random YouTube Search Links</div>
+    <h1 class="landing-title">YouTube Junkyard Roulette</h1>
+    <p class="landing-subtitle">Choose how many links you want, press generate and open a random list of YouTube search results based on old video filename patterns.</p>
+
+    <div class="simple-generator">
+      <div>
+        <label for="simpleCount">Number Of Links</label>
+        <input id="simpleCount" type="number" min="1" max="1000" value="5">
+        <div class="help">Creates clickable YouTube search links.</div>
+      </div>
+      <button id="simpleGenerateBtn" class="good" type="button">Generate Links</button>
+      <button id="simpleClearBtn" class="secondary" type="button">Clear</button>
+    </div>
+
+    <div class="simple-actions">
+      <label class="checkrow" style="margin:0; padding:10px 12px;">
+        <input id="simpleExcludeNsfw" type="checkbox" checked>
+        <span><strong>Exclude NSFW-Marked Patterns</strong></span>
+      </label>
+    </div>
+
+    <div class="notice-soft">URLs sourced from KVN AUST YouTube's Recycle Bin doc.</div>
+
+    <div class="simple-results">
+      <div class="simple-results-head">
+        <h2>Your YouTube Search Links</h2>
+        <span id="simpleStatus" class="pill">No Links Generated Yet</span>
+      </div>
+      <ul id="simpleUrlList" class="url-list"></ul>
+    </div>
+  </div>
+</section>
+
+<div id="advancedView" class="advanced-shell hidden">
+
+<header>
+  <h1>Video Filename Pattern YouTube URL Generator</h1>
+  <p>Generate random filename-style YouTube search URLs from the embedded pattern array. Choose a single pattern, generate from random matching patterns or generate one URL for every pattern.</p>
+</header>
+<main>
+  <aside class="panel controls">
+    <div class="section-title"><h2>Generator Options</h2></div>
+    <label for="baseUrl">Base Search URL</label>
+    <input id="baseUrl" type="text" value="https://www.youtube.com/results?search_query=">
+    <div class="help">The generated query is appended to this URL.</div>
+
+    <label for="mode">Generation Mode</label>
+    <select id="mode">
+      <option value="random">Random Pattern</option>
+      <option value="selected">Selected Pattern</option>
+      <option value="all">Every Pattern</option>
+    </select>
+
+    <label for="typeFilter">Type Filter</label>
+    <select id="typeFilter"><option value="All">All</option></select>
+
+    <label for="patternSelect">Choose Pattern</label>
+    <select id="patternSelect"></select>
+    <div class="help">Used when Generation Mode is set to Selected Pattern.</div>
+
+    <div class="grid2">
+      <div>
+        <label for="batchCount">Batch Count</label>
+        <input id="batchCount" type="number" min="1" max="1000" value="25">
+      </div>
+      <div>
+        <label for="appendExtension">Append Extension</label>
+        <select id="appendExtension">
+          <option value="none">None</option>
+          <option value=".mp4">.mp4</option>
+          <option value=".mov">.mov</option>
+          <option value=".avi">.avi</option>
+          <option value=".3gp">.3gp</option>
+          <option value=".3g2">.3g2</option>
+          <option value=".vob">.vob</option>
+          <option value=".mts">.mts</option>
+          <option value=".dat">.dat</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="spaceEncoding">URL Space Encoding</label>
+    <select id="spaceEncoding">
+      <option value="plus">Use + for spaces</option>
+      <option value="percent20">Use %20 for spaces</option>
+      <option value="standard">Standard encodeURIComponent</option>
+    </select>
+
+    <div class="checkrow"><input id="quoteQuery" type="checkbox"><div><strong>Quote Query</strong><div class="help">Wraps the generated filename in quotes for more exact YouTube searching.</div></div></div>
+    <div class="checkrow"><input id="excludeNsfw" type="checkbox"><div><strong>Exclude NSFW-Marked Patterns</strong><div class="help">Skips entries that have NSFW in the type or pattern metadata.</div></div></div>
+    <div class="checkrow"><input id="includeExactTitles" type="checkbox" checked><div><strong>Include Exact Titles</strong><div class="help">Allows exact non-variable titles such as MicrosoftTeams Video.</div></div></div>
+
+    <div class="grid2">
+      <div>
+        <label for="dateMinOverride">Date Min Override</label>
+        <input id="dateMinOverride" type="date">
+      </div>
+      <div>
+        <label for="dateMaxOverride">Date Max Override</label>
+        <input id="dateMaxOverride" type="date">
+      </div>
+    </div>
+    <div class="help">Leave blank to use each pattern's own min and max date rules.</div>
+
+    <label for="prefixText">Query Prefix</label>
+    <input id="prefixText" type="text" placeholder="Optional words before generated filename">
+    <label for="suffixText">Query Suffix</label>
+    <input id="suffixText" type="text" placeholder="Optional words after generated filename">
+
+    <div class="btns">
+      <button id="generateBtn" class="good">Generate</button>
+      <button id="generateAllBtn" class="secondary">Generate Every Pattern</button>
+      <button id="copyUrlsBtn" class="secondary">Copy URLs</button>
+      <button id="downloadJsonBtn" class="secondary">Download JSON</button>
+      <button id="downloadCsvBtn" class="secondary">Download CSV</button>
+      <button id="clearBtn" class="danger">Clear</button>
+    </div>
+  </aside>
+
+  <section class="panel content">
+    <div class="stats">
+      <div class="stat"><strong id="statPatterns">0</strong><span>Embedded Patterns</span></div>
+      <div class="stat"><strong id="statTypes">0</strong><span>Types</span></div>
+      <div class="stat"><strong id="statGenerated">0</strong><span>Generated URLs</span></div>
+      <div class="stat"><strong id="statDateBased">0</strong><span>Date-Based Patterns</span></div>
+    </div>
+
+    <div class="result-box">
+      <div class="result-title">Latest Generated URL</div>
+      <div id="latestUrl" class="generated-url">No URL generated yet.</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="results">Generated Results</button>
+      <button class="tab" data-tab="browser">Pattern Browser</button>
+      <button class="tab" data-tab="json">Embedded JSON</button>
+    </div>
+
+    <div id="tab-results">
+      <div class="section-title"><h2>Generated Results</h2><button id="copyJsonArrayBtn" class="small secondary">Copy Result Array</button></div>
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead><tr><th>#</th><th>Pattern</th><th>Generated Query</th><th>Type</th><th>URL</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-browser" class="hidden">
+      <div class="toolbar">
+        <div><label for="searchPatterns">Search Patterns</label><input id="searchPatterns" type="text" placeholder="Search pattern, type, example or rule"></div>
+        <div><label for="browserTypeFilter">Browser Type Filter</label><select id="browserTypeFilter"><option value="All">All</option></select></div>
+      </div>
+      <div class="table-wrap">
+        <table id="browserTable">
+          <thead><tr><th>#</th><th>Pattern</th><th>Variables</th><th>Min</th><th>Max</th><th>Example</th><th>Type</th><th>Use</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-json" class="hidden">
+      <div class="section-title"><h2>Embedded JSON Array And Options</h2><button id="copyConfigBtn" class="small secondary">Copy Config</button></div>
+      <textarea id="jsonViewer" spellcheck="false"></textarea>
+    </div>
+  </section>
+</main>
+<footer>
+  This file is fully standalone. The JSON pattern array is embedded inside the HTML and is also available as a separate JSON export.
+</footer>
+
+</div>
+
+<script id="pattern-data" type="application/json">{"dashboardName":"Video Filename Pattern YouTube URL Generator","version":"1.0.0","createdFor":"Standalone local dashboard","baseUrl":"https://www.youtube.com/results?search_query=","defaultOptions":{"mode":"random","batchCount":25,"selectedPatternId":"random","typeFilter":"All","excludeNsfw":false,"includeExactTitles":true,"quoteQuery":false,"appendExtension":"none","spaceEncoding":"plus","dateMinOverride":"","dateMaxOverride":"","prefixText":"","suffixText":"","outputFormat":"url"},"variableDictionary":{"X":"One generated character or digit depending on the rule.","XX":"Two generated characters or digits. Numeric rows are padded to two digits.","XXX":"Three generated characters or digits. Numeric rows are padded to three digits.","XXXX":"Four generated characters or digits. Numeric rows are padded to four digits.","XXXXX":"Five generated digits, usually padded to five digits.","YYYY":"Four-digit year.","YY":"Two-digit year.","MM":"Two-digit month.","DD":"Two-digit day.","D":"One or two digit day without forced leading zero.","Month":"Written month name, e.g. May.","Mth":"Short written month name, e.g. May.","HHMMSS":"Time of day in 24-hour format.","*":"Free-text wildcard used for titles such as Axon Body * Video."},"types":["Action Cam","App","Audio or App","Blender 3D","Body Cam","Camcorder","Camera","Camera, Czech","Camera, Japan","Camera, Russia","Camera, Stop Motion","DVD","DVD / Karaoke","Dashcam","Date","Drone","Drone / Dashcam","Game Capture","Game Capture, COD 4","Game Capture, COD WAW","Game Capture, GTA V","Game Capture, Half Life","GoPro","Misc","Misc, Italy","Misc, Russia","Misc, Time Of Day","Nintendo DS","Phone","Phone, Netherlands","Playlist Filter, NSFW","Screen Recorder","Trail Cam","Trail Cam / Camera","Unknown","VYond / GoAnimate","Video Editor","Webcam","Zoom"],"patterns":[{"number":1,"id":"pattern_001","pattern":"IMG XXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"IMG 3201","type":"Camera","generator":{"template":"IMG {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":2,"id":"pattern_002","pattern":"MVI XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"MVI 0042","type":"Camera","generator":{"template":"MVI {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":3,"id":"pattern_003","pattern":"MOV XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"MOV 0148","type":"Camera","generator":{"template":"MOV {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":4,"id":"pattern_004","pattern":"100 XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"100 0234","type":"Camera","generator":{"template":"100 {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":5,"id":"pattern_005","pattern":"SAM XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"SAM 0021","type":"Camera","generator":{"template":"SAM {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":6,"id":"pattern_006","pattern":"DSC XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"DSC 1055","type":"Camera","generator":{"template":"DSC {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":7,"id":"pattern_007","pattern":"SDV XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"SDV 0140","type":"Camera","generator":{"template":"SDV {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":8,"id":"pattern_008","pattern":"DSCFXXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"DSCF0198","type":"Camera","generator":{"template":"DSCF{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":9,"id":"pattern_009","pattern":"DSCNXXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"DSCN2210","type":"Camera","generator":{"template":"DSCN{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":10,"id":"pattern_010","pattern":"PICTXXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"PICT0032","type":"Camera","generator":{"template":"PICT{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":11,"id":"pattern_011","pattern":"MAQ0XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"MAQ00042","type":"Camera","generator":{"template":"MAQ0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":12,"id":"pattern_012","pattern":"FILEXXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"FILE0184","type":"Dashcam","generator":{"template":"FILE{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":13,"id":"pattern_013","pattern":"GOPRXXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"GOPR0048","type":"GoPro","generator":{"template":"GOPR{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":14,"id":"pattern_014","pattern":"GP01XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"GP010048","type":"GoPro","generator":{"template":"GP01{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":15,"id":"pattern_015","pattern":"GX01XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"GX010048","type":"GoPro","generator":{"template":"GX01{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":16,"id":"pattern_016","pattern":"DJI XXXX","variables":"XXXX","variableRules":"0000-2000","minValue":"0000","maxValue":"2000","example":"DJI 0048","type":"Drone","generator":{"template":"DJI {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":2000,"pad":4,"minValue":"0000","maxValue":"2000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":17,"id":"pattern_017","pattern":"HNI 0XXX","variables":"XXX","variableRules":"000-100","minValue":"000","maxValue":"100","example":"HNI 0042","type":"Nintendo DS","generator":{"template":"HNI 0{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":100,"pad":3,"minValue":"000","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":18,"id":"pattern_018","pattern":"WA0XXX","variables":"XXX","variableRules":"000-999","minValue":"000","maxValue":"999","example":"WA0042","type":"Misc","generator":{"template":"WA0{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":999,"pad":3,"minValue":"000","maxValue":"999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":19,"id":"pattern_019","pattern":"MOL0XX","variables":"XX","variableRules":"Hex-style: A-F and 0-9","minValue":"A / 0","maxValue":"F / 9","example":"MOL0E5","type":"Camera","generator":{"template":"MOL0{v0}","fields":[{"type":"hex","token":"XX","length":2,"chars":"ABCDEF0123456789","minValue":"A","maxValue":"F","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":20,"id":"pattern_020","pattern":"MOL0XX","variables":"XX","variableRules":"00-99","minValue":"00","maxValue":"99","example":"MOL042","type":"Unknown","generator":{"template":"MOL0{v0}","fields":[{"type":"number","token":"XX","min":0,"max":99,"pad":2,"minValue":"00","maxValue":"99","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":21,"id":"pattern_021","pattern":"HHMMSS","variables":"HH, MM, SS","variableRules":"000000-235959","minValue":"000000","maxValue":"235959","example":"142501","type":"Misc, Time Of Day","generator":{"template":"{time}","fields":[],"date":null,"time":{"mode":"HHMMSS","min":"000000","max":"235959"},"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":22,"id":"pattern_022","pattern":"P100XXXX","variables":"XXXX","variableRules":"0000-1999","minValue":"0000","maxValue":"1999","example":"P1000188","type":"Camera","generator":{"template":"P100{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1999,"pad":4,"minValue":"0000","maxValue":"1999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":23,"id":"pattern_023","pattern":"VTS XX X","variables":"XX, X","variableRules":"XX = 00-99, X = 0-9","minValue":"00 / 0","maxValue":"99 / 9","example":"VTS 01 1","type":"DVD","generator":{"template":"VTS {v0} {v1}","fields":[{"type":"number","token":"XX","min":0,"max":99,"pad":2,"minValue":"00","maxValue":"99","key":"v0"},{"type":"number","token":"X","min":0,"max":9,"pad":1,"minValue":"0","maxValue":"9","key":"v1"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":24,"id":"pattern_024","pattern":"VTS XXX 1","variables":"XXX","variableRules":"000-999","minValue":"000","maxValue":"999","example":"VTS 001 1","type":"DVD","generator":{"template":"VTS {v0} 1","fields":[{"type":"number","token":"XXX","min":0,"max":999,"pad":3,"minValue":"000","maxValue":"999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":25,"id":"pattern_025","pattern":"VTS 01 XXX","variables":"XXX","variableRules":"000-999","minValue":"000","maxValue":"999","example":"VTS 01 001","type":"DVD","generator":{"template":"VTS 01 {v0}","fields":[{"type":"number","token":"XXX","min":0,"max":999,"pad":3,"minValue":"000","maxValue":"999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":26,"id":"pattern_026","pattern":"My Slideshow Video","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"My Slideshow Video","type":"Video Editor","generator":{"template":"My Slideshow Video","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":27,"id":"pattern_027","pattern":"My Slideshow","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"My Slideshow","type":"Video Editor","generator":{"template":"My Slideshow","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":28,"id":"pattern_028","pattern":"My Slideshow XX","variables":"XX","variableRules":"00-99","minValue":"00","maxValue":"99","example":"My Slideshow 04","type":"Video Editor","generator":{"template":"My Slideshow {v0}","fields":[{"type":"number","token":"XX","min":0,"max":99,"pad":2,"minValue":"00","maxValue":"99","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":29,"id":"pattern_029","pattern":"My Stupeflix Video","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"My Stupeflix Video","type":"Video Editor","generator":{"template":"My Stupeflix Video","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":30,"id":"pattern_030","pattern":"My Stupeflix Video XXXX","variables":"XXXX","variableRules":"0000-1050","minValue":"0000","maxValue":"1050","example":"My Stupeflix Video 0044","type":"Video Editor","generator":{"template":"My Stupeflix Video {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1050,"pad":4,"minValue":"0000","maxValue":"1050","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":31,"id":"pattern_031","pattern":"YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Valid compact date","minValue":"Unspecified","maxValue":"Unspecified","example":"20250826","type":"Date","generator":{"template":"{date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2000-01-01","max":"today","originalMinValue":"Unspecified","originalMaxValue":"Unspecified"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":32,"id":"pattern_032","pattern":"WIN YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2013","minValue":"2014-01-01","maxValue":"Open ended","example":"WIN 20260504","type":"Misc","generator":{"template":"WIN {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2014-01-01","max":"today","originalMinValue":"2014-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":33,"id":"pattern_033","pattern":"VID YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2008","minValue":"2009-01-01","maxValue":"Open ended","example":"VID 20260504","type":"Misc","generator":{"template":"VID {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2009-01-01","max":"today","originalMinValue":"2009-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":34,"id":"pattern_034","pattern":"Capture YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2008","minValue":"2009-01-01","maxValue":"Open ended","example":"Capture 20260504","type":"Misc","generator":{"template":"Capture {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2009-01-01","max":"today","originalMinValue":"2009-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":35,"id":"pattern_035","pattern":"InShot YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2016","minValue":"2017-01-01","maxValue":"Open ended","example":"InShot 20260504","type":"Video Editor","generator":{"template":"InShot {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2017-01-01","max":"today","originalMinValue":"2017-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":36,"id":"pattern_036","pattern":"PXL YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2020","minValue":"2021-01-01","maxValue":"Open ended","example":"PXL 20260504","type":"Phone","generator":{"template":"PXL {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2021-01-01","max":"today","originalMinValue":"2021-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":37,"id":"pattern_037","pattern":"AUD-YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2017","minValue":"2018-01-01","maxValue":"Open ended","example":"AUD-20260504","type":"Audio or App","generator":{"template":"AUD-{date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2018-01-01","max":"today","originalMinValue":"2018-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":38,"id":"pattern_038","pattern":"240p 400k","variables":"None","variableRules":"Exact playlist filter text","minValue":"N/A","maxValue":"N/A","example":"240p 400k","type":"Playlist Filter, NSFW","generator":{"template":"240p 400k","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":true},{"number":39,"id":"pattern_039","pattern":"480p 600k","variables":"None","variableRules":"Exact playlist filter text","minValue":"N/A","maxValue":"N/A","example":"480p 600k","type":"Playlist Filter, NSFW","generator":{"template":"480p 600k","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":true},{"number":40,"id":"pattern_040","pattern":"480p 2000k","variables":"None","variableRules":"Exact playlist filter text","minValue":"N/A","maxValue":"N/A","example":"480p 2000k","type":"Playlist Filter, NSFW","generator":{"template":"480p 2000k","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":true},{"number":41,"id":"pattern_041","pattern":"720p 1500k","variables":"None","variableRules":"Exact playlist filter text","minValue":"N/A","maxValue":"N/A","example":"720p 1500k","type":"Playlist Filter, NSFW","generator":{"template":"720p 1500k","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":true},{"number":42,"id":"pattern_042","pattern":"720p 4000k","variables":"None","variableRules":"Exact playlist filter text","minValue":"N/A","maxValue":"N/A","example":"720p 4000k","type":"Playlist Filter, NSFW","generator":{"template":"720p 4000k","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":true},{"number":43,"id":"pattern_043","pattern":"Clips4Sale","variables":"None","variableRules":"Exact playlist filter text","minValue":"N/A","maxValue":"N/A","example":"Clips4Sale","type":"Playlist Filter, NSFW","generator":{"template":"Clips4Sale","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":true},{"number":44,"id":"pattern_044","pattern":"WhatsApp Video YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2015","minValue":"2016-01-01","maxValue":"Open ended","example":"WhatsApp Video 2026 05 04","type":"App","generator":{"template":"WhatsApp Video {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2016-01-01","max":"today","originalMinValue":"2016-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":45,"id":"pattern_045","pattern":"Desktop YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Valid spaced date","minValue":"Unspecified","maxValue":"Unspecified","example":"Desktop 2026 05 04","type":"Game Capture","generator":{"template":"Desktop {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2000-01-01","max":"today","originalMinValue":"Unspecified","originalMaxValue":"Unspecified"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":46,"id":"pattern_046","pattern":"Axon Body * Video","variables":"*","variableRules":"Variable body camera model or text","minValue":"N/A","maxValue":"N/A","example":"Axon Body 3 Video","type":"Body Cam","generator":{"template":"Axon Body {v0} Video","fields":[{"key":"v0","type":"choice","token":"*","choices":["2","3","4","Flex","Pro","Field","Officer"],"minValue":"N/A","maxValue":"N/A"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":47,"id":"pattern_047","pattern":"WP YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2011","minValue":"2012-01-01","maxValue":"Open ended","example":"WP 20260504","type":"Misc","generator":{"template":"WP {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2012-01-01","max":"today","originalMinValue":"2012-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":48,"id":"pattern_048","pattern":"Video YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2012","minValue":"2013-01-01","maxValue":"Open ended","example":"Video 20260504","type":"Misc","generator":{"template":"Video {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2013-01-01","max":"today","originalMinValue":"2013-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":49,"id":"pattern_049","pattern":"KakaoTalk Video YYYY MM","variables":"YYYY, MM","variableRules":"Year after 2012","minValue":"2013-01-01","maxValue":"Open ended","example":"KakaoTalk Video 2026 05","type":"Misc","generator":{"template":"KakaoTalk Video {date} MM","fields":[],"date":{"mode":"YYYY","min":"2013-01-01","max":"today","originalMinValue":"2013-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":50,"id":"pattern_050","pattern":"AVSEQXX","variables":"XX","variableRules":"00-99","minValue":"00","maxValue":"99","example":"AVSEQ01","type":"Misc","generator":{"template":"AVSEQ{v0}","fields":[{"type":"number","token":"XX","min":0,"max":99,"pad":2,"minValue":"00","maxValue":"99","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":51,"id":"pattern_051","pattern":"AVSEQXX.DAT","variables":"XX","variableRules":"00-99","minValue":"00","maxValue":"99","example":"AVSEQ01.DAT","type":"Misc","generator":{"template":"AVSEQ{v0}.DAT","fields":[{"type":"number","token":"XX","min":0,"max":99,"pad":2,"minValue":"00","maxValue":"99","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":52,"id":"pattern_052","pattern":"MOVIXXXX","variables":"XXXX","variableRules":"0000-1050","minValue":"0000","maxValue":"1050","example":"MOVI0230","type":"Drone / Dashcam","generator":{"template":"MOVI{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1050,"pad":4,"minValue":"0000","maxValue":"1050","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":53,"id":"pattern_053","pattern":"GMTYYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Valid compact date","minValue":"Unspecified","maxValue":"Unspecified","example":"GMT20260504","type":"Zoom","generator":{"template":"GMT{date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2000-01-01","max":"today","originalMinValue":"Unspecified","originalMaxValue":"Unspecified"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":54,"id":"pattern_054","pattern":"SVM AXXXX","variables":"XXXX","variableRules":"0000-1000","minValue":"0000","maxValue":"1000","example":"SVM A0042","type":"Camera","generator":{"template":"SVM A{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1000,"pad":4,"minValue":"0000","maxValue":"1000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":55,"id":"pattern_055","pattern":"KVIDXXXX","variables":"XXXX","variableRules":"0000-1000","minValue":"0000","maxValue":"1000","example":"KVID0042","type":"Camera","generator":{"template":"KVID{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1000,"pad":4,"minValue":"0000","maxValue":"1000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":56,"id":"pattern_056","pattern":"My Videolicious Video","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"My Videolicious Video","type":"Video Editor","generator":{"template":"My Videolicious Video","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":57,"id":"pattern_057","pattern":"M2U0XXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"M2U00042","type":"Camcorder","generator":{"template":"M2U0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":58,"id":"pattern_058","pattern":"GH01XXXX","variables":"XXXX","variableRules":"Likely 0000-9999","minValue":"0000","maxValue":"9999","example":"GH010042","type":"GoPro","generator":{"template":"GH01{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":59,"id":"pattern_059","pattern":"Month DD, YYYY","variables":"Month, DD, YYYY","variableRules":"Written date","minValue":"Unspecified","maxValue":"Unspecified","example":"May 02, 2011","type":"Phone","generator":{"template":"{date}","fields":[],"date":{"mode":"Month DD, YYYY","min":"2000-01-01","max":"today","originalMinValue":"Unspecified","originalMaxValue":"Unspecified"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":60,"id":"pattern_060","pattern":"MAH0XXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"MAH00042","type":"Camera","generator":{"template":"MAH0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":61,"id":"pattern_061","pattern":"CIMGXXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"CIMG0042","type":"Camera","generator":{"template":"CIMG{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":62,"id":"pattern_062","pattern":"IMGPXXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"IMGP0042","type":"Camera","generator":{"template":"IMGP{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":63,"id":"pattern_063","pattern":"VideoXXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"Video0042","type":"Camera","generator":{"template":"Video{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":64,"id":"pattern_064","pattern":"MOV0XXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"MOV00042","type":"Camera","generator":{"template":"MOV0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":65,"id":"pattern_065","pattern":"MUSIC0X.DAT","variables":"X","variableRules":"1-9","minValue":"1","maxValue":"9","example":"MUSIC01.DAT","type":"DVD / Karaoke","generator":{"template":"MUSIC0{v0}.DAT","fields":[{"type":"number","token":"X","min":1,"max":9,"pad":1,"minValue":"1","maxValue":"9","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":66,"id":"pattern_066","pattern":"REC XXXX","variables":"XXXX","variableRules":"0000-1000","minValue":"0000","maxValue":"1000","example":"REC 0042","type":"Drone / Dashcam","generator":{"template":"REC {v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1000,"pad":4,"minValue":"0000","maxValue":"1000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":67,"id":"pattern_067","pattern":"AVI00XXX","variables":"XXX","variableRules":"000-100","minValue":"000","maxValue":"100","example":"AVI00042","type":"Camera","generator":{"template":"AVI00{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":100,"pad":3,"minValue":"000","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":68,"id":"pattern_068","pattern":"AVI 0XXX","variables":"XXX","variableRules":"001-150","minValue":"001","maxValue":"150","example":"AVI 0042","type":"Camera","generator":{"template":"AVI 0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":150,"pad":3,"minValue":"001","maxValue":"150","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":69,"id":"pattern_069","pattern":"4XXX","variables":"XXX","variableRules":"AAA-FFF or 000-999","minValue":"A / 0","maxValue":"F / 9","example":"4A2F","type":"Phone","generator":{"template":"4{v0}","fields":[{"type":"hex","token":"XXX","length":3,"chars":"ABCDEF0123456789","minValue":"A","maxValue":"F","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":70,"id":"pattern_070","pattern":"Trim 4XXX","variables":"XXX","variableRules":"AAA-FFF or 000-999","minValue":"A / 0","maxValue":"F / 9","example":"Trim 4A2F","type":"Phone","generator":{"template":"Trim 4{v0}","fields":[{"type":"hex","token":"XXX","length":3,"chars":"ABCDEF0123456789","minValue":"A","maxValue":"F","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":71,"id":"pattern_071","pattern":"Copy 4XXX","variables":"XXX","variableRules":"AAA-FFF or 000-999","minValue":"A / 0","maxValue":"F / 9","example":"Copy 4A2F","type":"Phone","generator":{"template":"Copy 4{v0}","fields":[{"type":"hex","token":"XXX","length":3,"chars":"ABCDEF0123456789","minValue":"A","maxValue":"F","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":72,"id":"pattern_072","pattern":"Video 4XXX","variables":"XXX","variableRules":"AAA-FFF or 000-999","minValue":"A / 0","maxValue":"F / 9","example":"Video 4A2F","type":"Phone","generator":{"template":"Video 4{v0}","fields":[{"type":"hex","token":"XXX","length":3,"chars":"ABCDEF0123456789","minValue":"A","maxValue":"F","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":73,"id":"pattern_073","pattern":"M4H0XXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"M4H00042","type":"Camera","generator":{"template":"M4H0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":74,"id":"pattern_074","pattern":"M4V0XXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"M4V00042","type":"Camera","generator":{"template":"M4V0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":75,"id":"pattern_075","pattern":"SDC1XXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"SDC10042","type":"Camera","generator":{"template":"SDC1{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":76,"id":"pattern_076","pattern":"SANYXXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"SANY0042","type":"Camera","generator":{"template":"SANY{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":77,"id":"pattern_077","pattern":"HPIMXXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"HPIM0042","type":"Camera","generator":{"template":"HPIM{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":78,"id":"pattern_078","pattern":"GEDCXXXX","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"GEDC0042","type":"Camera","generator":{"template":"GEDC{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":79,"id":"pattern_079","pattern":"XXXX.mp4","variables":"XXXX","variableRules":"0000-9999","minValue":"0000","maxValue":"9999","example":"0042.mp4","type":"Misc","generator":{"template":"{v0}.mp4","fields":[{"type":"number","token":"XXXX","min":0,"max":9999,"pad":4,"minValue":"0000","maxValue":"9999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":80,"id":"pattern_080","pattern":"VID0XXXX","variables":"XXXX","variableRules":"0000-5000","minValue":"0000","maxValue":"5000","example":"VID00042","type":"Camera","generator":{"template":"VID0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":5000,"pad":4,"minValue":"0000","maxValue":"5000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":81,"id":"pattern_081","pattern":"DSC 0XXXX","variables":"XXXX","variableRules":"0000-5000","minValue":"0000","maxValue":"5000","example":"DSC 00042","type":"Camera","generator":{"template":"DSC 0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":5000,"pad":4,"minValue":"0000","maxValue":"5000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":82,"id":"pattern_082","pattern":"CAM0XXXX","variables":"XXXX","variableRules":"0000-5000","minValue":"0000","maxValue":"5000","example":"CAM00042","type":"Camera","generator":{"template":"CAM0{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":5000,"pad":4,"minValue":"0000","maxValue":"5000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":83,"id":"pattern_083","pattern":"AMBAXXXX","variables":"XXXX","variableRules":"0001-5000","minValue":"0001","maxValue":"5000","example":"AMBA0042","type":"Action Cam","generator":{"template":"AMBA{v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":5000,"pad":4,"minValue":"0001","maxValue":"5000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":84,"id":"pattern_084","pattern":"HDV XXXX","variables":"XXXX","variableRules":"0001-5000","minValue":"0001","maxValue":"5000","example":"HDV 0042","type":"Camera","generator":{"template":"HDV {v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":5000,"pad":4,"minValue":"0001","maxValue":"5000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":85,"id":"pattern_085","pattern":"DSCIXXXX","variables":"XXXX","variableRules":"0001-4000","minValue":"0001","maxValue":"4000","example":"DSCI0042","type":"Camera","generator":{"template":"DSCI{v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":4000,"pad":4,"minValue":"0001","maxValue":"4000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":86,"id":"pattern_086","pattern":"SNV3XXXX","variables":"XXXX","variableRules":"0001-3000","minValue":"0001","maxValue":"3000","example":"SNV30042","type":"Camera","generator":{"template":"SNV3{v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":3000,"pad":4,"minValue":"0001","maxValue":"3000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":87,"id":"pattern_087","pattern":"MOVXXXXA","variables":"XXXX","variableRules":"0000-3000","minValue":"0000","maxValue":"3000","example":"MOV0042A","type":"Camera","generator":{"template":"MOV{v0}A","fields":[{"type":"number","token":"XXXX","min":0,"max":3000,"pad":4,"minValue":"0000","maxValue":"3000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":88,"id":"pattern_088","pattern":"Zi6 XXXX","variables":"XXXX","variableRules":"0001-2000","minValue":"0001","maxValue":"2000","example":"Zi6 0042","type":"Camera","generator":{"template":"Zi6 {v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":2000,"pad":4,"minValue":"0001","maxValue":"2000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":89,"id":"pattern_089","pattern":"ClipXXXX","variables":"XXXX","variableRules":"0000-2000","minValue":"0000","maxValue":"2000","example":"Clip0042","type":"Misc","generator":{"template":"Clip{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":2000,"pad":4,"minValue":"0000","maxValue":"2000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":90,"id":"pattern_090","pattern":"YDXJXXXX","variables":"XXXX","variableRules":"0001-2000","minValue":"0001","maxValue":"2000","example":"YDXJ0042","type":"Action Cam","generator":{"template":"YDXJ{v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":2000,"pad":4,"minValue":"0001","maxValue":"2000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":91,"id":"pattern_091","pattern":"0XXXX.MTS","variables":"XXXX","variableRules":"0000-2000","minValue":"0000","maxValue":"2000","example":"00042.MTS","type":"Camera","generator":{"template":"0{v0}.MTS","fields":[{"type":"number","token":"XXXX","min":0,"max":2000,"pad":4,"minValue":"0000","maxValue":"2000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":92,"id":"pattern_092","pattern":"SSPXXXXX","variables":"XXXXX","variableRules":"00001-02000","minValue":"00001","maxValue":"02000","example":"SSP00042","type":"Camera","generator":{"template":"SSP{v0}","fields":[{"type":"number","token":"XXXXX","min":1,"max":2000,"pad":5,"minValue":"00001","maxValue":"02000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":93,"id":"pattern_093","pattern":"00XXXXA","variables":"XXXX","variableRules":"0001-2000","minValue":"0001","maxValue":"2000","example":"000042A","type":"Action Cam","generator":{"template":"00{v0}A","fields":[{"type":"number","token":"XXXX","min":1,"max":2000,"pad":4,"minValue":"0001","maxValue":"2000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":94,"id":"pattern_094","pattern":"IMAGXXXX","variables":"XXXX","variableRules":"0000-2000","minValue":"0000","maxValue":"2000","example":"IMAG0042","type":"Camera","generator":{"template":"IMAG{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":2000,"pad":4,"minValue":"0000","maxValue":"2000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":95,"id":"pattern_095","pattern":"CXXXX","variables":"XXXX","variableRules":"0000-2000","minValue":"0000","maxValue":"2000","example":"C0042","type":"Camera","generator":{"template":"C{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":2000,"pad":4,"minValue":"0000","maxValue":"2000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":96,"id":"pattern_096","pattern":"SUNPXXXX","variables":"XXXX","variableRules":"0000-1500","minValue":"0000","maxValue":"1500","example":"SUNP0042","type":"Camera","generator":{"template":"SUNP{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1500,"pad":4,"minValue":"0000","maxValue":"1500","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":97,"id":"pattern_097","pattern":"Picture XXX","variables":"XXX","variableRules":"001-1220","minValue":"001","maxValue":"1220","example":"Picture 042","type":"Phone","generator":{"template":"Picture {v0}","fields":[{"type":"number","token":"XXX","min":1,"max":1220,"pad":3,"minValue":"001","maxValue":"1220","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":98,"id":"pattern_098","pattern":"PC10XXXX","variables":"XXXX","variableRules":"0001-1050","minValue":"0001","maxValue":"1050","example":"PC100042","type":"Camera","generator":{"template":"PC10{v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":1050,"pad":4,"minValue":"0001","maxValue":"1050","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":99,"id":"pattern_099","pattern":"PTDCXXXX","variables":"XXXX","variableRules":"0000-1000","minValue":"0000","maxValue":"1000","example":"PTDC0042","type":"Camera","generator":{"template":"PTDC{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1000,"pad":4,"minValue":"0000","maxValue":"1000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":100,"id":"pattern_100","pattern":"ВидеоXXXX","variables":"XXXX","variableRules":"0000-1000","minValue":"0000","maxValue":"1000","example":"Видео0042","type":"Camera, Russia","generator":{"template":"Видео{v0}","fields":[{"type":"number","token":"XXXX","min":0,"max":1000,"pad":4,"minValue":"0000","maxValue":"1000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":101,"id":"pattern_101","pattern":"VCLPXXXX","variables":"XXXX","variableRules":"0001-1000","minValue":"0001","maxValue":"1000","example":"VCLP0042","type":"Camera","generator":{"template":"VCLP{v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":1000,"pad":4,"minValue":"0001","maxValue":"1000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":102,"id":"pattern_102","pattern":"FHDXXXX","variables":"XXXX","variableRules":"0001-1000","minValue":"0001","maxValue":"1000","example":"FHD0042","type":"Action Cam","generator":{"template":"FHD{v0}","fields":[{"type":"number","token":"XXXX","min":1,"max":1000,"pad":4,"minValue":"0001","maxValue":"1000","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":103,"id":"pattern_103","pattern":"Moto_0XXX","variables":"XXX","variableRules":"000-999","minValue":"000","maxValue":"999","example":"Moto_042","type":"Phone","generator":{"template":"Moto_0{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":999,"pad":3,"minValue":"000","maxValue":"999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":104,"id":"pattern_104","pattern":"WEB_0XXX","variables":"XXX","variableRules":"001-999","minValue":"001","maxValue":"999","example":"WEB_042","type":"Camera","generator":{"template":"WEB_0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":999,"pad":3,"minValue":"001","maxValue":"999","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":105,"id":"pattern_105","pattern":"P1XX0XXX","variables":"XX, XXX","variableRules":"XX = 01-35, XXX = 001-999","minValue":"01 / 001","maxValue":"35 / 999","example":"P1010042","type":"Camera","generator":{"template":"P1{v0}0{v1}","fields":[{"type":"number","token":"XX","min":1,"max":35,"pad":2,"minValue":"01","maxValue":"35","key":"v0"},{"type":"number","token":"XXX","min":1,"max":999,"pad":3,"minValue":"001","maxValue":"999","key":"v1"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":106,"id":"pattern_106","pattern":"im000XXX","variables":"XXX","variableRules":"001-899","minValue":"001","maxValue":"899","example":"im000042","type":"Camera","generator":{"template":"im000{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":899,"pad":3,"minValue":"001","maxValue":"899","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":107,"id":"pattern_107","pattern":"ZOOM0XXX","variables":"XXX","variableRules":"001-800","minValue":"001","maxValue":"800","example":"ZOOM0042","type":"Camera","generator":{"template":"ZOOM0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":800,"pad":3,"minValue":"001","maxValue":"800","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":108,"id":"pattern_108","pattern":"SV A0XXX","variables":"XXX","variableRules":"001-600","minValue":"001","maxValue":"600","example":"SV A0042","type":"Camera","generator":{"template":"SV A0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":600,"pad":3,"minValue":"001","maxValue":"600","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":109,"id":"pattern_109","pattern":"Videoplayback XXX","variables":"XXX","variableRules":"1-500","minValue":"1","maxValue":"500","example":"Videoplayback 042","type":"Misc","generator":{"template":"Videoplayback {v0}","fields":[{"type":"number","token":"XXX","min":1,"max":500,"pad":3,"minValue":"1","maxValue":"500","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":110,"id":"pattern_110","pattern":"GEDV0XXX","variables":"XXX","variableRules":"001-500","minValue":"001","maxValue":"500","example":"GEDV0042","type":"Camera","generator":{"template":"GEDV0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":500,"pad":3,"minValue":"001","maxValue":"500","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":111,"id":"pattern_111","pattern":"0001 0XXX","variables":"XXX","variableRules":"019-500","minValue":"019","maxValue":"500","example":"0001 0042","type":"Blender 3D","generator":{"template":"0001 0{v0}","fields":[{"type":"number","token":"XXX","min":19,"max":500,"pad":3,"minValue":"019","maxValue":"500","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":112,"id":"pattern_112","pattern":"ACTP0XXX","variables":"XXX","variableRules":"001-400","minValue":"001","maxValue":"400","example":"ACTP0042","type":"Action Cam","generator":{"template":"ACTP0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":400,"pad":3,"minValue":"001","maxValue":"400","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":113,"id":"pattern_113","pattern":"PAXX0XXX","variables":"XX, XXX","variableRules":"XX = 00-30, XXX = 001-499","minValue":"00 / 001","maxValue":"30 / 499","example":"PA010042","type":"Camera","generator":{"template":"PA{v0}0{v1}","fields":[{"type":"number","token":"XX","min":0,"max":30,"pad":2,"minValue":"00","maxValue":"30","key":"v0"},{"type":"number","token":"XXX","min":1,"max":499,"pad":3,"minValue":"001","maxValue":"499","key":"v1"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":114,"id":"pattern_114","pattern":"PBXX0XXX","variables":"XX, XXX","variableRules":"XX = 00-30, XXX = 001-499","minValue":"00 / 001","maxValue":"30 / 499","example":"PB010042","type":"Camera","generator":{"template":"PB{v0}0{v1}","fields":[{"type":"number","token":"XX","min":0,"max":30,"pad":2,"minValue":"00","maxValue":"30","key":"v0"},{"type":"number","token":"XXX","min":1,"max":499,"pad":3,"minValue":"001","maxValue":"499","key":"v1"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":115,"id":"pattern_115","pattern":"IM000XXX","variables":"XXX","variableRules":"000-400","minValue":"000","maxValue":"400","example":"IM000042","type":"Trail Cam / Camera","generator":{"template":"IM000{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":400,"pad":3,"minValue":"000","maxValue":"400","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":116,"id":"pattern_116","pattern":"MAV 0XXX","variables":"XXX","variableRules":"000-399","minValue":"000","maxValue":"399","example":"MAV 0042","type":"Camera, Japan","generator":{"template":"MAV 0{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":399,"pad":3,"minValue":"000","maxValue":"399","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":117,"id":"pattern_117","pattern":"MOVIE 0XXX","variables":"XXX","variableRules":"000-300","minValue":"000","maxValue":"300","example":"MOVIE 0042","type":"Camera","generator":{"template":"MOVIE 0{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":300,"pad":3,"minValue":"000","maxValue":"300","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":118,"id":"pattern_118","pattern":"ANMR0XXX","variables":"XXX","variableRules":"000-300","minValue":"000","maxValue":"300","example":"ANMR0042","type":"Camera","generator":{"template":"ANMR0{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":300,"pad":3,"minValue":"000","maxValue":"300","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":119,"id":"pattern_119","pattern":"Snímek XXX","variables":"XXX","variableRules":"001-300","minValue":"001","maxValue":"300","example":"Snímek 042","type":"Camera, Czech","generator":{"template":"Snímek {v0}","fields":[{"type":"number","token":"XXX","min":1,"max":300,"pad":3,"minValue":"001","maxValue":"300","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":120,"id":"pattern_120","pattern":"DIGI0XXX","variables":"XXX","variableRules":"001-300","minValue":"001","maxValue":"300","example":"DIGI0042","type":"Camera","generator":{"template":"DIGI0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":300,"pad":3,"minValue":"001","maxValue":"300","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":121,"id":"pattern_121","pattern":"ASF 0XXX","variables":"XXX","variableRules":"001-300","minValue":"001","maxValue":"300","example":"ASF 0042","type":"Camera","generator":{"template":"ASF 0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":300,"pad":3,"minValue":"001","maxValue":"300","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":122,"id":"pattern_122","pattern":"VXX0XXX","variables":"XX, XXX","variableRules":"XX = 00-50, XXX = 101-300","minValue":"00 / 101","maxValue":"50 / 300","example":"V010142","type":"Camera","generator":{"template":"V{v0}0{v1}","fields":[{"type":"number","token":"XX","min":0,"max":50,"pad":2,"minValue":"00","maxValue":"50","key":"v0"},{"type":"number","token":"XXX","min":101,"max":300,"pad":3,"minValue":"101","maxValue":"300","key":"v1"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":123,"id":"pattern_123","pattern":"IONX0XXX","variables":"X, XXX","variableRules":"XXX = 001-250","minValue":"001","maxValue":"250","example":"ION10042","type":"Camera","generator":{"template":"ION{v0}0{v1}","fields":[{"type":"number","token":"X","min":0,"max":9,"pad":1,"minValue":"0","maxValue":"9","key":"v0"},{"type":"number","token":"XXX","min":1,"max":250,"pad":3,"minValue":"001","maxValue":"250","key":"v1"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":124,"id":"pattern_124","pattern":"VICO0XXX","variables":"XXX","variableRules":"001-250","minValue":"001","maxValue":"250","example":"VICO0042","type":"Dashcam","generator":{"template":"VICO0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":250,"pad":3,"minValue":"001","maxValue":"250","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":125,"id":"pattern_125","pattern":"ArcSoft VideoXXX","variables":"XXX","variableRules":"1-249","minValue":"1","maxValue":"249","example":"ArcSoft Video042","type":"Camera","generator":{"template":"ArcSoft Video{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":249,"pad":3,"minValue":"1","maxValue":"249","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":126,"id":"pattern_126","pattern":"PRMS0XXX","variables":"XXX","variableRules":"001-200","minValue":"001","maxValue":"200","example":"PRMS0042","type":"Trail Cam","generator":{"template":"PRMS0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":200,"pad":3,"minValue":"001","maxValue":"200","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":127,"id":"pattern_127","pattern":"SMOV0XXX","variables":"XXX","variableRules":"001-200","minValue":"001","maxValue":"200","example":"SMOV0042","type":"Camera","generator":{"template":"SMOV0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":200,"pad":3,"minValue":"001","maxValue":"200","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":128,"id":"pattern_128","pattern":"RCA 0XXX","variables":"XXX","variableRules":"001-200","minValue":"001","maxValue":"200","example":"RCA 0042","type":"Camera","generator":{"template":"RCA 0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":200,"pad":3,"minValue":"001","maxValue":"200","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":129,"id":"pattern_129","pattern":"MOVA0XXX","variables":"XXX","variableRules":"001-200","minValue":"001","maxValue":"200","example":"MOVA0042","type":"Camera","generator":{"template":"MOVA0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":200,"pad":3,"minValue":"001","maxValue":"200","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":130,"id":"pattern_130","pattern":"Sequence XXX","variables":"XXX","variableRules":"001-200","minValue":"001","maxValue":"200","example":"Sequence 042","type":"Video Editor","generator":{"template":"Sequence {v0}","fields":[{"type":"number","token":"XXX","min":1,"max":200,"pad":3,"minValue":"001","maxValue":"200","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":131,"id":"pattern_131","pattern":"WideoXXX","variables":"XXX","variableRules":"000-199","minValue":"000","maxValue":"199","example":"Wideo042","type":"Camera","generator":{"template":"Wideo{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":199,"pad":3,"minValue":"000","maxValue":"199","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":132,"id":"pattern_132","pattern":"MAX 0XXX","variables":"XXX","variableRules":"001-150","minValue":"001","maxValue":"150","example":"MAX 0042","type":"Drone","generator":{"template":"MAX 0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":150,"pad":3,"minValue":"001","maxValue":"150","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":133,"id":"pattern_133","pattern":"MDGC0XXX","variables":"XXX","variableRules":"001-150","minValue":"001","maxValue":"150","example":"MDGC0042","type":"Trail Cam","generator":{"template":"MDGC0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":150,"pad":3,"minValue":"001","maxValue":"150","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":134,"id":"pattern_134","pattern":"PCDV0XXX","variables":"XXX","variableRules":"001-150","minValue":"001","maxValue":"150","example":"PCDV0042","type":"Camera","generator":{"template":"PCDV0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":150,"pad":3,"minValue":"001","maxValue":"150","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":135,"id":"pattern_135","pattern":"HD0 0XXX","variables":"XXX","variableRules":"000-120","minValue":"000","maxValue":"120","example":"HD0 0042","type":"Camera","generator":{"template":"HD0 0{v0}","fields":[{"type":"number","token":"XXX","min":0,"max":120,"pad":3,"minValue":"000","maxValue":"120","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":136,"id":"pattern_136","pattern":"Filmato 0XXX","variables":"XXX","variableRules":"001-120","minValue":"001","maxValue":"120","example":"Filmato 0042","type":"Misc","generator":{"template":"Filmato 0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":120,"pad":3,"minValue":"001","maxValue":"120","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":137,"id":"pattern_137","pattern":"Il mio filmato X","variables":"X","variableRules":"1-100","minValue":"1","maxValue":"100","example":"Il mio filmato 4","type":"Misc, Italy","generator":{"template":"Il mio filmato {v0}","fields":[{"type":"number","token":"X","min":1,"max":100,"pad":1,"minValue":"1","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":138,"id":"pattern_138","pattern":"LOOP0XXX","variables":"XXX","variableRules":"001-100","minValue":"001","maxValue":"100","example":"LOOP0042","type":"Action Cam","generator":{"template":"LOOP0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":100,"pad":3,"minValue":"001","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":139,"id":"pattern_139","pattern":"MAX 0XXX","variables":"XXX","variableRules":"001-100","minValue":"001","maxValue":"100","example":"MAX 0042","type":"Drone","generator":{"template":"MAX 0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":100,"pad":3,"minValue":"001","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":140,"id":"pattern_140","pattern":"SMDC0XXX","variables":"XXX","variableRules":"001-100","minValue":"001","maxValue":"100","example":"SMDC0042","type":"Camera","generator":{"template":"SMDC0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":100,"pad":3,"minValue":"001","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":141,"id":"pattern_141","pattern":"HUNT0XXX","variables":"XXX","variableRules":"001-100","minValue":"001","maxValue":"100","example":"HUNT0042","type":"Trail Cam","generator":{"template":"HUNT0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":100,"pad":3,"minValue":"001","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":142,"id":"pattern_142","pattern":"ACXS0XXX","variables":"XXX","variableRules":"001-100","minValue":"001","maxValue":"100","example":"ACXS0042","type":"Action Cam","generator":{"template":"ACXS0{v0}","fields":[{"type":"number","token":"XXX","min":1,"max":100,"pad":3,"minValue":"001","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":143,"id":"pattern_143","pattern":"MVC XXXV","variables":"XXX","variableRules":"001-100","minValue":"001","maxValue":"100","example":"MVC 042V","type":"Camera","generator":{"template":"MVC {v0}V","fields":[{"type":"number","token":"XXX","min":1,"max":100,"pad":3,"minValue":"001","maxValue":"100","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":144,"id":"pattern_144","pattern":"MA0 00XX","variables":"XX","variableRules":"00-99","minValue":"00","maxValue":"99","example":"MA0 0042","type":"Camera, Japan","generator":{"template":"MA0 00{v0}","fields":[{"type":"number","token":"XX","min":0,"max":99,"pad":2,"minValue":"00","maxValue":"99","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":145,"id":"pattern_145","pattern":"MMF00XX","variables":"XX","variableRules":"00-99","minValue":"00","maxValue":"99","example":"MMF0042","type":"Camera","generator":{"template":"MMF00{v0}","fields":[{"type":"number","token":"XX","min":0,"max":99,"pad":2,"minValue":"00","maxValue":"99","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":146,"id":"pattern_146","pattern":"G01000XX","variables":"XX","variableRules":"10-99","minValue":"10","maxValue":"99","example":"G0100042","type":"GoPro","generator":{"template":"G01000{v0}","fields":[{"type":"number","token":"XX","min":10,"max":99,"pad":2,"minValue":"10","maxValue":"99","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":147,"id":"pattern_147","pattern":"PCXX00XX","variables":"XX, XX","variableRules":"First XX = 00-30, second XX = 01-99","minValue":"00 / 01","maxValue":"30 / 99","example":"PC010042","type":"Camera","generator":{"template":"PC{v0}00{v1}","fields":[{"type":"number","token":"XX","min":0,"max":30,"pad":2,"minValue":"00","maxValue":"30","key":"v0"},{"type":"number","token":"XX","min":1,"max":99,"pad":2,"minValue":"01","maxValue":"99","key":"v1"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":148,"id":"pattern_148","pattern":"Sequence XX X","variables":"XX, X","variableRules":"XX = 01-99, X = 1-3","minValue":"01 / 1","maxValue":"99 / 3","example":"Sequence 04 1","type":"Video Editor","generator":{"template":"Sequence {v0} {v1}","fields":[{"type":"number","token":"XX","min":1,"max":99,"pad":2,"minValue":"01","maxValue":"99","key":"v0"},{"type":"number","token":"X","min":1,"max":3,"pad":1,"minValue":"1","maxValue":"3","key":"v1"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":149,"id":"pattern_149","pattern":"My Project X","variables":"X","variableRules":"0-50","minValue":"0","maxValue":"50","example":"My Project 4","type":"Video Editor","generator":{"template":"My Project {v0}","fields":[{"type":"number","token":"X","min":0,"max":50,"pad":1,"minValue":"0","maxValue":"50","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":150,"id":"pattern_150","pattern":"Kazam Screencast 000XX","variables":"XX","variableRules":"01-50","minValue":"01","maxValue":"50","example":"Kazam Screencast 00042","type":"Screen Recorder","generator":{"template":"Kazam Screencast 000{v0}","fields":[{"type":"number","token":"XX","min":1,"max":50,"pad":2,"minValue":"01","maxValue":"50","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":151,"id":"pattern_151","pattern":"CADDX0000XX","variables":"XX","variableRules":"01-50","minValue":"01","maxValue":"50","example":"CADDX000042","type":"Drone","generator":{"template":"CADDX0000{v0}","fields":[{"type":"number","token":"XX","min":1,"max":50,"pad":2,"minValue":"01","maxValue":"50","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":152,"id":"pattern_152","pattern":"ZOE 00XX","variables":"XX","variableRules":"01-50","minValue":"01","maxValue":"50","example":"ZOE 0042","type":"Camera","generator":{"template":"ZOE 00{v0}","fields":[{"type":"number","token":"XX","min":1,"max":50,"pad":2,"minValue":"01","maxValue":"50","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":153,"id":"pattern_153","pattern":"Video_ts.vob","variables":"None","variableRules":"Exact filename","minValue":"N/A","maxValue":"N/A","example":"Video_ts.vob","type":"DVD","generator":{"template":"Video_ts.vob","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":154,"id":"pattern_154","pattern":"MicrosoftTeams Video","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"MicrosoftTeams Video","type":"Misc","generator":{"template":"MicrosoftTeams Video","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":155,"id":"pattern_155","pattern":"Axon Flex Video","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Axon Flex Video","type":"Body Cam","generator":{"template":"Axon Flex Video","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":156,"id":"pattern_156","pattern":"Test upload","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Test upload","type":"Misc","generator":{"template":"Test upload","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":157,"id":"pattern_157","pattern":"Moviemakeronline com","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Moviemakeronline com","type":"Misc","generator":{"template":"Moviemakeronline com","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":158,"id":"pattern_158","pattern":"myvideo convert2video com","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"myvideo convert2video com","type":"Misc","generator":{"template":"myvideo convert2video com","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":159,"id":"pattern_159","pattern":"Myvideo imagetovideo com","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Myvideo imagetovideo com","type":"Misc","generator":{"template":"Myvideo imagetovideo com","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":160,"id":"pattern_160","pattern":"I created this video with the YouTube Slideshow Creator","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"I created this video with the YouTube Slideshow Creator","type":"Video Editor","generator":{"template":"I created this video with the YouTube Slideshow Creator","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":161,"id":"pattern_161","pattern":"I created this video with the YouTube Video Editor","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"I created this video with the YouTube Video Editor","type":"Video Editor","generator":{"template":"I created this video with the YouTube Video Editor","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":162,"id":"pattern_162","pattern":"Sent from my blackberry smartphone","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Sent from my blackberry smartphone","type":"Phone","generator":{"template":"Sent from my blackberry smartphone","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":163,"id":"pattern_163","pattern":"Video from Tweetcaster","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Video from Tweetcaster","type":"App","generator":{"template":"Video from Tweetcaster","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":164,"id":"pattern_164","pattern":"My Ezvid Video","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"My Ezvid Video","type":"Screen Recorder","generator":{"template":"My Ezvid Video","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":165,"id":"pattern_165","pattern":"This video was uploaded from an Android phone","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"This video was uploaded from an Android phone","type":"Phone","generator":{"template":"This video was uploaded from an Android phone","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":166,"id":"pattern_166","pattern":".VOB","variables":"None","variableRules":"File extension","minValue":"N/A","maxValue":"N/A","example":".VOB","type":"DVD","generator":{"template":".VOB","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":167,"id":"pattern_167","pattern":"копия видео","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"копия видео","type":"Misc, Russia","generator":{"template":"копия видео","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":168,"id":"pattern_168","pattern":"копия видео Копия видео","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"копия видео Копия видео","type":"Misc, Russia","generator":{"template":"копия видео Копия видео","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":169,"id":"pattern_169","pattern":"Sprint PictureMail","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Sprint PictureMail","type":"Phone","generator":{"template":"Sprint PictureMail","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":170,"id":"pattern_170","pattern":"Temp video for share","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Temp video for share","type":"Drone","generator":{"template":"Temp video for share","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":171,"id":"pattern_171","pattern":"My stop motion movie","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"My stop motion movie","type":"Video Editor","generator":{"template":"My stop motion movie","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":172,"id":"pattern_172","pattern":"XiaoYing video","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"XiaoYing video","type":"Misc","generator":{"template":"XiaoYing video","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":173,"id":"pattern_173","pattern":"Dvgrab","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Dvgrab","type":"Camera","generator":{"template":"Dvgrab","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":174,"id":"pattern_174","pattern":"Stop motion.avi","variables":"None","variableRules":"Exact filename","minValue":"N/A","maxValue":"N/A","example":"Stop motion.avi","type":"Camera, Stop Motion","generator":{"template":"Stop motion.avi","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":175,"id":"pattern_175","pattern":"QuickCapture Video - Month D, YYYY","variables":"Month, D, YYYY","variableRules":"Year after 2007 and before 2013","minValue":"2008-01-01","maxValue":"2012-12-31","example":"QuickCapture Video - May 2, 2011","type":"Webcam","generator":{"template":"QuickCapture Video - {date}","fields":[],"date":{"mode":"Month D, YYYY","min":"2008-01-01","max":"2012-12-31","originalMinValue":"2008-01-01","originalMaxValue":"2012-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":176,"id":"pattern_176","pattern":"Webcam YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2007 and before 2010","minValue":"2008-01-01","maxValue":"2009-12-31","example":"Webcam 20090504","type":"Webcam","generator":{"template":"Webcam {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2008-01-01","max":"2009-12-31","originalMinValue":"2008-01-01","originalMaxValue":"2009-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":177,"id":"pattern_177","pattern":"Webcam Recorded Video - Month D, YYYY","variables":"Month, D, YYYY","variableRules":"Year after 2008 and before 2010","minValue":"2009-01-01","maxValue":"2009-12-31","example":"Webcam Recorded Video - May 2, 2009","type":"Webcam","generator":{"template":"Webcam Recorded Video - {date}","fields":[],"date":{"mode":"Month D, YYYY","min":"2009-01-01","max":"2009-12-31","originalMinValue":"2009-01-01","originalMaxValue":"2009-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":178,"id":"pattern_178","pattern":"Webcam video Month D, YYYY","variables":"Month, D, YYYY","variableRules":"Year after 2010 and before 2012","minValue":"2011-01-01","maxValue":"2011-12-31","example":"Webcam video May 2, 2011","type":"Webcam","generator":{"template":"Webcam video {date}","fields":[],"date":{"mode":"Month D, YYYY","min":"2011-01-01","max":"2011-12-31","originalMinValue":"2011-01-01","originalMaxValue":"2011-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":179,"id":"pattern_179","pattern":"Project of DD Mth 2011 PDT","variables":"DD, Mth","variableRules":"Fixed year 2011","minValue":"2011-01-01","maxValue":"2011-12-31","example":"Project of 02 May 2011 PDT","type":"Video Editor","generator":{"template":"Project of {date}","fields":[],"date":{"mode":"DD Mth 2011 PDT","min":"2011-01-01","max":"2011-12-31","originalMinValue":"2011-01-01","originalMaxValue":"2011-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":180,"id":"pattern_180","pattern":"Webcam video from Month D, YYYY","variables":"Month, D, YYYY","variableRules":"Year after 2011 and before 2016","minValue":"2012-01-01","maxValue":"2015-12-31","example":"Webcam video from May 2, 2014","type":"Webcam","generator":{"template":"Webcam video from {date}","fields":[],"date":{"mode":"Month D, YYYY","min":"2012-01-01","max":"2015-12-31","originalMinValue":"2012-01-01","originalMaxValue":"2015-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":181,"id":"pattern_181","pattern":"SCR YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2014 and before 2018","minValue":"2015-01-01","maxValue":"2017-12-31","example":"SCR 20160504","type":"Screen Recorder","generator":{"template":"SCR {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2015-01-01","max":"2017-12-31","originalMinValue":"2015-01-01","originalMaxValue":"2017-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":182,"id":"pattern_182","pattern":"Flipagram Month YYYY","variables":"Month, YYYY","variableRules":"Year after 2013 and before 2019","minValue":"2014-01-01","maxValue":"2018-12-31","example":"Flipagram May 2016","type":"Video Editor","generator":{"template":"Flipagram {date}","fields":[],"date":{"mode":"Month YYYY","min":"2014-01-01","max":"2018-12-31","originalMinValue":"2014-01-01","originalMaxValue":"2018-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":183,"id":"pattern_183","pattern":"Iw3mp YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2008 and before 2020","minValue":"2009-01-01","maxValue":"2019-12-31","example":"Iw3mp 20160504","type":"Game Capture, COD 4","generator":{"template":"Iw3mp {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2009-01-01","max":"2019-12-31","originalMinValue":"2009-01-01","originalMaxValue":"2019-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":184,"id":"pattern_184","pattern":"AR.Drone 2.0 Video: YYYY","variables":"YYYY","variableRules":"Year after 2015 and before 2021","minValue":"2016-01-01","maxValue":"2020-12-31","example":"AR.Drone 2.0 Video: 2018","type":"Drone","generator":{"template":"AR.Drone 2.0 Video: {date}","fields":[],"date":{"mode":"YYYY","min":"2016-01-01","max":"2020-12-31","originalMinValue":"2016-01-01","originalMaxValue":"2020-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":185,"id":"pattern_185","pattern":"WA VID YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2018 and before 2023","minValue":"2019-01-01","maxValue":"2022-12-31","example":"WA VID 20210504","type":"App","generator":{"template":"WA VID {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2019-01-01","max":"2022-12-31","originalMinValue":"2019-01-01","originalMaxValue":"2022-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":186,"id":"pattern_186","pattern":"XRecorder DDMMYYYY","variables":"DD, MM, YYYY","variableRules":"Year after 2021 and before 2024","minValue":"2022-01-01","maxValue":"2023-12-31","example":"XRecorder 04052022","type":"Screen Recorder","generator":{"template":"XRecorder {date}","fields":[],"date":{"mode":"DDMMYYYY","min":"2022-01-01","max":"2023-12-31","originalMinValue":"2022-01-01","originalMaxValue":"2023-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":187,"id":"pattern_187","pattern":"CODWAWMP YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2008 and before 2023","minValue":"2009-01-01","maxValue":"2022-12-31","example":"CODWAWMP 2016 05 04","type":"Game Capture, COD WAW","generator":{"template":"CODWAWMP {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2009-01-01","max":"2022-12-31","originalMinValue":"2009-01-01","originalMaxValue":"2022-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":188,"id":"pattern_188","pattern":"Hl2 YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2008 and before 2023","minValue":"2009-01-01","maxValue":"2022-12-31","example":"Hl2 2016 05 04","type":"Game Capture, Half Life","generator":{"template":"Hl2 {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2009-01-01","max":"2022-12-31","originalMinValue":"2009-01-01","originalMaxValue":"2022-12-31"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":189,"id":"pattern_189","pattern":"Grand Theft Auto 5 YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2008","minValue":"2009-01-01","maxValue":"Open ended","example":"Grand Theft Auto 5 2026 05 04","type":"Game Capture, GTA V","generator":{"template":"Grand Theft Auto 5 {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2009-01-01","max":"today","originalMinValue":"2009-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":190,"id":"pattern_190","pattern":"Javaw YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2009","minValue":"2010-01-01","maxValue":"Open ended","example":"Javaw 2026 05 04","type":"Game Capture","generator":{"template":"Javaw {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2010-01-01","max":"today","originalMinValue":"2010-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":191,"id":"pattern_191","pattern":"Chrome YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2010","minValue":"2011-01-01","maxValue":"Open ended","example":"Chrome 2026 05 04","type":"Screen Recorder","generator":{"template":"Chrome {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2011-01-01","max":"today","originalMinValue":"2011-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":192,"id":"pattern_192","pattern":"Bandicam YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2010","minValue":"2011-01-01","maxValue":"Open ended","example":"Bandicam 2026 05 04","type":"Screen Recorder","generator":{"template":"Bandicam {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2011-01-01","max":"today","originalMinValue":"2011-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":193,"id":"pattern_193","pattern":"Screen Recording YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2012","minValue":"2013-01-01","maxValue":"Open ended","example":"Screen Recording 2026 05 04","type":"Screen Recorder","generator":{"template":"Screen Recording {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2013-01-01","max":"today","originalMinValue":"2013-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":194,"id":"pattern_194","pattern":"YouCut YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"After May 2018","minValue":"2018-06-01","maxValue":"Open ended","example":"YouCut 20260504","type":"Video Editor","generator":{"template":"YouCut {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2018-06-01","max":"today","originalMinValue":"2018-06-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":195,"id":"pattern_195","pattern":"Km YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2021","minValue":"2022-01-01","maxValue":"Open ended","example":"Km 20260504","type":"Video Editor","generator":{"template":"Km {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2022-01-01","max":"today","originalMinValue":"2022-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":196,"id":"pattern_196","pattern":"Simplescreenrecorder YYYY MM DD","variables":"YYYY, MM, DD","variableRules":"Year after 2023","minValue":"2024-01-01","maxValue":"Open ended","example":"Simplescreenrecorder 2026 05 04","type":"Screen Recorder","generator":{"template":"Simplescreenrecorder {date}","fields":[],"date":{"mode":"YYYY MM DD","min":"2024-01-01","max":"today","originalMinValue":"2024-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":197,"id":"pattern_197","pattern":"720p YYMMDD","variables":"YY, MM, DD","variableRules":"Year after 2023","minValue":"2024-01-01","maxValue":"Open ended","example":"720p 260504","type":"VYond / GoAnimate","generator":{"template":"720p {date}","fields":[],"date":{"mode":"YYMMDD","min":"2024-01-01","max":"today","originalMinValue":"2024-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":198,"id":"pattern_198","pattern":"XRecorder YYYYMMDD","variables":"YYYY, MM, DD","variableRules":"Year after 2024","minValue":"2025-01-01","maxValue":"Open ended","example":"XRecorder 20260504","type":"Screen Recorder","generator":{"template":"XRecorder {date}","fields":[],"date":{"mode":"YYYYMMDD","min":"2025-01-01","max":"today","originalMinValue":"2025-01-01","originalMaxValue":"Open ended"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":199,"id":"pattern_199","pattern":"You have new picture mail! (video)","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"You have new picture mail! (video)","type":"Phone","generator":{"template":"You have new picture mail! (video)","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":200,"id":"pattern_200","pattern":"Media1.3gp","variables":"None","variableRules":"Exact filename","minValue":"N/A","maxValue":"N/A","example":"Media1.3gp","type":"Phone","generator":{"template":"Media1.3gp","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":201,"id":"pattern_201","pattern":"Media1.3g2","variables":"None","variableRules":"Exact filename","minValue":"N/A","maxValue":"N/A","example":"Media1.3g2","type":"Phone","generator":{"template":"Media1.3g2","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":202,"id":"pattern_202","pattern":"Video.3g2","variables":"None","variableRules":"Exact filename","minValue":"N/A","maxValue":"N/A","example":"Video.3g2","type":"Misc","generator":{"template":"Video.3g2","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":203,"id":"pattern_203","pattern":"New Multimedia Message","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"New Multimedia Message","type":"Phone","generator":{"template":"New Multimedia Message","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":204,"id":"pattern_204","pattern":"Multimedia Message","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Multimedia Message","type":"Phone","generator":{"template":"Multimedia Message","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":205,"id":"pattern_205","pattern":"Video from my phone","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Video from my phone","type":"Phone","generator":{"template":"Video from my phone","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":206,"id":"pattern_206","pattern":"Video uploaded from my mobile phone","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Video uploaded from my mobile phone","type":"Phone","generator":{"template":"Video uploaded from my mobile phone","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":207,"id":"pattern_207","pattern":"For Month DD, YYYY","variables":"Month, DD, YYYY","variableRules":"Written date","minValue":"Unspecified","maxValue":"Unspecified","example":"For December 02, 2007","type":"Phone","generator":{"template":"For {date}","fields":[],"date":{"mode":"Month DD, YYYY","min":"2000-01-01","max":"today","originalMinValue":"Unspecified","originalMaxValue":"Unspecified"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":208,"id":"pattern_208","pattern":"Recorded on Month DD, YYYY using a Flip Video Camcorder","variables":"Month, DD, YYYY","variableRules":"Written date","minValue":"Unspecified","maxValue":"Unspecified","example":"Recorded on May 02, 2011 using a Flip Video Camcorder","type":"Camera","generator":{"template":"Recorded on {date} using a Flip Video Camcorder","fields":[],"date":{"mode":"Month DD, YYYY","min":"2000-01-01","max":"today","originalMinValue":"Unspecified","originalMaxValue":"Unspecified"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":209,"id":"pattern_209","pattern":"Video0XX","variables":"XX","variableRules":"00-10","minValue":"00","maxValue":"10","example":"Video001","type":"Camera","generator":{"template":"Video0{v0}","fields":[{"type":"number","token":"XX","min":0,"max":10,"pad":2,"minValue":"00","maxValue":"10","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":210,"id":"pattern_210","pattern":"Vid0XX","variables":"XX","variableRules":"00-10","minValue":"00","maxValue":"10","example":"Vid001","type":"Camera","generator":{"template":"Vid0{v0}","fields":[{"type":"number","token":"XX","min":0,"max":10,"pad":2,"minValue":"00","maxValue":"10","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":211,"id":"pattern_211","pattern":"MOV000XX","variables":"XX","variableRules":"00-10","minValue":"00","maxValue":"10","example":"MOV00001","type":"Camera","generator":{"template":"MOV000{v0}","fields":[{"type":"number","token":"XX","min":0,"max":10,"pad":2,"minValue":"00","maxValue":"10","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":212,"id":"pattern_212","pattern":"Recorded on Month DD, YYYY using a Flip Video Camera","variables":"Month, DD, YYYY","variableRules":"Written date","minValue":"Unspecified","maxValue":"Unspecified","example":"Recorded on May 02, 2011 using a Flip Video Camera","type":"Camera","generator":{"template":"Recorded on {date} using a Flip Video Camera","fields":[],"date":{"mode":"Month DD, YYYY","min":"2000-01-01","max":"today","originalMinValue":"Unspecified","originalMaxValue":"Unspecified"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":213,"id":"pattern_213","pattern":"Created on Month DD, YYYY using FlipShare","variables":"Month, DD, YYYY","variableRules":"Written date","minValue":"Unspecified","maxValue":"Unspecified","example":"Created on May 02, 2011 using FlipShare","type":"Camera","generator":{"template":"Created on {date} using FlipShare","fields":[],"date":{"mode":"Month DD, YYYY","min":"2000-01-01","max":"today","originalMinValue":"Unspecified","originalMaxValue":"Unspecified"},"time":null,"notes":[]},"isDateBased":true,"isExact":false,"isNsfw":false},{"number":214,"id":"pattern_214","pattern":"Video van Mijn telefoon","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Video van Mijn telefoon","type":"Phone, Netherlands","generator":{"template":"Video van Mijn telefoon","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":215,"id":"pattern_215","pattern":"video geüpload van mijn mobiel","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"video geüpload van mijn mobiel","type":"Phone, Netherlands","generator":{"template":"video geüpload van mijn mobiel","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":216,"id":"pattern_216","pattern":"Vídeo desde mi teléfono","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"Vídeo desde mi teléfono","type":"Phone","generator":{"template":"Vídeo desde mi teléfono","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":217,"id":"pattern_217","pattern":"vídeo subido desde mi teléfono móvil","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"vídeo subido desde mi teléfono móvil","type":"Phone","generator":{"template":"vídeo subido desde mi teléfono móvil","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":218,"id":"pattern_218","pattern":"muuvee00XX","variables":"XX","variableRules":"00-40","minValue":"00","maxValue":"40","example":"muuvee0004","type":"Video Editor","generator":{"template":"muuvee00{v0}","fields":[{"type":"number","token":"XX","min":0,"max":40,"pad":2,"minValue":"00","maxValue":"40","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":219,"id":"pattern_219","pattern":"0_VIDEO_0XX","variables":"XX","variableRules":"01-54","minValue":"01","maxValue":"54","example":"0_VIDEO_042","type":"Phone","generator":{"template":"0_VIDEO_0{v0}","fields":[{"type":"number","token":"XX","min":1,"max":54,"pad":2,"minValue":"01","maxValue":"54","key":"v0"}],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":false,"isNsfw":false},{"number":220,"id":"pattern_220","pattern":"You have received a new message","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"You have received a new message","type":"Phone","generator":{"template":"You have received a new message","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":221,"id":"pattern_221","pattern":"My Great Movie","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"My Great Movie","type":"Video Editor","generator":{"template":"My Great Movie","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false},{"number":222,"id":"pattern_222","pattern":"My First Project","variables":"None","variableRules":"Exact title","minValue":"N/A","maxValue":"N/A","example":"My First Project","type":"Video Editor","generator":{"template":"My First Project","fields":[],"date":null,"time":null,"notes":[]},"isDateBased":false,"isExact":true,"isNsfw":false}]}</script>
+<script>
+const CONFIG = JSON.parse(document.getElementById('pattern-data').textContent);
+let generatedRows = [];
+const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const shortMonths = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const $ = id => document.getElementById(id);
+
+function randInt(min, max) {
+  min = Math.ceil(Number(min));
+  max = Math.floor(Number(max));
+  if (!Number.isFinite(min)) min = 0;
+  if (!Number.isFinite(max)) max = min;
+  if (max < min) [min, max] = [max, min];
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function pad(num, width) { return String(num).padStart(width, '0'); }
+function parseDateSafe(value, fallback) {
+  if (!value || value === 'today') return fallback;
+  const d = new Date(value + 'T00:00:00');
+  return Number.isNaN(d.getTime()) ? fallback : d;
+}
+function randomDate(minValue, maxValue) {
+  const today = new Date();
+  let minDate = parseDateSafe(minValue, new Date('2000-01-01T00:00:00'));
+  let maxDate = parseDateSafe(maxValue, today);
+  if (maxDate > today && maxValue === 'today') maxDate = today;
+  if (maxDate < minDate) [minDate, maxDate] = [maxDate, minDate];
+  const time = randInt(minDate.getTime(), maxDate.getTime());
+  return new Date(time);
+}
+function dateParts(d) {
+  const yyyy = d.getFullYear();
+  const yy = String(yyyy).slice(-2);
+  const mm = pad(d.getMonth()+1, 2);
+  const dd = pad(d.getDate(), 2);
+  return { yyyy, yy, mm, dd, d: String(d.getDate()), month: months[d.getMonth()], mth: shortMonths[d.getMonth()] };
+}
+function formatDate(d, mode) {
+  const p = dateParts(d);
+  switch (mode) {
+    case 'YYYYMMDD': return `${p.yyyy}${p.mm}${p.dd}`;
+    case 'YYYY MM DD': return `${p.yyyy} ${p.mm} ${p.dd}`;
+    case 'DDMMYYYY': return `${p.dd}${p.mm}${p.yyyy}`;
+    case 'YYMMDD': return `${p.yy}${p.mm}${p.dd}`;
+    case 'Month DD, YYYY': return `${p.month} ${p.dd}, ${p.yyyy}`;
+    case 'Month D, YYYY': return `${p.month} ${p.d}, ${p.yyyy}`;
+    case 'Month YYYY': return `${p.month} ${p.yyyy}`;
+    case 'DD Mth 2011 PDT': return `${p.dd} ${p.mth} 2011 PDT`;
+    case 'YYYY': return String(p.yyyy);
+    default: return `${p.yyyy}${p.mm}${p.dd}`;
+  }
+}
+function generateField(field) {
+  if (field.type === 'number') return pad(randInt(field.min, field.max), field.pad || 0);
+  if (field.type === 'hex') {
+    const chars = field.chars || 'ABCDEF0123456789';
+    let out = '';
+    for (let i = 0; i < (field.length || 1); i++) out += chars[randInt(0, chars.length - 1)];
+    return out;
+  }
+  if (field.type === 'choice') return field.choices[randInt(0, field.choices.length - 1)];
+  return '';
+}
+function generateTime() {
+  const h = randInt(0,23), m = randInt(0,59), s = randInt(0,59);
+  return `${pad(h,2)}${pad(m,2)}${pad(s,2)}`;
+}
+function buildQuery(record, options) {
+  let filename = record.generator.template;
+  if (record.generator.date) {
+    const minOverride = $('dateMinOverride').value;
+    const maxOverride = $('dateMaxOverride').value;
+    const d = randomDate(minOverride || record.generator.date.min, maxOverride || record.generator.date.max);
+    filename = filename.replace('{date}', formatDate(d, record.generator.date.mode));
+  }
+  if (record.generator.time) filename = filename.replace('{time}', generateTime());
+  for (const field of record.generator.fields || []) {
+    filename = filename.replace(`{${field.key}}`, generateField(field));
+  }
+  if (options.appendExtension && options.appendExtension !== 'none' && !/\.[A-Za-z0-9]{2,4}$/.test(filename)) {
+    filename += options.appendExtension;
+  }
+  let query = [options.prefixText, filename, options.suffixText].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  if (options.quoteQuery) query = `"${query}"`;
+  return query;
+}
+function encodeQuery(query, mode) {
+  if (mode === 'standard') return encodeURIComponent(query);
+  const encoded = encodeURIComponent(query);
+  if (mode === 'plus') return encoded.replace(/%20/g, '+');
+  return encoded;
+}
+function getOptions() {
+  return {
+    baseUrl: $('baseUrl').value || CONFIG.baseUrl,
+    mode: $('mode').value,
+    typeFilter: $('typeFilter').value,
+    selectedPatternId: $('patternSelect').value,
+    batchCount: Math.max(1, Math.min(1000, Number($('batchCount').value || 1))),
+    appendExtension: $('appendExtension').value,
+    spaceEncoding: $('spaceEncoding').value,
+    quoteQuery: $('quoteQuery').checked,
+    excludeNsfw: $('excludeNsfw').checked,
+    includeExactTitles: $('includeExactTitles').checked,
+    prefixText: $('prefixText').value.trim(),
+    suffixText: $('suffixText').value.trim()
+  };
+}
+function availablePatterns(options) {
+  return CONFIG.patterns.filter(r => {
+    if (options.typeFilter !== 'All' && r.type !== options.typeFilter) return false;
+    if (options.excludeNsfw && r.isNsfw) return false;
+    if (!options.includeExactTitles && r.isExact) return false;
+    return true;
+  });
+}
+function generateOne(record, options) {
+  const query = buildQuery(record, options);
+  const url = options.baseUrl + encodeQuery(query, options.spaceEncoding);
+  return {
+    number: record.number,
+    id: record.id,
+    pattern: record.pattern,
+    query,
+    url,
+    type: record.type,
+    variableRules: record.variableRules,
+    minValue: record.minValue,
+    maxValue: record.maxValue,
+    example: record.example
+  };
+}
+function generate() {
+  const options = getOptions();
+  let pool = availablePatterns(options);
+  if (!pool.length) { alert('No patterns match the current filters.'); return; }
+  let rows = [];
+  if (options.mode === 'all') {
+    rows = pool.map(record => generateOne(record, options));
+  } else if (options.mode === 'selected') {
+    const selected = CONFIG.patterns.find(r => r.id === options.selectedPatternId) || pool[0];
+    for (let i=0; i<options.batchCount; i++) rows.push(generateOne(selected, options));
+  } else {
+    for (let i=0; i<options.batchCount; i++) rows.push(generateOne(pool[randInt(0, pool.length-1)], options));
+  }
+  generatedRows = rows;
+  renderResults();
+}
+function renderResults() {
+  $('statGenerated').textContent = generatedRows.length;
+  $('latestUrl').textContent = generatedRows[0]?.url || 'No URL generated yet.';
+  const body = document.querySelector('#resultsTable tbody');
+  body.innerHTML = generatedRows.map((r, idx) => `
+    <tr>
+      <td>${r.number}</td>
+      <td><span class="code">${escapeHtml(r.pattern)}</span><div class="help">Example: ${escapeHtml(r.example)}</div></td>
+      <td class="code">${escapeHtml(r.query)}</td>
+      <td><span class="pill">${escapeHtml(r.type)}</span></td>
+      <td class="generated-url">${escapeHtml(r.url)}</td>
+      <td><button class="small" onclick="openUrl(${idx})">Open</button> <button class="small secondary" onclick="copyText(generatedRows[${idx}].url)">Copy</button></td>
+    </tr>`).join('');
+}
+function openUrl(index) { window.open(generatedRows[index].url, '_blank', 'noopener'); }
+function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+async function copyText(text) {
+  await navigator.clipboard.writeText(text);
+}
+function renderPatternBrowser() {
+  const q = ($('searchPatterns')?.value || '').toLowerCase();
+  const type = $('browserTypeFilter')?.value || 'All';
+  const body = document.querySelector('#browserTable tbody');
+  const rows = CONFIG.patterns.filter(r => {
+    if (type !== 'All' && r.type !== type) return false;
+    if (!q) return true;
+    return [r.pattern, r.variables, r.variableRules, r.example, r.type, r.minValue, r.maxValue].join(' ').toLowerCase().includes(q);
+  });
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.number}</td>
+      <td class="code">${escapeHtml(r.pattern)}</td>
+      <td>${escapeHtml(r.variables)}</td>
+      <td>${escapeHtml(r.minValue)}</td>
+      <td>${escapeHtml(r.maxValue)}</td>
+      <td class="code">${escapeHtml(r.example)}</td>
+      <td><span class="pill${r.isNsfw ? ' warn' : ''}">${escapeHtml(r.type)}</span></td>
+      <td><button class="small" onclick="selectPattern('${r.id}')">Use</button></td>
+    </tr>`).join('');
+}
+function selectPattern(id) {
+  $('patternSelect').value = id;
+  $('mode').value = 'selected';
+  switchTab('results');
+  generate();
+}
+function populateControls() {
+  $('statPatterns').textContent = CONFIG.patterns.length;
+  $('statTypes').textContent = CONFIG.types.length;
+  $('statDateBased').textContent = CONFIG.patterns.filter(r => r.isDateBased).length;
+  for (const type of CONFIG.types) {
+    const opt = new Option(type, type);
+    $('typeFilter').add(opt.cloneNode(true));
+    $('browserTypeFilter').add(opt);
+  }
+  CONFIG.patterns.forEach(r => {
+    $('patternSelect').add(new Option(`#${r.number} - ${r.pattern} (${r.type})`, r.id));
+  });
+  $('jsonViewer').value = JSON.stringify(CONFIG, null, 2);
+  renderPatternBrowser();
+}
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+  $('tab-results').classList.toggle('hidden', tab !== 'results');
+  $('tab-browser').classList.toggle('hidden', tab !== 'browser');
+  $('tab-json').classList.toggle('hidden', tab !== 'json');
+}
+function download(filename, text, type='text/plain') {
+  const blob = new Blob([text], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function resultCsv() {
+  const cols = ['number','pattern','query','url','type','variableRules','minValue','maxValue','example'];
+  const esc = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  return [cols.join(',')].concat(generatedRows.map(r => cols.map(c => esc(r[c])).join(','))).join('\\n');
+}
+
+function simpleOptions() {
+  return {
+    baseUrl: CONFIG.baseUrl,
+    mode: 'random',
+    typeFilter: 'All',
+    selectedPatternId: 'random',
+    batchCount: Math.max(1, Math.min(1000, Number($('simpleCount').value || 1))),
+    appendExtension: 'none',
+    spaceEncoding: 'plus',
+    quoteQuery: false,
+    excludeNsfw: $('simpleExcludeNsfw').checked,
+    includeExactTitles: true,
+    prefixText: '',
+    suffixText: ''
+  };
+}
+function generateSimple() {
+  const options = simpleOptions();
+  const pool = availablePatterns(options);
+  if (!pool.length) { alert('No patterns are available with the current simple filter.'); return; }
+  generatedRows = [];
+  for (let i = 0; i < options.batchCount; i++) {
+    generatedRows.push(generateOne(pool[randInt(0, pool.length - 1)], options));
+  }
+  renderSimpleResults();
+}
+function renderSimpleResults() {
+  const list = $('simpleUrlList');
+  const status = $('simpleStatus');
+  if (!list || !status) return;
+  status.textContent = generatedRows.length ? `${generatedRows.length} Links Generated` : 'No Links Generated Yet';
+  list.innerHTML = generatedRows.map((r, idx) => `
+    <li class="url-item">
+      <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>
+      <div class="url-meta">#${idx + 1} · Pattern ${r.number}: ${escapeHtml(r.pattern)} · Query: ${escapeHtml(r.query)}</div>
+    </li>`).join('');
+  renderResults();
+}
+function showAdvancedMode() {
+  $('landingPage').classList.add('hidden');
+  $('advancedView').classList.remove('hidden');
+  $('advancedToggleBtn').classList.add('hidden');
+  $('landingToggleBtn').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function showSimpleMode() {
+  $('advancedView').classList.add('hidden');
+  $('landingPage').classList.remove('hidden');
+  $('landingToggleBtn').classList.add('hidden');
+  $('advancedToggleBtn').classList.add('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  populateControls();
+  $('advancedToggleBtn').addEventListener('click', showAdvancedMode);
+  $('landingToggleBtn').addEventListener('click', showSimpleMode);
+  $('simpleGenerateBtn').addEventListener('click', generateSimple);
+  $('simpleClearBtn').addEventListener('click', () => { generatedRows = []; renderSimpleResults(); });
+  $('generateBtn').addEventListener('click', generate);
+  $('generateAllBtn').addEventListener('click', () => { $('mode').value = 'all'; generate(); });
+  $('copyUrlsBtn').addEventListener('click', () => copyText(generatedRows.map(r => r.url).join('\\n')));
+  $('copyJsonArrayBtn').addEventListener('click', () => copyText(JSON.stringify(generatedRows, null, 2)));
+  $('downloadJsonBtn').addEventListener('click', () => download('generated-youtube-url-results.json', JSON.stringify(generatedRows, null, 2), 'application/json'));
+  $('downloadCsvBtn').addEventListener('click', () => download('generated-youtube-url-results.csv', resultCsv(), 'text/csv'));
+  $('clearBtn').addEventListener('click', () => { generatedRows = []; renderResults(); });
+  $('copyConfigBtn').addEventListener('click', () => copyText(JSON.stringify(CONFIG, null, 2)));
+  $('searchPatterns').addEventListener('input', renderPatternBrowser);
+  $('browserTypeFilter').addEventListener('change', renderPatternBrowser);
+  document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+  $('typeFilter').addEventListener('change', () => {
+    const type = $('typeFilter').value;
+    $('patternSelect').innerHTML = '';
+    CONFIG.patterns.filter(r => type === 'All' || r.type === type).forEach(r => $('patternSelect').add(new Option(`#${r.number} - ${r.pattern} (${r.type})`, r.id)));
+  });
+  renderResults();
+});
+</script>
+</body>
+</html>
