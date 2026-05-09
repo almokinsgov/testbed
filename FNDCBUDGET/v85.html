@@ -2668,7 +2668,7 @@
     const EXTRA_BUDGET = Math.round(BASELINE_BUDGET * (1 + EXTRA_RATE));
     const EXTRA_AMOUNT = EXTRA_BUDGET - BASELINE_BUDGET;
     const ANNUAL_PLAN_BUDGET = EXTRA_BUDGET;
-    const GOOGLE_SHEET_SUBMISSION_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwdEoOKsuTcbxWDx7vbHdTFeYAnyyn28Un7LTKPsLwp-EEGSANlj044qY_wpOnI9Yaj/exec';
+    const GOOGLE_SHEET_SUBMISSION_ENDPOINT = 'https://script.google.com/macros/s/AKfycbytuYIsFQcHEmYIVsQVSqdovSG0q2H3bOxTt_tP-Yh7IY7_BYF093crXQhVAV9tQder/exec';
     let readyPngBlob = null;
     let readyPngFilename = '';
     let keepExportProgressOpen = false;
@@ -6953,17 +6953,19 @@
       };
     }
 
-    function buildSimpleSheetSubmissionData() {
+    function buildSimpleSheetSubmissionData(options = {}) {
       const source = buildDashboardJsonData();
       const totals = source.totals || {};
       const ratings = source.ratings || {};
       const detailRows = Array.isArray(source.dashboard_rows) ? source.dashboard_rows : [];
+      const exportType = options.exportType || 'council_budget_suggestion_google_sheet_submission';
+      const submissionTarget = options.submissionTarget || 'final_submission';
 
       const sheetRecord = {
         'Submission ID': source.submission_id,
         'Submitted At': source.submitted_at,
-        'Schema Version': '1.5',
-        'Export Type': 'council_budget_suggestion_google_sheet_submission',
+        'Schema Version': '1.6',
+        'Export Type': exportType,
         'Age Group': source.submission_details?.age_group || '',
         'Comment': source.submission_details?.comment || '',
         'Budget View Mode': source.submission_details?.budget_view_mode || displayModeLabel(),
@@ -7000,6 +7002,7 @@
 
       return {
         ...sheetRecord,
+        submission_target: submissionTarget,
         submission_array: [sheetRecord]
       };
     }
@@ -7105,6 +7108,61 @@
       const json = downloadJsonBlob(data, filename);
       if (els.jsonOutput) els.jsonOutput.value = json;
       if (els.jsonNotice) els.jsonNotice.textContent = `JSON downloaded as ${filename}.`;
+    }
+
+    let backgroundResultsSheetSubmissionInFlight = false;
+    let lastBackgroundResultsSheetSubmissionAt = 0;
+
+    async function submitResultsViewToGoogleSheetInBackground() {
+      if (!GOOGLE_SHEET_SUBMISSION_ENDPOINT || GOOGLE_SHEET_SUBMISSION_ENDPOINT.includes('PASTE_')) {
+        console.warn('Background results sheet submission skipped because the Google Sheet endpoint is not configured.');
+        return;
+      }
+
+      const now = Date.now();
+      if (backgroundResultsSheetSubmissionInFlight || now - lastBackgroundResultsSheetSubmissionAt < 1200) {
+        console.info('Background results sheet submission skipped to avoid duplicate rapid clicks.');
+        return;
+      }
+
+      backgroundResultsSheetSubmissionInFlight = true;
+      lastBackgroundResultsSheetSubmissionAt = now;
+
+      try {
+        autoUpdateJsonExport({ silent: true });
+        const payload = buildSimpleSheetSubmissionData({
+          exportType: 'council_budget_suggestion_results_view_background_submission',
+          submissionTarget: 'results_view_background'
+        });
+
+        await fetch(GOOGLE_SHEET_SUBMISSION_ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors',
+          cache: 'no-store',
+          redirect: 'follow',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        console.info('Background results sheet submission sent.', {
+          submissionId: payload['Submission ID'],
+          exportType: payload['Export Type'],
+          sheetTarget: payload.submission_target
+        });
+      } catch (error) {
+        console.warn('Background results sheet submission failed before it could be sent:', error);
+      } finally {
+        backgroundResultsSheetSubmissionInFlight = false;
+      }
+    }
+
+    function showResultsAndSubmitBackground() {
+      showToolPage('results');
+      window.setTimeout(() => {
+        submitResultsViewToGoogleSheetInBackground();
+      }, 0);
     }
 
     async function submitJsonToGoogleSheet() {
@@ -7335,9 +7393,9 @@
     document.getElementById('resetBtn').addEventListener('click', resetToCurrent);
     const starterResetBtn = document.getElementById('starterResetBtn');
     if (starterResetBtn) starterResetBtn.addEventListener('click', resetAndShowStarterModal);
-    document.getElementById('jumpSubmitBtn').addEventListener('click', () => showToolPage('results'));
+    document.getElementById('jumpSubmitBtn').addEventListener('click', showResultsAndSubmitBackground);
     const bottomSeeBudgetBtn = document.getElementById('bottomSeeBudgetBtn');
-    if (bottomSeeBudgetBtn) bottomSeeBudgetBtn.addEventListener('click', () => showToolPage('results'));
+    if (bottomSeeBudgetBtn) bottomSeeBudgetBtn.addEventListener('click', showResultsAndSubmitBackground);
     const backToBuilderBtn = document.getElementById('backToBuilderBtn');
     if (backToBuilderBtn) backToBuilderBtn.addEventListener('click', () => showToolPage('builder'));
     const downloadResultsJsonBtn = document.getElementById('downloadResultsJsonBtn');
