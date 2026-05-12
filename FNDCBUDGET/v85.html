@@ -2301,6 +2301,434 @@
       display: none !important;
     }
 
+
+/* v87: Lightweight click heatmap session tools. */
+.heatmap-modal-card {
+  width: min(980px, calc(100vw - 40px));
+}
+
+.heatmap-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.heatmap-summary-item {
+  background: #f7f9fc;
+  border: 1px solid #e1e8f1;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.heatmap-summary-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.heatmap-summary-value {
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.heatmap-json-preview {
+  width: 100%;
+  min-height: 260px;
+  max-height: 52vh;
+  overflow: auto;
+  white-space: pre;
+  word-break: normal;
+  background: #101828;
+  color: #e6edf7;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 12px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 0.78rem;
+  line-height: 1.42;
+}
+
+.heatmap-canvas-wrap {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.heatmap-canvas {
+  width: 100%;
+  height: 260px;
+  display: block;
+  border-radius: 12px;
+  background: #f7f9fc;
+  border: 1px solid #e1e8f1;
+}
+
+
+/* v89: Slider-page click location analyser overlay. */
+/* v91: Add pasted Google Sheets heatmap JSON loader to click analyser modal. */
+.integrated-heatmap-overlay-canvas {
+  position: absolute;
+  pointer-events: none;
+  z-index: 75;
+  opacity: 0.92;
+  display: none;
+}
+
+.integrated-heatmap-overlay-canvas.is-visible {
+  display: block;
+}
+
+.integrated-heatmap-overlay-label {
+  position: absolute;
+  pointer-events: none;
+  z-index: 76;
+  display: none;
+  background: rgba(23, 32, 51, 0.88);
+  color: #fff;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  box-shadow: 0 8px 22px rgba(19, 45, 85, 0.18);
+}
+
+.integrated-heatmap-overlay-label.is-visible {
+  display: block;
+}
+
+.heatmap-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.heatmap-option-card {
+  border: 1px solid #e1e8f1;
+  border-radius: 16px;
+  background: #f7f9fc;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.heatmap-option-card strong {
+  display: block;
+  font-size: 0.96rem;
+}
+
+.heatmap-option-card span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.heatmap-file-input {
+  width: 100%;
+  border: 1px dashed #9fb3d1;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+
+.heatmap-paste-textarea {
+  width: 100%;
+  min-height: 150px;
+  max-height: 260px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+  color: var(--text);
+  font-family: Consolas, Monaco, monospace;
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.heatmap-paste-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heatmap-paste-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.heatmap-loaded-list {
+  display: grid;
+  gap: 6px;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.heatmap-loaded-list-item {
+  border: 1px solid #e1e8f1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.heatmap-inline-status {
+  border: 1px solid #d4e4ff;
+  background: #eef4ff;
+  color: #234265;
+  border-radius: 14px;
+  padding: 10px 12px;
+  line-height: 1.45;
+  font-size: 0.9rem;
+}
+
+
+
+/* v92: Heatmap JSON manager and floating layer picker. */
+.heatmap-manager-panel {
+  border: 1px solid #e1e8f1;
+  background: #fbfdff;
+  border-radius: 16px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.heatmap-manager-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.heatmap-manager-title {
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.heatmap-manager-sub {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  margin-top: 3px;
+}
+
+.heatmap-manager-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.heatmap-layer-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e1e8f1;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.heatmap-layer-mode-row label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.heatmap-layer-mode-row select {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.heatmap-layer-list {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.heatmap-layer-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #e1e8f1;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.heatmap-layer-row.is-hidden-layer {
+  opacity: 0.58;
+  background: #f7f9fc;
+}
+
+.heatmap-layer-check {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+}
+
+.heatmap-layer-main {
+  min-width: 0;
+}
+
+.heatmap-layer-name {
+  font-weight: 900;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.heatmap-layer-meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-top: 3px;
+}
+
+.heatmap-layer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.heatmap-layer-colour {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border: 1px solid rgba(0,0,0,0.12);
+}
+
+.heatmap-floating-picker {
+  position: fixed;
+  right: 18px;
+  top: 96px;
+  z-index: 1200;
+  width: min(330px, calc(100vw - 36px));
+  display: none;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 18px 48px rgba(19, 45, 85, 0.18);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.heatmap-floating-picker.is-enabled {
+  display: block;
+}
+
+.heatmap-floating-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #172033;
+  color: #fff;
+  cursor: move;
+  user-select: none;
+}
+
+.heatmap-floating-picker-title {
+  font-weight: 900;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.heatmap-floating-picker-hint {
+  opacity: 0.75;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.heatmap-floating-picker-body {
+  display: none;
+  padding: 10px 12px 12px;
+  max-height: min(68vh, 560px);
+  overflow: auto;
+}
+
+.heatmap-floating-picker:hover .heatmap-floating-picker-body,
+.heatmap-floating-picker:focus-within .heatmap-floating-picker-body,
+.heatmap-floating-picker.is-open .heatmap-floating-picker-body {
+  display: grid;
+  gap: 10px;
+}
+
+.heatmap-floating-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border: 1px solid #e1e8f1;
+  border-radius: 12px;
+  padding: 8px;
+  background: #f7f9fc;
+}
+
+.heatmap-floating-row strong {
+  display: block;
+  overflow-wrap: anywhere;
+  line-height: 1.22;
+}
+
+.heatmap-floating-row span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.3;
+}
+
+.heatmap-floating-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.heatmap-floating-controls .btn {
+  padding: 7px 9px;
+  font-size: 0.82rem;
+}
+
+.heatmap-modal-card .final-page-actions {
+  justify-content: flex-start;
+}
+
+.auto-submit-paused #autoSheetSubmitToggleBtn {
+  border-color: #f4d28f;
+  background: #fff2d8;
+  color: #925d00;
+}
+
+/* v95: Keep admin/debug controls hidden for public users until the console command is entered. */
+body:not(.admin-tools-visible) [data-admin-tool="true"] {
+  display: none !important;
+}
+
   </style>
 </head>
 <body>
@@ -2325,6 +2753,8 @@
         <button class="btn" id="goalSplitBtn" type="button">Set to current budget without rates increase</button>
         <button class="btn" id="resetBtn" type="button">Set to current budget with rates increase</button>
         <button class="btn" id="starterResetBtn" type="button">Reset</button>
+        <button class="btn" id="clickLocationAnalyserBtn" type="button" data-admin-tool="true">Click Location Analyser</button>
+        <button class="btn" id="autoSheetSubmitToggleBtn" type="button" aria-pressed="false" data-admin-tool="true">Pause Auto Submit</button>
         <button class="btn primary" id="jumpSubmitBtn" type="button">See Your Budget</button>
       </div>
     </section>
@@ -2402,6 +2832,7 @@
         </div>
         <div class="top-actions">
           <button class="btn" id="backToBuilderBtn" type="button">Back To Budget Sliders</button>
+          <button class="btn" id="viewHeatmapJsonBtn" type="button">View Click Location JSON</button>
           <button class="btn" id="downloadResultsJsonBtn" type="button">Download Results JSON</button>
           <button class="btn" id="exportResultsPngBtn" type="button">Export PNG</button>
           <button class="btn primary" id="resultsExportBtn" type="button">Submit your budget</button>
@@ -2668,7 +3099,7 @@
     const EXTRA_BUDGET = Math.round(BASELINE_BUDGET * (1 + EXTRA_RATE));
     const EXTRA_AMOUNT = EXTRA_BUDGET - BASELINE_BUDGET;
     const ANNUAL_PLAN_BUDGET = EXTRA_BUDGET;
-    const GOOGLE_SHEET_SUBMISSION_ENDPOINT = 'https://script.google.com/macros/s/AKfycbytuYIsFQcHEmYIVsQVSqdovSG0q2H3bOxTt_tP-Yh7IY7_BYF093crXQhVAV9tQder/exec';
+    const GOOGLE_SHEET_SUBMISSION_ENDPOINT = 'https://script.google.com/macros/s/AKfycbycP_DV439CJupQo0cK-ucfdOMX1P7wELrMpCfYtYWG5WuW5xAcidKoz4qzlnWNAIVS/exec';
     let readyPngBlob = null;
     let readyPngFilename = '';
     let keepExportProgressOpen = false;
@@ -3219,6 +3650,1480 @@
       jsonOutput: document.getElementById('jsonOutput'),
       jsonNotice: document.getElementById('jsonNotice')
     };
+
+
+
+const HEATMAP_GRID_COLUMNS = 24;
+const HEATMAP_GRID_ROWS = 48;
+const HEATMAP_STORAGE_KEY = 'budgetClickHeatmapSessionV2';
+const HEATMAP_LAST_STORAGE_KEY = 'budgetClickHeatmapLastCompletedV2';
+const HEATMAP_POINT_PRECISION_DECIMALS = 6;
+const HEATMAP_PREVIEW_MIN_RADIUS = 8;
+const HEATMAP_PREVIEW_MAX_RADIUS = 28;
+let budgetClickHeatmapSession = null;
+let budgetClickHeatmapLastCompleted = null;
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function makeHeatmapSessionId() {
+  return 'budget-click-session-' + nowIso().replace(/[:.]/g, '-') + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function getElementSummary(target) {
+  if (!target || target.nodeType !== 1) {
+    return {
+      tag: '',
+      id: '',
+      classes: '',
+      text: '',
+      input_type: '',
+      aria_label: '',
+      name: '',
+      category: ''
+    };
+  }
+
+  const element = target;
+  const card = element.closest ? element.closest('.category-card') : null;
+  const categoryTitle = card ? card.querySelector('.category-title') : null;
+  const text = (element.innerText || element.value || element.getAttribute('aria-label') || element.textContent || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+
+  return {
+    tag: element.tagName ? element.tagName.toLowerCase() : '',
+    id: element.id || '',
+    classes: typeof element.className === 'string' ? element.className.slice(0, 180) : '',
+    text,
+    input_type: element.getAttribute ? (element.getAttribute('type') || '') : '',
+    aria_label: element.getAttribute ? (element.getAttribute('aria-label') || '') : '',
+    name: element.getAttribute ? (element.getAttribute('name') || '') : '',
+    category: categoryTitle ? categoryTitle.textContent.replace(/\s+/g, ' ').trim() : ''
+  };
+}
+
+function getBuilderHeatmapMetrics() {
+  const builder = document.getElementById('builderPage');
+  if (!builder) {
+    return {
+      left: 0,
+      top: 0,
+      width: Math.max(document.documentElement.scrollWidth, window.innerWidth || 1),
+      height: Math.max(document.documentElement.scrollHeight, window.innerHeight || 1),
+      viewport_width: window.innerWidth || 0,
+      viewport_height: window.innerHeight || 0,
+      document_width: document.documentElement.scrollWidth || 0,
+      document_height: document.documentElement.scrollHeight || 0,
+      scroll_x: window.scrollX || 0,
+      scroll_y: window.scrollY || 0
+    };
+  }
+
+  const rect = builder.getBoundingClientRect();
+  const width = Math.max(builder.scrollWidth, Math.round(rect.width), 1);
+  const height = Math.max(builder.scrollHeight, Math.round(rect.height), 1);
+  return {
+    left: rect.left + (window.scrollX || 0),
+    top: rect.top + (window.scrollY || 0),
+    width,
+    height,
+    viewport_width: window.innerWidth || 0,
+    viewport_height: window.innerHeight || 0,
+    document_width: document.documentElement.scrollWidth || 0,
+    document_height: document.documentElement.scrollHeight || 0,
+    scroll_x: window.scrollX || 0,
+    scroll_y: window.scrollY || 0
+  };
+}
+
+function getCurrentAllocationSnapshotForHeatmap() {
+  return state.map((item) => ({
+    category: item.category,
+    suggested_amount: Number(item.suggestedAmount || 0),
+    suggested_percent: roundForJson(Number(item.suggestedAmount || 0) / BASELINE_BUDGET * 100, 2),
+    annual_plan_without_rates: Number(item.currentAmount || 0),
+    annual_plan_with_rates: Number(item.requiredAmount || 0),
+    animal_type: item.animalType || ''
+  }));
+}
+
+function refreshHeatmapSessionSummary(session) {
+  if (!session) return null;
+  const clicks = Array.isArray(session.clicks) ? session.clicks : [];
+  const cellCounts = session.cell_counts || {};
+  const topCells = Object.entries(cellCounts)
+    .map(([key, count]) => {
+      const parts = key.split(',').map((part) => Number(part));
+      return {
+        key,
+        column: parts[0] || 0,
+        row: parts[1] || 0,
+        count: Number(count || 0)
+      };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20);
+
+  const exactPoints = clicks
+    .map((click) => ({
+      x: Number(click.normalised_x ?? click.precise_normalised_x ?? 0),
+      y: Number(click.normalised_y ?? click.precise_normalised_y ?? 0)
+    }))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+  const pointBounds = exactPoints.length
+    ? {
+        min_x: roundForJson(Math.min(...exactPoints.map((point) => point.x)), HEATMAP_POINT_PRECISION_DECIMALS),
+        max_x: roundForJson(Math.max(...exactPoints.map((point) => point.x)), HEATMAP_POINT_PRECISION_DECIMALS),
+        min_y: roundForJson(Math.min(...exactPoints.map((point) => point.y)), HEATMAP_POINT_PRECISION_DECIMALS),
+        max_y: roundForJson(Math.max(...exactPoints.map((point) => point.y)), HEATMAP_POINT_PRECISION_DECIMALS)
+      }
+    : { min_x: 0, max_x: 0, min_y: 0, max_y: 0 };
+
+  session.total_clicks = clicks.length;
+  session.summary = {
+    total_clicks: clicks.length,
+    exact_click_points: exactPoints.length,
+    coordinate_precision: 'Exact click points are stored as builder-page coordinates and normalised 0 to 1 positions, rounded to ' + HEATMAP_POINT_PRECISION_DECIMALS + ' decimal places.',
+    point_bounds: pointBounds,
+    unique_cells_clicked: Object.keys(cellCounts).length,
+    top_cells: topCells,
+    started_at: session.started_at || '',
+    ended_at: session.ended_at || '',
+    duration_ms: session.ended_at && session.started_at
+      ? Math.max(0, new Date(session.ended_at).getTime() - new Date(session.started_at).getTime())
+      : Math.max(0, Date.now() - new Date(session.started_at || Date.now()).getTime())
+  };
+  return session.summary;
+}
+
+function persistHeatmapSession() {
+  try {
+    if (budgetClickHeatmapSession) {
+      refreshHeatmapSessionSummary(budgetClickHeatmapSession);
+      localStorage.setItem(HEATMAP_STORAGE_KEY, JSON.stringify(budgetClickHeatmapSession));
+    }
+    if (budgetClickHeatmapLastCompleted) {
+      refreshHeatmapSessionSummary(budgetClickHeatmapLastCompleted);
+      localStorage.setItem(HEATMAP_LAST_STORAGE_KEY, JSON.stringify(budgetClickHeatmapLastCompleted));
+    }
+  } catch (error) {
+    console.warn('Click heatmap session could not be saved to localStorage.', error);
+  }
+}
+
+function cloneHeatmapSession(session) {
+  return JSON.parse(JSON.stringify(session || {}));
+}
+
+function startBudgetClickHeatmapSession(startReason) {
+  const metrics = getBuilderHeatmapMetrics();
+  budgetClickHeatmapSession = {
+    schema_version: '1.1',
+    export_type: 'budget_click_heatmap_session',
+    session_id: makeHeatmapSessionId(),
+    start_reason: startReason || 'Page loaded.',
+    end_reason: '',
+    started_at: nowIso(),
+    ended_at: '',
+    page: {
+      title: document.title,
+      url: window.location.href.split('#')[0]
+    },
+    grid: {
+      columns: HEATMAP_GRID_COLUMNS,
+      rows: HEATMAP_GRID_ROWS,
+      description: 'Legacy summary grid only. Exact click locations are stored in clicks[].normalised_x and clicks[].normalised_y for relative adaptive-resolution analysis.'
+    },
+    point_capture: {
+      coordinate_system: 'builder_page_relative',
+      precision: 'Exact click points are captured using builder-page X/Y pixels and normalised 0 to 1 coordinates.',
+      normalised_decimal_places: HEATMAP_POINT_PRECISION_DECIMALS,
+      analyser_hint: 'Use the clicks array for point rendering and adaptive-density heatmaps. Do not rely only on cell_counts.'
+    },
+    builder_page: {
+      width: metrics.width,
+      height: metrics.height,
+      viewport_width: metrics.viewport_width,
+      viewport_height: metrics.viewport_height,
+      document_width: metrics.document_width,
+      document_height: metrics.document_height
+    },
+    clicks: [],
+    cell_counts: {},
+    allocation_snapshot_at_end: [],
+    summary: {
+      total_clicks: 0,
+      unique_cells_clicked: 0,
+      top_cells: [],
+      duration_ms: 0
+    }
+  };
+  persistHeatmapSession();
+  return budgetClickHeatmapSession;
+}
+
+function endBudgetClickHeatmapSession(endReason) {
+  if (!budgetClickHeatmapSession) {
+    startBudgetClickHeatmapSession('Session created at end because no active session was found.');
+  }
+  if (!budgetClickHeatmapSession.ended_at) {
+    const metrics = getBuilderHeatmapMetrics();
+    budgetClickHeatmapSession.ended_at = nowIso();
+    budgetClickHeatmapSession.end_reason = endReason || 'Budget page viewed.';
+    budgetClickHeatmapSession.builder_page.width = metrics.width;
+    budgetClickHeatmapSession.builder_page.height = metrics.height;
+    budgetClickHeatmapSession.builder_page.viewport_width = metrics.viewport_width;
+    budgetClickHeatmapSession.builder_page.viewport_height = metrics.viewport_height;
+    budgetClickHeatmapSession.builder_page.document_width = metrics.document_width;
+    budgetClickHeatmapSession.builder_page.document_height = metrics.document_height;
+    budgetClickHeatmapSession.allocation_snapshot_at_end = getCurrentAllocationSnapshotForHeatmap();
+    refreshHeatmapSessionSummary(budgetClickHeatmapSession);
+    budgetClickHeatmapLastCompleted = cloneHeatmapSession(budgetClickHeatmapSession);
+    persistHeatmapSession();
+  }
+  return budgetClickHeatmapLastCompleted || budgetClickHeatmapSession;
+}
+
+function isHeatmapResetControl(target) {
+  return Boolean(target && target.closest && target.closest('#resetBtn, #starterResetBtn, #clearBtn'));
+}
+
+function recordBudgetBuilderClick(event) {
+  const builder = document.getElementById('builderPage');
+  if (!builder || builder.hidden || !builder.contains(event.target)) return;
+  if (isHeatmapResetControl(event.target)) return;
+  if (!budgetClickHeatmapSession || budgetClickHeatmapSession.ended_at) {
+    startBudgetClickHeatmapSession('Slider page interaction started.');
+  }
+
+  const metrics = getBuilderHeatmapMetrics();
+  const relativeX = Math.max(0, Math.min(metrics.width, Math.round((event.pageX || 0) - metrics.left)));
+  const relativeY = Math.max(0, Math.min(metrics.height, Math.round((event.pageY || 0) - metrics.top)));
+  const normalisedX = metrics.width ? relativeX / metrics.width : 0;
+  const normalisedY = metrics.height ? relativeY / metrics.height : 0;
+  const column = Math.min(HEATMAP_GRID_COLUMNS - 1, Math.max(0, Math.floor(normalisedX * HEATMAP_GRID_COLUMNS)));
+  const row = Math.min(HEATMAP_GRID_ROWS - 1, Math.max(0, Math.floor(normalisedY * HEATMAP_GRID_ROWS)));
+  const key = column + ',' + row;
+  const clickedAt = nowIso();
+  const startedAt = new Date(budgetClickHeatmapSession.started_at).getTime();
+
+  const clickRecord = {
+    index: budgetClickHeatmapSession.clicks.length + 1,
+    clicked_at: clickedAt,
+    elapsed_ms: Math.max(0, new Date(clickedAt).getTime() - startedAt),
+    page_x: Math.round(event.pageX || 0),
+    page_y: Math.round(event.pageY || 0),
+    viewport_x: Math.round(event.clientX || 0),
+    viewport_y: Math.round(event.clientY || 0),
+    builder_x: relativeX,
+    builder_y: relativeY,
+    normalised_x: roundForJson(normalisedX, HEATMAP_POINT_PRECISION_DECIMALS),
+    normalised_y: roundForJson(normalisedY, HEATMAP_POINT_PRECISION_DECIMALS),
+    percent_x: roundForJson(normalisedX * 100, 3),
+    percent_y: roundForJson(normalisedY * 100, 3),
+    coordinate_precision: 'builder-page relative exact point',
+    grid_column: column,
+    grid_row: row,
+    grid_key: key,
+    scroll_x: metrics.scroll_x,
+    scroll_y: metrics.scroll_y,
+    target: getElementSummary(event.target)
+  };
+
+  budgetClickHeatmapSession.clicks.push(clickRecord);
+  budgetClickHeatmapSession.cell_counts[key] = Number(budgetClickHeatmapSession.cell_counts[key] || 0) + 1;
+  refreshHeatmapSessionSummary(budgetClickHeatmapSession);
+  persistHeatmapSession();
+  refreshCurrentHeatmapOverlayIfVisible();
+}
+
+function refreshCurrentHeatmapOverlayIfVisible(message) {
+  refreshHeatmapLayerControls();
+  if (integratedHeatmapOverlayVisible && integratedHeatmapCurrentLayerVisible) {
+    window.requestAnimationFrame(renderIntegratedHeatmapOverlay);
+  }
+  updateIntegratedHeatmapModalStatus(message);
+}
+
+function restartBudgetClickHeatmapSession(startReason, message) {
+  const session = startBudgetClickHeatmapSession(startReason || 'Current heatmap session restarted.');
+  refreshCurrentHeatmapOverlayIfVisible(message || 'Current heatmap cleared and a new live session has started.');
+  return session;
+}
+
+function getBudgetClickHeatmapExport() {
+  const session = budgetClickHeatmapSession || budgetClickHeatmapLastCompleted || startBudgetClickHeatmapSession('Session created for export.');
+  const copy = cloneHeatmapSession(session);
+  refreshHeatmapSessionSummary(copy);
+  return copy;
+}
+
+function getHeatmapJsonFilename(session) {
+  const started = session && session.started_at ? session.started_at : nowIso();
+  const stamp = started.slice(0, 19).replace(/[:T]/g, '-');
+  const totalClicks = session && session.summary ? Number(session.summary.total_clicks || 0) : 0;
+  return 'budget-click-heatmap_' + stamp + '_clicks-' + totalClicks + '.json';
+}
+
+function getHeatmapNormalisedClicks(session) {
+  const clicks = Array.isArray(session?.clicks) ? session.clicks : [];
+  const exactClicks = clicks
+    .map((click) => ({
+      x: Number(click.normalised_x ?? click.precise_normalised_x ?? 0),
+      y: Number(click.normalised_y ?? click.precise_normalised_y ?? 0),
+      index: click.index,
+      target: click.target || null
+    }))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+    .map((point) => ({
+      ...point,
+      x: Math.max(0, Math.min(1, point.x)),
+      y: Math.max(0, Math.min(1, point.y))
+    }));
+
+  if (exactClicks.length) return exactClicks;
+
+  const cols = session?.grid?.columns || HEATMAP_GRID_COLUMNS;
+  const rows = session?.grid?.rows || HEATMAP_GRID_ROWS;
+  return Object.entries(session?.cell_counts || {}).flatMap(([key, count]) => {
+    const [column, row] = key.split(',').map((part) => Number(part));
+    const total = Math.max(0, Number(count || 0));
+    const point = {
+      x: (column + 0.5) / cols,
+      y: (row + 0.5) / rows,
+      index: null,
+      target: null
+    };
+    return Array.from({ length: total }, () => point);
+  });
+}
+
+function getAdaptiveHeatmapRadius(pointCount, width, height) {
+  const area = Math.max(1, width * height);
+  const densityBase = Math.sqrt(area / Math.max(1, pointCount)) * 0.42;
+  return Math.max(HEATMAP_PREVIEW_MIN_RADIUS, Math.min(HEATMAP_PREVIEW_MAX_RADIUS, densityBase));
+}
+
+function drawAdaptivePointDensity(ctx, points, width, height, radius) {
+  points.forEach((point) => {
+    const x = point.x * width;
+    const y = point.y * height;
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, 'rgba(20, 92, 196, 0.32)');
+    gradient.addColorStop(0.45, 'rgba(20, 92, 196, 0.16)');
+    gradient.addColorStop(1, 'rgba(20, 92, 196, 0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawHeatmapPreviewCanvas(canvas, session) {
+  if (!canvas || !session) return;
+  const ratio = window.devicePixelRatio || 1;
+  const cssWidth = canvas.clientWidth || 720;
+  const cssHeight = canvas.clientHeight || 260;
+  canvas.width = Math.round(cssWidth * ratio);
+  canvas.height = Math.round(cssHeight * ratio);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ratio, ratio);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+  ctx.fillStyle = '#f7f9fc';
+  ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+  const points = getHeatmapNormalisedClicks(session);
+  const radius = getAdaptiveHeatmapRadius(points.length, cssWidth, cssHeight);
+  drawAdaptivePointDensity(ctx, points, cssWidth, cssHeight, radius);
+
+  ctx.strokeStyle = 'rgba(217, 225, 236, 0.75)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, cssWidth - 1, cssHeight - 1);
+
+  points.forEach((point, index) => {
+    const x = point.x * cssWidth;
+    const y = point.y * cssHeight;
+    ctx.beginPath();
+    ctx.arc(x, y, 3.25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(168, 32, 32, 0.82)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    if (index < 40) {
+      ctx.fillStyle = 'rgba(23, 32, 51, 0.72)';
+      ctx.font = '9px Arial, Helvetica, sans-serif';
+      ctx.fillText(String(index + 1), x + 5, y - 5);
+    }
+  });
+
+  ctx.fillStyle = 'rgba(23, 32, 51, 0.72)';
+  ctx.font = '12px Arial, Helvetica, sans-serif';
+  ctx.fillText('Exact click points with adaptive-density radius: ' + radius.toFixed(1) + 'px', 12, cssHeight - 12);
+}
+
+function showBudgetClickHeatmapJsonModal() {
+  const existing = document.getElementById('budgetHeatmapModal');
+  if (existing) existing.remove();
+
+  const session = getBudgetClickHeatmapExport();
+  const json = JSON.stringify(session, null, 2);
+  const modal = document.createElement('div');
+  modal.className = 'overlay-modal';
+  modal.id = 'budgetHeatmapModal';
+  modal.innerHTML = `
+    <section class="overlay-card heatmap-modal-card" role="dialog" aria-modal="true" aria-labelledby="budgetHeatmapModalTitle">
+      <div class="overlay-card-head">
+        <h3 id="budgetHeatmapModalTitle">Click Heatmap JSON</h3>
+        <p>This JSON captures exact slider-page click locations for this budget session using builder-page pixels and normalised 0 to 1 coordinates. The grid is kept only as a legacy summary. It does not capture screenshots or personal information.</p>
+      </div>
+      <div class="overlay-card-body">
+        <div class="heatmap-summary-grid">
+          <div class="heatmap-summary-item">
+            <div class="heatmap-summary-label">Session ID</div>
+            <div class="heatmap-summary-value">${session.session_id || 'Not Available'}</div>
+          </div>
+          <div class="heatmap-summary-item">
+            <div class="heatmap-summary-label">Clicks</div>
+            <div class="heatmap-summary-value">${session.summary?.total_clicks || 0}</div>
+          </div>
+          <div class="heatmap-summary-item">
+            <div class="heatmap-summary-label">Point Precision</div>
+            <div class="heatmap-summary-value">Exact Normalised</div>
+          </div>
+          <div class="heatmap-summary-item">
+            <div class="heatmap-summary-label">Started</div>
+            <div class="heatmap-summary-value">${session.started_at || 'Not Available'}</div>
+          </div>
+        </div>
+        <div class="heatmap-canvas-wrap">
+          <canvas class="heatmap-canvas" id="budgetHeatmapCanvas" aria-label="Click heatmap preview"></canvas>
+        </div>
+        <pre class="heatmap-json-preview" id="budgetHeatmapJsonPreview"></pre>
+        <div class="final-page-actions">
+          <button class="btn" id="copyBudgetHeatmapJsonBtn" type="button">Copy JSON</button>
+          <button class="btn primary" id="downloadBudgetHeatmapJsonBtn" type="button">Download JSON</button>
+          <button class="btn" id="closeBudgetHeatmapModalBtn" type="button">Close</button>
+        </div>
+      </div>
+    </section>
+  `;
+  document.body.appendChild(modal);
+  const preview = document.getElementById('budgetHeatmapJsonPreview');
+  if (preview) preview.textContent = json;
+  drawHeatmapPreviewCanvas(document.getElementById('budgetHeatmapCanvas'), session);
+
+  const close = () => modal.remove();
+  const closeBtn = document.getElementById('closeBudgetHeatmapModalBtn');
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) close();
+  });
+
+  const copyBtn = document.getElementById('copyBudgetHeatmapJsonBtn');
+  if (copyBtn) copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(json);
+      copyBtn.textContent = 'Copied';
+    } catch (error) {
+      copyTextFallback(json);
+      copyBtn.textContent = 'Copied Where Supported';
+    }
+  });
+
+  const downloadBtn = document.getElementById('downloadBudgetHeatmapJsonBtn');
+  if (downloadBtn) downloadBtn.addEventListener('click', () => {
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+    forceDownloadBlob(blob, getHeatmapJsonFilename(session));
+  });
+}
+
+
+function safeHeatmapText(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+let integratedHeatmapSessions = [];
+let integratedHeatmapOverlayVisible = false;
+let integratedHeatmapOverlayMode = 'current';
+let integratedHeatmapLayerDisplayMode = 'combined';
+let integratedHeatmapCurrentLayerVisible = true;
+let integratedHeatmapFloatingPickerEnabled = false;
+let integratedHeatmapFloatingPickerDragState = null;
+
+const INTEGRATED_HEATMAP_LAYER_COLORS = [
+  '20, 92, 196',
+  '168, 32, 32',
+  '17, 107, 58',
+  '146, 93, 0',
+  '102, 45, 145',
+  '0, 121, 140',
+  '210, 75, 0',
+  '70, 82, 98'
+];
+
+function makeIntegratedHeatmapLayerId(prefix = 'heatmap-layer') {
+  return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function ensureHeatmapSessionLayerMeta(session, index = 0) {
+  if (!session || typeof session !== 'object') return session;
+  if (!session.heatmap_layer_id) session.heatmap_layer_id = makeIntegratedHeatmapLayerId('loaded-heatmap');
+  if (session.heatmap_layer_visible === undefined) session.heatmap_layer_visible = true;
+  if (!session.heatmap_layer_name) {
+    session.heatmap_layer_name = session.file_name || session.session_id || `Loaded Heatmap ${index + 1}`;
+  }
+  session.heatmap_layer_colour = session.heatmap_layer_colour || INTEGRATED_HEATMAP_LAYER_COLORS[(index + 1) % INTEGRATED_HEATMAP_LAYER_COLORS.length];
+  return session;
+}
+
+function normaliseHeatmapSessionCollection(sessions) {
+  return (sessions || [])
+    .filter(Boolean)
+    .map((session, index) => ensureHeatmapSessionLayerMeta(session, index));
+}
+
+function getHeatmapLayerName(layer) {
+  if (!layer) return 'Heatmap Layer';
+  return layer.name || layer.session?.heatmap_layer_name || layer.session?.file_name || layer.session?.session_id || 'Heatmap Layer';
+}
+
+function getHeatmapLayerClickCount(layer) {
+  return getHeatmapNormalisedClicks(layer?.session || layer).length;
+}
+
+function getIntegratedHeatmapAllLayerDescriptors() {
+  const currentSession = getBudgetClickHeatmapExport();
+  return [
+    {
+      kind: 'current',
+      id: 'current-session',
+      index: -1,
+      name: 'Current Session',
+      session: currentSession,
+      visible: integratedHeatmapCurrentLayerVisible,
+      removable: false,
+      colour: INTEGRATED_HEATMAP_LAYER_COLORS[0]
+    },
+    ...normaliseHeatmapSessionCollection(integratedHeatmapSessions).map((session, index) => ({
+      kind: 'loaded',
+      id: session.heatmap_layer_id || `loaded-${index}`,
+      index,
+      name: session.heatmap_layer_name || session.file_name || session.session_id || `Loaded Heatmap ${index + 1}`,
+      session,
+      visible: session.heatmap_layer_visible !== false,
+      removable: true,
+      colour: session.heatmap_layer_colour || INTEGRATED_HEATMAP_LAYER_COLORS[(index + 1) % INTEGRATED_HEATMAP_LAYER_COLORS.length]
+    }))
+  ];
+}
+
+function getIntegratedHeatmapSelectedLayers() {
+  return getIntegratedHeatmapAllLayerDescriptors().filter((layer) => layer.visible);
+}
+
+function setIntegratedHeatmapVisibilityPreset(preset) {
+  if (preset === 'current') {
+    integratedHeatmapCurrentLayerVisible = true;
+    integratedHeatmapSessions.forEach((session) => { session.heatmap_layer_visible = false; });
+    integratedHeatmapOverlayMode = 'current';
+  } else if (preset === 'loaded') {
+    integratedHeatmapCurrentLayerVisible = false;
+    integratedHeatmapSessions.forEach((session) => { session.heatmap_layer_visible = true; });
+    integratedHeatmapOverlayMode = 'loaded';
+  } else if (preset === 'combined') {
+    integratedHeatmapCurrentLayerVisible = true;
+    integratedHeatmapSessions.forEach((session) => { session.heatmap_layer_visible = true; });
+    integratedHeatmapOverlayMode = 'combined';
+  }
+  refreshHeatmapLayerControls();
+}
+
+function setHeatmapLayerVisibility(kind, index, visible) {
+  if (kind === 'current') {
+    integratedHeatmapCurrentLayerVisible = visible;
+  } else if (kind === 'loaded' && integratedHeatmapSessions[index]) {
+    integratedHeatmapSessions[index].heatmap_layer_visible = visible;
+  }
+  refreshHeatmapLayerControls();
+  if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+}
+
+function showOnlyHeatmapLayer(kind, index) {
+  integratedHeatmapCurrentLayerVisible = kind === 'current';
+  integratedHeatmapSessions.forEach((session, sessionIndex) => {
+    session.heatmap_layer_visible = kind === 'loaded' && Number(index) === sessionIndex;
+  });
+  refreshHeatmapLayerControls();
+  showIntegratedHeatmapOverlay();
+}
+
+function removeHeatmapLayer(index) {
+  if (integratedHeatmapSessions[index]) {
+    integratedHeatmapSessions.splice(index, 1);
+    integratedHeatmapSessions = normaliseHeatmapSessionCollection(integratedHeatmapSessions);
+  }
+  refreshHeatmapLayerControls();
+  if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+}
+
+function removeHiddenHeatmapLayers() {
+  integratedHeatmapSessions = normaliseHeatmapSessionCollection(integratedHeatmapSessions.filter((session) => session.heatmap_layer_visible !== false));
+  refreshHeatmapLayerControls();
+  if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+}
+
+function setAllLoadedHeatmapVisibility(visible) {
+  integratedHeatmapSessions.forEach((session) => { session.heatmap_layer_visible = visible; });
+  refreshHeatmapLayerControls();
+  if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+}
+
+function setAllHeatmapLayerVisibility(visible) {
+  integratedHeatmapCurrentLayerVisible = visible;
+  setAllLoadedHeatmapVisibility(visible);
+}
+
+function updateAutoSheetSubmitToggleButton() {
+  const button = document.getElementById('autoSheetSubmitToggleBtn');
+  if (!button) return;
+  button.textContent = backgroundResultsSheetSubmissionPaused ? 'Enable Auto Submit' : 'Pause Auto Submit';
+  button.setAttribute('aria-pressed', backgroundResultsSheetSubmissionPaused ? 'true' : 'false');
+  document.body.classList.toggle('auto-submit-paused', backgroundResultsSheetSubmissionPaused);
+  button.title = backgroundResultsSheetSubmissionPaused
+    ? 'Automatic Google Sheet submission when viewing results is paused. Click to enable it again.'
+    : 'Automatic Google Sheet submission when viewing results is enabled. Click to pause it.';
+}
+
+function toggleBackgroundResultsSheetSubmissionPaused() {
+  backgroundResultsSheetSubmissionPaused = !backgroundResultsSheetSubmissionPaused;
+  localStorage.setItem(BACKGROUND_RESULTS_SHEET_SUBMIT_PAUSED_KEY, backgroundResultsSheetSubmissionPaused ? 'true' : 'false');
+  updateAutoSheetSubmitToggleButton();
+  console.info('Automatic results-view sheet submission is now ' + (backgroundResultsSheetSubmissionPaused ? 'paused.' : 'enabled.'));
+}
+
+function normaliseLoadedHeatmapSession(raw, fileName) {
+  const session = Array.isArray(raw) ? raw[0] : raw;
+  if (!session || typeof session !== 'object') return null;
+  const clicks = Array.isArray(session.clicks) ? session.clicks : [];
+  const normalisedClicks = clicks
+    .map((click, index) => {
+      const x = Number(click.normalised_x ?? click.precise_normalised_x ?? click.x);
+      const y = Number(click.normalised_y ?? click.precise_normalised_y ?? click.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      return {
+        ...click,
+        index: click.index ?? index + 1,
+        normalised_x: Math.max(0, Math.min(1, x)),
+        normalised_y: Math.max(0, Math.min(1, y))
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    ...session,
+    file_name: fileName || session.file_name || '',
+    clicks: normalisedClicks,
+    summary: {
+      ...(session.summary || {}),
+      total_clicks: normalisedClicks.length,
+      exact_click_points: normalisedClicks.length
+    }
+  };
+}
+
+
+function normalisePastedSpreadsheetText(value) {
+  let text = String(value || '').trim();
+  if (!text) return '';
+
+  // Google Sheets can sometimes paste large JSON cells as quoted text with doubled quotes.
+  if (text.startsWith('"') && text.endsWith('"')) {
+    text = text.slice(1, -1).replace(/""/g, '"');
+  }
+
+  return text;
+}
+
+function tryParseHeatmapJsonCandidate(candidate) {
+  const attempts = [];
+  const text = normalisePastedSpreadsheetText(candidate);
+  if (!text) return null;
+
+  attempts.push(text);
+
+  // If the text came from a spreadsheet quoted cell, JSON quotes may have been doubled.
+  if (text.includes('""')) attempts.push(text.replace(/""/g, '"'));
+
+  // Sometimes the cell contains a JSON string that itself contains the object text.
+  for (const attempt of attempts) {
+    try {
+      const parsed = JSON.parse(attempt);
+      if (typeof parsed === 'string') {
+        try {
+          return JSON.parse(parsed);
+        } catch (innerError) {
+          return parsed;
+        }
+      }
+      return parsed;
+    } catch (error) {
+      // Continue to next candidate.
+    }
+  }
+
+  return null;
+}
+
+function extractJsonCandidatesFromPastedText(text) {
+  const source = normalisePastedSpreadsheetText(text);
+  if (!source) return [];
+
+  const whole = tryParseHeatmapJsonCandidate(source);
+  if (whole && typeof whole === 'object') return [whole];
+
+  const candidates = [];
+  let index = 0;
+
+  while (index < source.length) {
+    const start = source.slice(index).search(/[\{\[]/);
+    if (start < 0) break;
+
+    const absoluteStart = index + start;
+    const opening = source[absoluteStart];
+    const closing = opening === '{' ? '}' : ']';
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = absoluteStart; i < source.length; i += 1) {
+      const char = source[i];
+
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (char === '\\') {
+          escaped = true;
+        } else if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        inString = true;
+      } else if (char === opening) {
+        depth += 1;
+      } else if (char === closing) {
+        depth -= 1;
+        if (depth === 0) {
+          candidates.push(source.slice(absoluteStart, i + 1));
+          index = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (index <= absoluteStart) break;
+  }
+
+  if (!candidates.length) {
+    return source
+      .split(/\r?\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  return candidates;
+}
+
+function addParsedHeatmapValueToList(value, loaded, sourceName) {
+  if (!value) return;
+
+  if (typeof value === 'string') {
+    const parsed = tryParseHeatmapJsonCandidate(value);
+    if (parsed && parsed !== value) addParsedHeatmapValueToList(parsed, loaded, sourceName);
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => addParsedHeatmapValueToList(entry, loaded, `${sourceName} ${index + 1}`));
+    return;
+  }
+
+  const heatmapJson = value['Heatmap JSON'] || value.heatmap_json || value.click_heatmap_session || value.clickHeatmapSession;
+  if (heatmapJson) {
+    addParsedHeatmapValueToList(heatmapJson, loaded, sourceName || value['Submission ID'] || 'Pasted Sheet Row');
+    return;
+  }
+
+  const session = normaliseLoadedHeatmapSession(value, sourceName || value.session_id || 'Pasted Heatmap JSON');
+  if (session) loaded.push(session);
+}
+
+function parsePastedHeatmapJsonSessions(text) {
+  const candidates = extractJsonCandidatesFromPastedText(text);
+  const loaded = [];
+  const errors = [];
+
+  candidates.forEach((candidate, index) => {
+    const parsed = tryParseHeatmapJsonCandidate(candidate);
+    if (!parsed) {
+      errors.push(`Item ${index + 1} could not be parsed as JSON.`);
+      return;
+    }
+    addParsedHeatmapValueToList(parsed, loaded, `Pasted JSON ${index + 1}`);
+  });
+
+  return { loaded, errors, candidates_found: candidates.length };
+}
+
+function loadIntegratedHeatmapsFromPaste(appendMode = true) {
+  const textarea = document.getElementById('integratedHeatmapPasteArea');
+  if (!textarea) return;
+
+  const parsed = parsePastedHeatmapJsonSessions(textarea.value);
+
+  if (!parsed.loaded.length) {
+    updateIntegratedHeatmapModalStatus(parsed.errors.length
+      ? `No heatmap sessions loaded from pasted text. ${parsed.errors.join(' ')}`
+      : 'No heatmap sessions found in pasted text.');
+    return;
+  }
+
+  const prepared = normaliseHeatmapSessionCollection(parsed.loaded);
+  integratedHeatmapSessions = appendMode
+    ? normaliseHeatmapSessionCollection(integratedHeatmapSessions.concat(prepared))
+    : prepared;
+
+  setIntegratedHeatmapVisibilityPreset('loaded');
+  updateIntegratedHeatmapModalStatus(`Loaded ${prepared.length} pasted heatmap session(s). Total loaded sessions: ${integratedHeatmapSessions.length}.`);
+  if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+}
+
+function getIntegratedHeatmapSessions() {
+  return getIntegratedHeatmapSelectedLayers().map((layer) => layer.session);
+}
+
+function getIntegratedHeatmapPoints() {
+  return getIntegratedHeatmapSelectedLayers().flatMap((layer, layerIndex) => {
+    return getHeatmapNormalisedClicks(layer.session).map((point, pointIndex) => ({
+      ...point,
+      layer_kind: layer.kind,
+      layer_id: layer.id,
+      layer_index: layerIndex,
+      layer_colour: layer.colour,
+      layer_name: getHeatmapLayerName(layer),
+      point_index: pointIndex,
+      file_name: layer.session.file_name || '',
+      session_id: layer.session.session_id || ''
+    }));
+  });
+}
+
+function ensureIntegratedHeatmapOverlay() {
+  let canvas = document.getElementById('integratedHeatmapOverlayCanvas');
+  let label = document.getElementById('integratedHeatmapOverlayLabel');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'integratedHeatmapOverlayCanvas';
+    canvas.className = 'integrated-heatmap-overlay-canvas';
+    document.body.appendChild(canvas);
+  }
+  if (!label) {
+    label = document.createElement('div');
+    label.id = 'integratedHeatmapOverlayLabel';
+    label.className = 'integrated-heatmap-overlay-label';
+    document.body.appendChild(label);
+  }
+  return { canvas, label };
+}
+
+function hideIntegratedHeatmapOverlay() {
+  integratedHeatmapOverlayVisible = false;
+  const canvas = document.getElementById('integratedHeatmapOverlayCanvas');
+  const label = document.getElementById('integratedHeatmapOverlayLabel');
+  if (canvas) canvas.classList.remove('is-visible');
+  if (label) label.classList.remove('is-visible');
+  updateIntegratedHeatmapModalStatus();
+}
+
+function getOverlayRadius(points, width, height) {
+  const area = Math.max(1, width * height);
+  const pointCount = Math.max(1, points.length);
+  const base = Math.sqrt(area / pointCount) * 0.24;
+  return Math.max(18, Math.min(70, base));
+}
+
+
+function drawAdaptivePointDensityWithColour(ctx, points, width, height, radius, rgb, strength = 1) {
+  const sourceColour = rgb || '20, 92, 196';
+  points.forEach((point) => {
+    const x = point.x * width;
+    const y = point.y * height;
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, `rgba(${sourceColour}, ${Math.min(0.38, 0.30 * strength).toFixed(3)})`);
+    gradient.addColorStop(0.45, `rgba(${sourceColour}, ${Math.min(0.20, 0.14 * strength).toFixed(3)})`);
+    gradient.addColorStop(1, `rgba(${sourceColour}, 0)`);
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawHeatmapPointDots(ctx, points, width, height, options = {}) {
+  const labelLimit = options.labelLimit ?? 80;
+  const defaultColour = options.colour || '168, 32, 32';
+  points.forEach((point, index) => {
+    const x = point.x * width;
+    const y = point.y * height;
+    const colour = point.layer_colour || defaultColour;
+    ctx.beginPath();
+    ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${colour}, 0.86)`;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.94)';
+    ctx.lineWidth = 1.25;
+    ctx.stroke();
+
+    if (index < labelLimit) {
+      ctx.fillStyle = 'rgba(23, 32, 51, 0.75)';
+      ctx.font = '10px Arial, Helvetica, sans-serif';
+      ctx.fillText(String(index + 1), x + 6, y - 6);
+    }
+  });
+}
+
+function renderIntegratedHeatmapOverlay() {
+  const { canvas, label } = ensureIntegratedHeatmapOverlay();
+  if (!integratedHeatmapOverlayVisible) {
+    canvas.classList.remove('is-visible');
+    label.classList.remove('is-visible');
+    return;
+  }
+
+  const builder = document.getElementById('builderPage');
+  if (!builder || builder.hidden) {
+    canvas.classList.remove('is-visible');
+    label.classList.remove('is-visible');
+    return;
+  }
+
+  const metrics = getBuilderHeatmapMetrics();
+  const layers = getIntegratedHeatmapSelectedLayers();
+  const points = getIntegratedHeatmapPoints();
+  const ratio = window.devicePixelRatio || 1;
+  const cssWidth = Math.max(1, metrics.width);
+  const cssHeight = Math.max(1, metrics.height);
+
+  canvas.style.left = metrics.left + 'px';
+  canvas.style.top = metrics.top + 'px';
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  canvas.width = Math.round(cssWidth * ratio);
+  canvas.height = Math.round(cssHeight * ratio);
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+  const radius = getOverlayRadius(points, cssWidth, cssHeight);
+
+  if (integratedHeatmapLayerDisplayMode === 'layers') {
+    layers.forEach((layer) => {
+      const layerPoints = points.filter((point) => point.layer_id === layer.id);
+      if (!layerPoints.length) return;
+      drawAdaptivePointDensityWithColour(ctx, layerPoints, cssWidth, cssHeight, radius, layer.colour, 1);
+    });
+    drawHeatmapPointDots(ctx, points, cssWidth, cssHeight, { labelLimit: 100 });
+  } else {
+    drawAdaptivePointDensity(ctx, points, cssWidth, cssHeight, radius);
+    drawHeatmapPointDots(ctx, points, cssWidth, cssHeight, { colour: '168, 32, 32', labelLimit: 100 });
+  }
+
+  label.style.left = (metrics.left + 12) + 'px';
+  label.style.top = (metrics.top + 12) + 'px';
+  label.textContent = 'Click heatmap overlay: ' + points.length + ' exact click point' + (points.length === 1 ? '' : 's') + ' | ' + layers.length + ' visible layer' + (layers.length === 1 ? '' : 's') + ' | ' + (integratedHeatmapLayerDisplayMode === 'layers' ? 'layer colours' : 'combined density');
+  canvas.classList.add('is-visible');
+  label.classList.add('is-visible');
+  renderHeatmapFloatingLayerPicker();
+}
+
+function showIntegratedHeatmapOverlay(mode) {
+  if (mode) setIntegratedHeatmapVisibilityPreset(mode);
+  integratedHeatmapOverlayVisible = true;
+  showToolPage('builder');
+  window.setTimeout(() => {
+    renderIntegratedHeatmapOverlay();
+    updateIntegratedHeatmapModalStatus();
+    renderHeatmapFloatingLayerPicker();
+  }, 80);
+}
+
+function updateIntegratedHeatmapModalStatus(message) {
+  const status = document.getElementById('integratedHeatmapStatus');
+  if (!status) return;
+  const current = getBudgetClickHeatmapExport();
+  const loadedClicks = integratedHeatmapSessions.reduce((sum, session) => sum + getHeatmapNormalisedClicks(session).length, 0);
+  const currentClicks = getHeatmapNormalisedClicks(current).length;
+  const visibleLayers = getIntegratedHeatmapSelectedLayers().length;
+  const visiblePoints = getIntegratedHeatmapPoints().length;
+  status.textContent = message || `Current session: ${currentClicks} click point(s). Loaded heatmaps: ${integratedHeatmapSessions.length}. Loaded click points: ${loadedClicks}. Visible layers: ${visibleLayers}. Visible points: ${visiblePoints}. Overlay: ${integratedHeatmapOverlayVisible ? 'shown on slider page' : 'hidden'}.`;
+}
+
+function renderLoadedHeatmapList() {
+  const list = document.getElementById('integratedHeatmapLoadedList');
+  if (!list) return;
+  const layers = getIntegratedHeatmapAllLayerDescriptors();
+  if (!layers.length) {
+    list.innerHTML = '<div class="heatmap-loaded-list-item">No heatmap files loaded yet.</div>';
+    return;
+  }
+  list.innerHTML = layers.map((layer) => {
+    const clicks = getHeatmapLayerClickCount(layer);
+    return `<div class="heatmap-loaded-list-item"><strong><span class="heatmap-layer-colour" style="background: rgba(${layer.colour}, 0.85);"></span>${safeHeatmapText(getHeatmapLayerName(layer))}</strong><br>${clicks} exact click point(s). ${layer.kind === 'current' ? 'Current live session.' : 'Started: ' + safeHeatmapText(layer.session.started_at || 'Not available')}. ${layer.visible ? 'Visible.' : 'Hidden.'}</div>`;
+  }).join('');
+}
+
+function renderHeatmapJsonManager() {
+  const list = document.getElementById('integratedHeatmapManagerList');
+  if (!list) return;
+  const layers = getIntegratedHeatmapAllLayerDescriptors();
+  list.innerHTML = layers.map((layer) => {
+    const clicks = getHeatmapLayerClickCount(layer);
+    const checked = layer.visible ? 'checked' : '';
+    const rowClass = layer.visible ? '' : ' is-hidden-layer';
+    const removeButton = layer.removable ? `<button class="btn small removeHeatmapLayerBtn" type="button" data-layer-index="${layer.index}">Remove</button>` : '';
+    return `
+      <div class="heatmap-layer-row${rowClass}" data-layer-kind="${layer.kind}" data-layer-index="${layer.index}">
+        <input class="heatmap-layer-check heatmapLayerVisibilityToggle" type="checkbox" ${checked} aria-label="Show ${safeHeatmapText(getHeatmapLayerName(layer))}" data-layer-kind="${layer.kind}" data-layer-index="${layer.index}">
+        <div class="heatmap-layer-main">
+          <div class="heatmap-layer-name"><span class="heatmap-layer-colour" style="background: rgba(${layer.colour}, 0.85);"></span>${safeHeatmapText(getHeatmapLayerName(layer))}</div>
+          <div class="heatmap-layer-meta">${clicks} click point(s). ${layer.kind === 'current' ? 'Current page session.' : 'Started: ' + safeHeatmapText(layer.session.started_at || 'Not available')}</div>
+        </div>
+        <div class="heatmap-layer-actions">
+          <button class="btn small showOnlyHeatmapLayerBtn" type="button" data-layer-kind="${layer.kind}" data-layer-index="${layer.index}">Show Only</button>
+          ${removeButton}
+        </div>
+      </div>
+    `;
+  }).join('');
+  attachHeatmapManagerHandlers(list);
+}
+
+function attachHeatmapManagerHandlers(root) {
+  root.querySelectorAll('.heatmapLayerVisibilityToggle').forEach((toggle) => {
+    toggle.addEventListener('change', () => {
+      setHeatmapLayerVisibility(toggle.dataset.layerKind, Number(toggle.dataset.layerIndex), toggle.checked);
+    });
+  });
+  root.querySelectorAll('.showOnlyHeatmapLayerBtn').forEach((button) => {
+    button.addEventListener('click', () => showOnlyHeatmapLayer(button.dataset.layerKind, Number(button.dataset.layerIndex)));
+  });
+  root.querySelectorAll('.removeHeatmapLayerBtn').forEach((button) => {
+    button.addEventListener('click', () => removeHeatmapLayer(Number(button.dataset.layerIndex)));
+  });
+}
+
+function refreshHeatmapLayerControls() {
+  renderLoadedHeatmapList();
+  renderHeatmapJsonManager();
+  renderHeatmapFloatingLayerPicker();
+  const loadedCount = document.getElementById('integratedLoadedFileCount');
+  if (loadedCount) loadedCount.textContent = String(integratedHeatmapSessions.length);
+  const modeSelect = document.getElementById('integratedHeatmapLayerDisplayMode');
+  if (modeSelect) modeSelect.value = integratedHeatmapLayerDisplayMode;
+  const floatingModeSelect = document.getElementById('floatingHeatmapLayerDisplayMode');
+  if (floatingModeSelect) floatingModeSelect.value = integratedHeatmapLayerDisplayMode;
+}
+
+async function loadIntegratedHeatmapFilesFromInput(input) {
+  const files = Array.from(input?.files || []);
+  if (!files.length) return;
+  const loaded = [];
+  for (const file of files) {
+    try {
+      const fileText = await file.text();
+      const parsed = JSON.parse(fileText);
+      const session = normaliseLoadedHeatmapSession(parsed, file.name);
+      if (session) loaded.push(session);
+    } catch (error) {
+      console.warn('Could not load heatmap JSON:', file.name, error);
+    }
+  }
+  integratedHeatmapSessions = normaliseHeatmapSessionCollection(loaded);
+  setIntegratedHeatmapVisibilityPreset(loaded.length ? 'loaded' : 'current');
+  updateIntegratedHeatmapModalStatus(`Loaded ${loaded.length} heatmap file(s). Use Show Loaded On Sliders to view them on the slider page.`);
+  if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+}
+
+function exportIntegratedHeatmapOverlayPng() {
+  if (!integratedHeatmapOverlayVisible) {
+    showIntegratedHeatmapOverlay(integratedHeatmapOverlayMode);
+  } else {
+    renderIntegratedHeatmapOverlay();
+  }
+  const canvas = document.getElementById('integratedHeatmapOverlayCanvas');
+  if (!canvas) return;
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    forceDownloadBlob(blob, 'budget-click-heatmap-overlay_' + stamp + '.png');
+  }, 'image/png');
+}
+
+
+function setIntegratedHeatmapLayerDisplayMode(mode) {
+  integratedHeatmapLayerDisplayMode = mode === 'layers' ? 'layers' : 'combined';
+  refreshHeatmapLayerControls();
+  if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+}
+
+function enableHeatmapFloatingLayerPicker(enabled = true) {
+  integratedHeatmapFloatingPickerEnabled = !!enabled;
+  const picker = ensureHeatmapFloatingLayerPicker();
+  picker.classList.toggle('is-enabled', integratedHeatmapFloatingPickerEnabled);
+  renderHeatmapFloatingLayerPicker();
+  updateIntegratedHeatmapModalStatus(integratedHeatmapFloatingPickerEnabled
+    ? 'Floating layer picker enabled. Hover over it on the slider page to pick visible heatmaps.'
+    : 'Floating layer picker disabled.');
+}
+
+function ensureHeatmapFloatingLayerPicker() {
+  let picker = document.getElementById('heatmapFloatingLayerPicker');
+  if (!picker) {
+    picker = document.createElement('div');
+    picker.id = 'heatmapFloatingLayerPicker';
+    picker.className = 'heatmap-floating-picker';
+    picker.innerHTML = `
+      <div class="heatmap-floating-picker-head" id="heatmapFloatingLayerPickerHead" tabindex="0">
+        <div>
+          <div class="heatmap-floating-picker-title">Heatmap Layers</div>
+          <div class="heatmap-floating-picker-hint">Hover to open • drag to move</div>
+        </div>
+        <button class="btn small" id="heatmapFloatingPickerCloseBtn" type="button">Hide</button>
+      </div>
+      <div class="heatmap-floating-picker-body">
+        <div class="heatmap-layer-mode-row">
+          <label for="floatingHeatmapLayerDisplayMode">Display</label>
+          <select id="floatingHeatmapLayerDisplayMode">
+            <option value="combined">Combined Visible Layers</option>
+            <option value="layers">Separate Layer Colours</option>
+          </select>
+        </div>
+        <div class="heatmap-floating-controls">
+          <button class="btn" id="floatingShowAllHeatmapsBtn" type="button">Show All</button>
+          <button class="btn" id="floatingHideAllHeatmapsBtn" type="button">Hide All</button>
+          <button class="btn" id="floatingRenderHeatmapsBtn" type="button">Refresh Overlay</button>
+        </div>
+        <div id="floatingHeatmapLayerList"></div>
+      </div>
+    `;
+    document.body.appendChild(picker);
+
+    const closeBtn = document.getElementById('heatmapFloatingPickerCloseBtn');
+    if (closeBtn) closeBtn.addEventListener('click', () => enableHeatmapFloatingLayerPicker(false));
+
+    const modeSelect = document.getElementById('floatingHeatmapLayerDisplayMode');
+    if (modeSelect) modeSelect.addEventListener('change', () => setIntegratedHeatmapLayerDisplayMode(modeSelect.value));
+
+    const showAllBtn = document.getElementById('floatingShowAllHeatmapsBtn');
+    if (showAllBtn) showAllBtn.addEventListener('click', () => {
+      setAllHeatmapLayerVisibility(true);
+      showIntegratedHeatmapOverlay();
+    });
+
+    const hideAllBtn = document.getElementById('floatingHideAllHeatmapsBtn');
+    if (hideAllBtn) hideAllBtn.addEventListener('click', () => setAllHeatmapLayerVisibility(false));
+
+    const renderBtn = document.getElementById('floatingRenderHeatmapsBtn');
+    if (renderBtn) renderBtn.addEventListener('click', () => showIntegratedHeatmapOverlay());
+
+    attachHeatmapFloatingPickerDrag(picker, document.getElementById('heatmapFloatingLayerPickerHead'));
+  }
+  return picker;
+}
+
+function attachHeatmapFloatingPickerDrag(picker, handle) {
+  if (!picker || !handle || handle.dataset.dragAttached === 'true') return;
+  handle.dataset.dragAttached = 'true';
+
+  handle.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('button')) return;
+    const rect = picker.getBoundingClientRect();
+    integratedHeatmapFloatingPickerDragState = {
+      startX: event.clientX,
+      startY: event.clientY,
+      left: rect.left,
+      top: rect.top
+    };
+    handle.setPointerCapture?.(event.pointerId);
+  });
+
+  handle.addEventListener('pointermove', (event) => {
+    if (!integratedHeatmapFloatingPickerDragState) return;
+    const dx = event.clientX - integratedHeatmapFloatingPickerDragState.startX;
+    const dy = event.clientY - integratedHeatmapFloatingPickerDragState.startY;
+    const nextLeft = Math.max(8, Math.min(window.innerWidth - 80, integratedHeatmapFloatingPickerDragState.left + dx));
+    const nextTop = Math.max(8, Math.min(window.innerHeight - 40, integratedHeatmapFloatingPickerDragState.top + dy));
+    picker.style.left = nextLeft + 'px';
+    picker.style.right = 'auto';
+    picker.style.top = nextTop + 'px';
+  });
+
+  const endDrag = () => {
+    integratedHeatmapFloatingPickerDragState = null;
+  };
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+}
+
+function renderHeatmapFloatingLayerPicker() {
+  const picker = ensureHeatmapFloatingLayerPicker();
+  picker.classList.toggle('is-enabled', integratedHeatmapFloatingPickerEnabled);
+  const list = document.getElementById('floatingHeatmapLayerList');
+  const modeSelect = document.getElementById('floatingHeatmapLayerDisplayMode');
+  if (modeSelect) modeSelect.value = integratedHeatmapLayerDisplayMode;
+  if (!list) return;
+
+  const layers = getIntegratedHeatmapAllLayerDescriptors();
+  list.innerHTML = layers.map((layer) => {
+    const clicks = getHeatmapLayerClickCount(layer);
+    const checked = layer.visible ? 'checked' : '';
+    return `
+      <label class="heatmap-floating-row">
+        <input class="floatingHeatmapLayerToggle" type="checkbox" ${checked} data-layer-kind="${layer.kind}" data-layer-index="${layer.index}">
+        <span>
+          <strong><span class="heatmap-layer-colour" style="background: rgba(${layer.colour}, 0.85);"></span>${safeHeatmapText(getHeatmapLayerName(layer))}</strong>
+          <span>${clicks} click point(s)</span>
+        </span>
+      </label>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.floatingHeatmapLayerToggle').forEach((toggle) => {
+    toggle.addEventListener('change', () => {
+      setHeatmapLayerVisibility(toggle.dataset.layerKind, Number(toggle.dataset.layerIndex), toggle.checked);
+      showIntegratedHeatmapOverlay();
+    });
+  });
+}
+
+
+function showIntegratedClickLocationAnalyserModal() {
+  const existing = document.getElementById('integratedHeatmapModal');
+  if (existing) existing.remove();
+
+  const current = getBudgetClickHeatmapExport();
+  const currentClicks = getHeatmapNormalisedClicks(current).length;
+  const modal = document.createElement('div');
+  modal.className = 'overlay-modal';
+  modal.id = 'integratedHeatmapModal';
+  modal.innerHTML = `
+    <section class="overlay-card heatmap-modal-card" role="dialog" aria-modal="true" aria-labelledby="integratedHeatmapModalTitle">
+      <div class="overlay-card-head">
+        <h3 id="integratedHeatmapModalTitle">Click Location Analyser</h3>
+        <p>Load heatmap JSON files or use the current budget session to draw exact click locations directly over the slider page. The overlay uses relative click positions, so it adapts to the page size instead of relying on coarse grid cells.</p>
+      </div>
+      <div class="overlay-card-body">
+        <div class="heatmap-summary-grid">
+          <div class="heatmap-summary-item">
+            <div class="heatmap-summary-label">Current Session Clicks</div>
+            <div class="heatmap-summary-value">${currentClicks}</div>
+          </div>
+          <div class="heatmap-summary-item">
+            <div class="heatmap-summary-label">Loaded Heatmap Files</div>
+            <div class="heatmap-summary-value" id="integratedLoadedFileCount">${integratedHeatmapSessions.length}</div>
+          </div>
+          <div class="heatmap-summary-item">
+            <div class="heatmap-summary-label">Overlay Status</div>
+            <div class="heatmap-summary-value">${integratedHeatmapOverlayVisible ? 'Shown' : 'Hidden'}</div>
+          </div>
+        </div>
+
+        <div class="heatmap-manager-panel" aria-label="Heatmap JSON manager">
+          <div class="heatmap-manager-head">
+            <div>
+              <div class="heatmap-manager-title">Heatmap JSON Manager</div>
+              <div class="heatmap-manager-sub">Select which heatmap JSON sessions are visible, show only one session, remove sessions or switch between a combined heatmap and separate layer colours.</div>
+            </div>
+            <div class="heatmap-manager-toolbar">
+              <button class="btn small" id="showAllHeatmapLayersBtn" type="button">Show All</button>
+              <button class="btn small" id="hideAllHeatmapLayersBtn" type="button">Hide All</button>
+              <button class="btn small" id="removeHiddenHeatmapLayersBtn" type="button">Remove Hidden</button>
+            </div>
+          </div>
+          <div class="heatmap-layer-mode-row">
+            <label for="integratedHeatmapLayerDisplayMode">Overlay Display</label>
+            <select id="integratedHeatmapLayerDisplayMode">
+              <option value="combined">Combined Visible Layers</option>
+              <option value="layers">Separate Layer Colours</option>
+            </select>
+          </div>
+          <div class="heatmap-layer-list" id="integratedHeatmapManagerList"></div>
+        </div>
+
+        <div class="heatmap-option-grid">
+          <div class="heatmap-option-card">
+            <strong>Load Heatmap JSON</strong>
+            <span>Select one or more exported heatmap JSON files and display them over the slider page.</span>
+            <input class="heatmap-file-input" id="integratedHeatmapFileInput" type="file" accept="application/json,.json" multiple>
+          </div>
+          <div class="heatmap-option-card">
+            <strong>Paste Heatmap JSON From Sheet</strong>
+            <span>Paste one Heatmap JSON cell, several cells copied from Google Sheets, or multiple JSON objects one after another.</span>
+            <textarea class="heatmap-paste-textarea" id="integratedHeatmapPasteArea" placeholder='Paste Heatmap JSON here. Example: {"schema_version":"1.1","export_type":"budget_click_heatmap_session",...}'></textarea>
+            <div class="heatmap-paste-actions">
+              <button class="btn primary" id="loadPastedHeatmapJsonBtn" type="button">Load Pasted JSON</button>
+              <button class="btn" id="replaceWithPastedHeatmapJsonBtn" type="button">Replace Loaded With Paste</button>
+              <button class="btn" id="clearPastedHeatmapJsonBtn" type="button">Clear Paste Box</button>
+            </div>
+            <div class="heatmap-paste-note">This only reads what you paste into the browser. It does not upload pasted JSON anywhere.</div>
+          </div>
+          <div class="heatmap-option-card">
+            <strong>Show On Slider Page</strong>
+            <span>Overlay exact click points and adaptive-density shading directly on the slider UI.</span>
+            <button class="btn primary" id="showCurrentHeatmapOverlayBtn" type="button">Show Current Session</button>
+            <button class="btn" id="showLoadedHeatmapOverlayBtn" type="button">Show Loaded Files</button>
+            <button class="btn" id="showCombinedHeatmapOverlayBtn" type="button">Show Combined</button>
+          </div>
+          <div class="heatmap-option-card">
+            <strong>Export</strong>
+            <span>Download the current session JSON or a transparent PNG of the overlay.</span>
+            <button class="btn primary" id="downloadCurrentHeatmapFromAnalyserBtn" type="button">Download Current JSON</button>
+            <button class="btn" id="downloadHeatmapOverlayPngBtn" type="button">Download Overlay PNG</button>
+          </div>
+          <div class="heatmap-option-card">
+            <strong>Overlay Controls</strong>
+            <span>Hide the overlay or clear loaded files without changing the current click session.</span>
+            <button class="btn primary" id="enableFloatingHeatmapPickerBtn" type="button">Enable Floating Layer Picker</button>
+            <button class="btn" id="disableFloatingHeatmapPickerBtn" type="button">Disable Floating Picker</button>
+            <button class="btn" id="hideIntegratedHeatmapOverlayBtn" type="button">Hide Overlay</button>
+            <button class="btn" id="clearCurrentHeatmapBtn" type="button">Clear Current Heatmap</button>
+            <button class="btn" id="clearLoadedHeatmapsBtn" type="button">Clear Loaded Heatmaps</button>
+          </div>
+        </div>
+
+        <div class="heatmap-inline-status" id="integratedHeatmapStatus">Current session: ${currentClicks} click point(s).</div>
+        <div class="heatmap-loaded-list" id="integratedHeatmapLoadedList"></div>
+
+        <div class="final-page-actions">
+          <button class="btn" id="openExistingHeatmapJsonBtn" type="button">View Current JSON</button>
+          <button class="btn" id="closeIntegratedHeatmapModalBtn" type="button">Close</button>
+        </div>
+      </div>
+    </section>
+  `;
+  document.body.appendChild(modal);
+  refreshHeatmapLayerControls();
+  updateIntegratedHeatmapModalStatus();
+
+  const close = () => modal.remove();
+  const closeBtn = document.getElementById('closeIntegratedHeatmapModalBtn');
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) close();
+  });
+
+  const fileInput = document.getElementById('integratedHeatmapFileInput');
+  if (fileInput) fileInput.addEventListener('change', () => loadIntegratedHeatmapFilesFromInput(fileInput));
+
+  const loadPasteBtn = document.getElementById('loadPastedHeatmapJsonBtn');
+  if (loadPasteBtn) loadPasteBtn.addEventListener('click', () => loadIntegratedHeatmapsFromPaste(true));
+
+  const replacePasteBtn = document.getElementById('replaceWithPastedHeatmapJsonBtn');
+  if (replacePasteBtn) replacePasteBtn.addEventListener('click', () => loadIntegratedHeatmapsFromPaste(false));
+
+  const clearPasteBtn = document.getElementById('clearPastedHeatmapJsonBtn');
+  if (clearPasteBtn) clearPasteBtn.addEventListener('click', () => {
+    const textarea = document.getElementById('integratedHeatmapPasteArea');
+    if (textarea) textarea.value = '';
+    updateIntegratedHeatmapModalStatus('Paste box cleared. Loaded heatmaps were not changed.');
+  });
+
+  const managerModeSelect = document.getElementById('integratedHeatmapLayerDisplayMode');
+  if (managerModeSelect) managerModeSelect.addEventListener('change', () => setIntegratedHeatmapLayerDisplayMode(managerModeSelect.value));
+
+  const showAllLayersBtn = document.getElementById('showAllHeatmapLayersBtn');
+  if (showAllLayersBtn) showAllLayersBtn.addEventListener('click', () => {
+    setAllHeatmapLayerVisibility(true);
+    if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+  });
+
+  const hideAllLayersBtn = document.getElementById('hideAllHeatmapLayersBtn');
+  if (hideAllLayersBtn) hideAllLayersBtn.addEventListener('click', () => {
+    setAllHeatmapLayerVisibility(false);
+    if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+  });
+
+  const removeHiddenBtn = document.getElementById('removeHiddenHeatmapLayersBtn');
+  if (removeHiddenBtn) removeHiddenBtn.addEventListener('click', removeHiddenHeatmapLayers);
+
+  const enableFloatingBtn = document.getElementById('enableFloatingHeatmapPickerBtn');
+  if (enableFloatingBtn) enableFloatingBtn.addEventListener('click', () => {
+    enableHeatmapFloatingLayerPicker(true);
+    showIntegratedHeatmapOverlay();
+  });
+
+  const disableFloatingBtn = document.getElementById('disableFloatingHeatmapPickerBtn');
+  if (disableFloatingBtn) disableFloatingBtn.addEventListener('click', () => enableHeatmapFloatingLayerPicker(false));
+
+  const currentBtn = document.getElementById('showCurrentHeatmapOverlayBtn');
+  if (currentBtn) currentBtn.addEventListener('click', () => showIntegratedHeatmapOverlay('current'));
+  const loadedBtn = document.getElementById('showLoadedHeatmapOverlayBtn');
+  if (loadedBtn) loadedBtn.addEventListener('click', () => showIntegratedHeatmapOverlay('loaded'));
+  const combinedBtn = document.getElementById('showCombinedHeatmapOverlayBtn');
+  if (combinedBtn) combinedBtn.addEventListener('click', () => showIntegratedHeatmapOverlay('combined'));
+
+  const downloadCurrentBtn = document.getElementById('downloadCurrentHeatmapFromAnalyserBtn');
+  if (downloadCurrentBtn) downloadCurrentBtn.addEventListener('click', () => {
+    const session = getBudgetClickHeatmapExport();
+    const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json;charset=utf-8' });
+    forceDownloadBlob(blob, getHeatmapJsonFilename(session));
+  });
+
+  const overlayPngBtn = document.getElementById('downloadHeatmapOverlayPngBtn');
+  if (overlayPngBtn) overlayPngBtn.addEventListener('click', exportIntegratedHeatmapOverlayPng);
+
+  const hideBtn = document.getElementById('hideIntegratedHeatmapOverlayBtn');
+  if (hideBtn) hideBtn.addEventListener('click', hideIntegratedHeatmapOverlay);
+
+  const clearCurrentBtn = document.getElementById('clearCurrentHeatmapBtn');
+  if (clearCurrentBtn) clearCurrentBtn.addEventListener('click', () => {
+    integratedHeatmapCurrentLayerVisible = true;
+    restartBudgetClickHeatmapSession('Clear Current Heatmap button pressed.', 'Current heatmap cleared. A new current session is recording now.');
+  });
+
+  const clearLoadedBtn = document.getElementById('clearLoadedHeatmapsBtn');
+  if (clearLoadedBtn) clearLoadedBtn.addEventListener('click', () => {
+    integratedHeatmapSessions = [];
+    integratedHeatmapOverlayMode = 'current';
+    refreshHeatmapLayerControls();
+    if (integratedHeatmapOverlayVisible) renderIntegratedHeatmapOverlay();
+    updateIntegratedHeatmapModalStatus('Loaded heatmaps cleared. Current session remains available.');
+  });
+
+  const openJsonBtn = document.getElementById('openExistingHeatmapJsonBtn');
+  if (openJsonBtn) openJsonBtn.addEventListener('click', showBudgetClickHeatmapJsonModal);
+}
+
+window.addEventListener('resize', () => {
+  if (integratedHeatmapOverlayVisible) window.requestAnimationFrame(renderIntegratedHeatmapOverlay);
+});
+
+window.addEventListener('scroll', () => {
+  if (integratedHeatmapOverlayVisible) window.requestAnimationFrame(renderIntegratedHeatmapOverlay);
+}, { passive: true });
 
     function getDisplayMode() {
       return els.displayMode ? els.displayMode.value : 'simple';
@@ -6953,6 +8858,70 @@
       };
     }
 
+    function getSafeClientInfoForSheet() {
+      const screenWidth = window.screen && window.screen.width ? window.screen.width : '';
+      const screenHeight = window.screen && window.screen.height ? window.screen.height : '';
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth || '';
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || '';
+
+      const safeUrl = (() => {
+        try {
+          return window.location.origin + window.location.pathname + window.location.search;
+        } catch (error) {
+          return window.location.href || '';
+        }
+      })();
+
+      return {
+        current_url: safeUrl,
+        page_title: document.title || '',
+        referrer: document.referrer || '',
+        screen_size: screenWidth && screenHeight ? `${screenWidth} x ${screenHeight}` : '',
+        viewport_size: viewportWidth && viewportHeight ? `${viewportWidth} x ${viewportHeight}` : '',
+        user_agent: navigator.userAgent || '',
+        platform: navigator.platform || '',
+        language: navigator.language || '',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+        device_touch_points: navigator.maxTouchPoints || 0
+      };
+    }
+
+    function getHeatmapSessionForSheet() {
+      let session = null;
+
+      try {
+        if (typeof getBudgetClickHeatmapExport === 'function') {
+          session = getBudgetClickHeatmapExport();
+        }
+      } catch (error) {
+        console.warn('Could not build heatmap session for sheet submission:', error);
+      }
+
+      if (!session || typeof session !== 'object') {
+        session = {
+          schema_version: '1.0',
+          session_id: '',
+          started_at: '',
+          ended_at: '',
+          summary: { total_clicks: 0 },
+          clicks: []
+        };
+      }
+
+      const clicks = Array.isArray(session.clicks) ? session.clicks : [];
+      const summary = session.summary || {};
+      const clickCount = Number(summary.total_clicks || clicks.length || session.total_clicks || 0);
+
+      return {
+        session,
+        session_id: session.session_id || '',
+        started_at: session.started_at || '',
+        ended_at: session.ended_at || '',
+        click_count: clickCount,
+        json: JSON.stringify(session)
+      };
+    }
+
     function buildSimpleSheetSubmissionData(options = {}) {
       const source = buildDashboardJsonData();
       const totals = source.totals || {};
@@ -6960,11 +8929,13 @@
       const detailRows = Array.isArray(source.dashboard_rows) ? source.dashboard_rows : [];
       const exportType = options.exportType || 'council_budget_suggestion_google_sheet_submission';
       const submissionTarget = options.submissionTarget || 'final_submission';
+      const heatmap = getHeatmapSessionForSheet();
+      const safeClientInfo = getSafeClientInfoForSheet();
 
       const sheetRecord = {
         'Submission ID': source.submission_id,
         'Submitted At': source.submitted_at,
-        'Schema Version': '1.6',
+        'Schema Version': '1.7',
         'Export Type': exportType,
         'Age Group': source.submission_details?.age_group || '',
         'Comment': source.submission_details?.comment || '',
@@ -6985,6 +8956,7 @@
       const animalTopCategories = Array.isArray(animalResult.top_categories) && animalResult.top_categories.length
         ? animalResult.top_categories
         : (animalResult.category ? [animalResult.category] : []);
+
       sheetRecord['animal'] = animalResult.animal_type || source.animal || '';
       sheetRecord['top_categories'] = animalTopCategories.join(', ');
       sheetRecord['allocation_style'] = animalResult.allocation_style || source.allocation_style || '';
@@ -6995,15 +8967,42 @@
       sheetRecord['Animal Personality Words'] = animalResult.personality_words || '';
       sheetRecord['Animal Allocation Style'] = animalResult.allocation_style || '';
       sheetRecord['Animal Relative Priority Percent'] = animalResult.relative_priority_percent ?? '';
+
       sheetRecord['Public reaction average score total'] = totals.overall_average_sentiment_score;
       sheetRecord['Outcome Rating'] = ratings.outcome_rating?.grade || totals.outcome_rating || '';
       sheetRecord['Public Reaction Rating'] = ratings.public_reaction_rating?.grade || totals.public_reaction_rating || '';
       sheetRecord['Overall Rating'] = ratings.overall_rating?.grade || totals.overall_rating || '';
 
+      sheetRecord['Heatmap Session ID'] = heatmap.session_id;
+      sheetRecord['Heatmap Started At'] = heatmap.started_at;
+      sheetRecord['Heatmap Ended At'] = heatmap.ended_at;
+      sheetRecord['Heatmap Click Count'] = heatmap.click_count;
+      sheetRecord['Heatmap JSON'] = heatmap.json;
+
+      sheetRecord['Current URL'] = safeClientInfo.current_url;
+      sheetRecord['Page Title'] = safeClientInfo.page_title;
+      sheetRecord['Referrer'] = safeClientInfo.referrer;
+      sheetRecord['Screen Size'] = safeClientInfo.screen_size;
+      sheetRecord['Viewport Size'] = safeClientInfo.viewport_size;
+      sheetRecord['User Agent'] = safeClientInfo.user_agent;
+      sheetRecord['Platform'] = safeClientInfo.platform;
+      sheetRecord['Language'] = safeClientInfo.language;
+      sheetRecord['Timezone'] = safeClientInfo.timezone;
+      sheetRecord['Device Touch Points'] = safeClientInfo.device_touch_points;
+      sheetRecord['Safe Client Info JSON'] = JSON.stringify(safeClientInfo);
+
+      const submissionArrayRecord = { ...sheetRecord };
+      delete submissionArrayRecord['Heatmap JSON'];
+      delete submissionArrayRecord['Safe Client Info JSON'];
+
       return {
         ...sheetRecord,
+        heatmap_json: heatmap.json,
+        heatmap_session_id: heatmap.session_id,
+        heatmap_click_count: heatmap.click_count,
+        safe_client_info: safeClientInfo,
         submission_target: submissionTarget,
-        submission_array: [sheetRecord]
+        submission_array: [submissionArrayRecord]
       };
     }
 
@@ -7112,8 +9111,16 @@
 
     let backgroundResultsSheetSubmissionInFlight = false;
     let lastBackgroundResultsSheetSubmissionAt = 0;
+    const BACKGROUND_RESULTS_SHEET_SUBMIT_PAUSED_KEY = 'budgetBackgroundResultsSheetSubmitPausedV2';
+    let backgroundResultsSheetSubmissionPaused = localStorage.getItem(BACKGROUND_RESULTS_SHEET_SUBMIT_PAUSED_KEY) === 'true';
 
     async function submitResultsViewToGoogleSheetInBackground() {
+      if (backgroundResultsSheetSubmissionPaused) {
+        console.info('Background results sheet submission skipped because automatic sheet submissions are paused.');
+        updateAutoSheetSubmitToggleButton();
+        return;
+      }
+
       if (!GOOGLE_SHEET_SUBMISSION_ENDPOINT || GOOGLE_SHEET_SUBMISSION_ENDPOINT.includes('PASTE_')) {
         console.warn('Background results sheet submission skipped because the Google Sheet endpoint is not configured.');
         return;
@@ -7377,7 +9384,12 @@
       if (target) target.hidden = false;
 
       if (pageName === 'results') {
+        endBudgetClickHeatmapSession('Budget page viewed.');
         updateResultsPage();
+      }
+
+      if (pageName === 'builder' && (!budgetClickHeatmapSession || budgetClickHeatmapSession.ended_at)) {
+        startBudgetClickHeatmapSession('Slider page viewed.');
       }
 
       if (pageName === 'submit') {
@@ -7387,17 +9399,68 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    document.getElementById('clearBtn').addEventListener('click', clearBudget);
+
+    function setAdminToolsVisible(visible) {
+      document.body.classList.toggle('admin-tools-visible', !!visible);
+      const adminButtons = document.querySelectorAll('[data-admin-tool="true"]');
+      adminButtons.forEach((button) => {
+        button.hidden = false;
+        button.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      });
+      updateAutoSheetSubmitToggleButton();
+      return visible ? 'Admin tools enabled. Click Location Analyser and Auto Submit controls are now visible.' : 'Admin tools hidden.';
+    }
+
+    function enableAdminToolsFromConsole() {
+      return setAdminToolsVisible(true);
+    }
+
+    try {
+      Object.defineProperty(window, 'admintools', {
+        configurable: true,
+        get() {
+          enableAdminToolsFromConsole();
+          return enableAdminToolsFromConsole;
+        }
+      });
+      window.enableAdminTools = enableAdminToolsFromConsole;
+      window.hideAdminTools = () => setAdminToolsVisible(false);
+    } catch (error) {
+      window.admintools = enableAdminToolsFromConsole;
+      window.enableAdminTools = enableAdminToolsFromConsole;
+    }
+
+    setAdminToolsVisible(false);
+
+
+    const clickLocationAnalyserBtn = document.getElementById('clickLocationAnalyserBtn');
+    if (clickLocationAnalyserBtn) clickLocationAnalyserBtn.addEventListener('click', showIntegratedClickLocationAnalyserModal);
+    const autoSheetSubmitToggleBtn = document.getElementById('autoSheetSubmitToggleBtn');
+    if (autoSheetSubmitToggleBtn) autoSheetSubmitToggleBtn.addEventListener('click', toggleBackgroundResultsSheetSubmissionPaused);
+    updateAutoSheetSubmitToggleButton();
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      clearBudget();
+      restartBudgetClickHeatmapSession('Start Again button pressed.', 'Current heatmap reset. A new current session is recording now.');
+    });
     document.getElementById('goalSplitBtn').addEventListener('click', resetToGoal);
     els.displayMode.addEventListener('change', refreshDisplayMode);
-    document.getElementById('resetBtn').addEventListener('click', resetToCurrent);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      resetToCurrent();
+      restartBudgetClickHeatmapSession('Reset button pressed.', 'Current heatmap reset. A new current session is recording now.');
+    });
     const starterResetBtn = document.getElementById('starterResetBtn');
-    if (starterResetBtn) starterResetBtn.addEventListener('click', resetAndShowStarterModal);
+    if (starterResetBtn) starterResetBtn.addEventListener('click', () => {
+      resetAndShowStarterModal();
+      restartBudgetClickHeatmapSession('Starter reset button pressed.', 'Current heatmap reset. A new current session is recording now.');
+    });
     document.getElementById('jumpSubmitBtn').addEventListener('click', showResultsAndSubmitBackground);
     const bottomSeeBudgetBtn = document.getElementById('bottomSeeBudgetBtn');
     if (bottomSeeBudgetBtn) bottomSeeBudgetBtn.addEventListener('click', showResultsAndSubmitBackground);
     const backToBuilderBtn = document.getElementById('backToBuilderBtn');
     if (backToBuilderBtn) backToBuilderBtn.addEventListener('click', () => showToolPage('builder'));
+    const viewHeatmapJsonBtn = document.getElementById('viewHeatmapJsonBtn');
+    if (viewHeatmapJsonBtn) viewHeatmapJsonBtn.addEventListener('click', showBudgetClickHeatmapJsonModal);
     const downloadResultsJsonBtn = document.getElementById('downloadResultsJsonBtn');
     if (downloadResultsJsonBtn) downloadResultsJsonBtn.addEventListener('click', downloadResultsJson);
     const resultsExportBtn = document.getElementById('resultsExportBtn');
@@ -7471,6 +9534,9 @@
       hideStarterModal();
       showToolPage('builder');
     });
+
+    document.addEventListener('click', recordBudgetBuilderClick, true);
+    startBudgetClickHeatmapSession('Page loaded.');
 
     renderCategories();
     renderSentimentMatrix();
